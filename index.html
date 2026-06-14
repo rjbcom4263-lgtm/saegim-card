@@ -174,8 +174,9 @@ function renderTT(data){
       <span class="tt-btn-icon">${f.icon}</span>
       <span>${esc(tt.facilities[f.key])}</span>
     </button>`).join('');
-  const phoneBtn=data.owner_phone?`<a class="btn sub" href="tel:${esc(data.owner_phone)}">📞 ${esc(tt.call)}</a>`:'';
-  const emailBtn=data.owner_email?`<a class="btn sub" href="mailto:${esc(data.owner_email)}">✉️ ${esc(tt.email_contact)}</a>`:'';
+  const contactBtn=data.lost_contact_url
+    ?`<a class="btn danger" href="${esc(normalizeLostUrl_(data.lost_contact_type,data.lost_contact_url))}">${esc(data.lost_contact_label||tt.call)}</a>`
+    :'';
   app.innerHTML=`
     ${brand()}
     <div class="lang-bar">
@@ -191,7 +192,7 @@ function renderTT(data){
     <div class="tt-lost-title">${esc(tt.lost_title)}</div>
     <div class="tt-lost-sub">${esc(tt.lost_sub)}</div>
     <button class="btn" onclick="showChat()">💬 ${esc(tt.chat)}</button>
-    ${phoneBtn}${emailBtn}
+    ${contactBtn}
     ${editBtn()}
     <div class="footer">SAEGIM · TRAVEL TAG</div>`;
 }
@@ -415,9 +416,22 @@ function renderRegister(data){
   const ttFields=`
     <label>표시 이름 (소유자 이름)</label>
     <input id="owner" class="input" placeholder="예) 홍길동" value="${esc(data.owner||'')}">
-    <label>연락처 (분실 시 연락할 번호)</label>
-    <input id="owner_phone" class="input" placeholder="예) 010-1234-5678" value="${esc(data.owner_phone||'')}">
-    <label>이메일 (선택)</label>
+    <div class="section-title">분실 연락수단</div>
+    <label>연락 방식</label>
+    <select id="lost_contact_type" class="input">
+      <option value="">선택안함</option>
+      <option value="전화">전화</option>
+      <option value="카카오">카카오톡</option>
+      <option value="이메일">이메일</option>
+      <option value="왓츠앱">WhatsApp</option>
+      <option value="라인">LINE</option>
+      <option value="텔레그램">Telegram</option>
+    </select>
+    <label>버튼 이름 (예: 주인에게 연락하기)</label>
+    <input id="lost_contact_label" class="input" placeholder="주인에게 연락하기" value="">
+    <label>연락처 (전화번호 또는 URL)</label>
+    <input id="lost_contact_url" class="input" placeholder="010-1234-5678 또는 링크" value="">
+    <label>알림 이메일 (선택 · 채팅 메시지 수신 알림)</label>
     <input id="owner_email" class="input" type="email" placeholder="example@email.com" value="${esc(data.owner_email||'')}">`;
   const fields=isBmt?bmtFields:(isTT?ttFields:cdFields);
   const linksSection=isTT?'':`<div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>`;
@@ -464,15 +478,27 @@ function renderEditForm(password){
 function renderTTEditForm(password){
   const d=QR_DATA;
   const t=I18N[currentLang]||I18N.ko;
+  const ctypes=['전화','카카오','이메일','왓츠앱','라인','텔레그램'];
+  const ctypeLabels={전화:'전화',카카오:'카카오톡',이메일:'이메일',왓츠앱:'WhatsApp',라인:'LINE',텔레그램:'Telegram'};
   app.innerHTML=`
     ${brand()}
     <div class="main-title">✈️ Travel Tag 수정</div>
     <input id="password" type="hidden" value="${esc(password)}">
     <div class="section-title">소유자 정보</div>
     <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
-    <label>연락처 (분실 시 연락할 번호)</label><input id="owner_phone" value="${esc(d.owner_phone||'')}">
-    <label>이메일 (선택)</label><input id="owner_email" type="email" value="${esc(d.owner_email||'')}">
+    <div class="section-title">분실 연락수단</div>
+    <label>연락 방식</label>
+    <select id="lost_contact_type">
+      <option value="">선택안함</option>
+      ${ctypes.map(v=>`<option value="${v}" ${d.lost_contact_type===v?'selected':''}>${ctypeLabels[v]}</option>`).join('')}
+    </select>
+    <label>버튼 이름</label>
+    <input id="lost_contact_label" value="${esc(d.lost_contact_label||'')}" placeholder="주인에게 연락하기">
+    <label>연락처 (전화번호 또는 URL)</label>
+    <input id="lost_contact_url" value="${esc(d.lost_contact_url||'')}" placeholder="010-1234-5678 또는 링크">
     <div class="section-title">알림 설정</div>
+    <label>알림 이메일 (채팅 메시지 수신 알림)</label>
+    <input id="owner_email" type="email" value="${esc(d.owner_email||'')}" placeholder="example@email.com">
     <button id="ttPushBtn" class="btn sub" onclick="enablePushNotification()">${t.push_enable}</button>
     <button class="btn" onclick="saveEdit()">저장하기</button>
     <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
@@ -707,7 +733,7 @@ async function registerFirst(){
     ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url'].forEach(k=>form[k]=val(k));
   }else if(isTT){
     form={...base};
-    ['owner_phone','owner_email'].forEach(k=>form[k]=val(k));
+    ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
@@ -732,7 +758,7 @@ async function saveEdit(){
     ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   }else if(isTT){
     form={...base};
-    ['owner_phone','owner_email'].forEach(k=>form[k]=val(k));
+    ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
