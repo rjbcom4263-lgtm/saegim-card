@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>새김 안심 연결</title>
+<style>
+:root{--bg:#111;--card:#171717;--line:#7a6040;--gold:#e6c88f;--gold2:#c7a05d;--text:#f6ead4;--muted:#b7a88f}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 100%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:28px 18px}
+.card{border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,#181818,#101010);padding:26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.brand{text-align:center;margin-bottom:24px}.logo{font-family:serif;font-size:34px;letter-spacing:.18em;color:var(--gold)}.slogan{margin-top:8px;color:var(--muted);font-size:14px}
+.main-title{text-align:center;font-size:24px;font-weight:800;line-height:1.35;margin:8px 0}.sub{text-align:center;color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:22px}
+.btn,.call-btn{display:block;width:100%;margin-top:12px;padding:18px;border-radius:18px;text-decoration:none;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+.call-btn.secondary,.btn.sub{color:var(--gold);background:#111;border:1px solid var(--gold2)}
+.section-title{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold);margin:26px 0 14px;font-weight:800}
+.section-title:before,.section-title:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line))}
+.section-title:after{background:linear-gradient(90deg,var(--line),transparent)}
+.info{border:1px solid rgba(230,200,143,.35);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.03)}
+.row{display:grid;grid-template-columns:115px 1fr;gap:12px;padding:15px;border-bottom:1px solid rgba(230,200,143,.18)}
+.row:last-child{border-bottom:0}.label{color:var(--gold);font-weight:700}.value{color:var(--text);line-height:1.55;white-space:pre-line}
+.thanks{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:18px;text-align:center;color:var(--gold);font-size:18px;font-weight:800}.small{margin-top:8px;color:var(--muted);font-size:13px;font-weight:400}
+.footer{text-align:center;margin-top:20px;color:var(--muted);font-size:12px;letter-spacing:.18em}.loading,.error{text-align:center;color:var(--muted);padding:70px 20px}
+input,textarea,select{width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px}
+textarea{min-height:86px;resize:vertical}label{display:block;color:var(--gold);font-size:13px;margin-top:6px}.edit-group{border:1px solid rgba(230,200,143,.25);border-radius:16px;padding:14px;margin-top:12px}
+.hidden{display:none}
+.bmt-photo{width:100%;height:220px;border-radius:18px;border:1px solid rgba(230,200,143,.35);object-fit:cover;object-position:center;background:#0d0d0d}
+.bmt-memory{margin-top:16px;border:1px solid rgba(230,200,143,.35);border-radius:20px;padding:18px;background:rgba(255,255,255,.03)}
+.bmt-memory-title{color:var(--gold);font-weight:800;margin-bottom:8px}
+.bmt-memory-text{line-height:1.7;white-space:pre-line;color:var(--text)}
+.bmt-actions{margin-top:20px}
+.bmt-photo-single{margin:18px 0;position:relative}
+.bmt-photo-click{cursor:pointer;display:block}
+.bmt-photo-hint{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
+.bmt-slider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:18px -6px;padding:0 6px 12px}
+.bmt-slide{min-width:86%;scroll-snap-align:center}
+.bmt-slide .bmt-photo{height:220px}
+.bmt-dots{display:flex;justify-content:center;gap:7px;margin:-2px 0 18px}
+.bmt-dot{width:8px;height:8px;border-radius:50%;background:rgba(122,96,64,.35)}
+.bmt-dot:first-child{background:var(--gold2)}
+.bmt-date{text-align:center;color:var(--gold);font-size:14px;letter-spacing:.03em;line-height:1.5;margin:-6px 0 16px}
+.bmt-audio{margin-top:20px;border:1px solid rgba(230,200,143,.35);border-radius:18px;padding:14px;background:rgba(255,255,255,.03)}
+.bmt-audio-title{color:var(--gold);font-weight:800;margin-bottom:10px;font-size:14px}
+.bmt-audio audio{width:100%}
+.gallery-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:none;align-items:center;justify-content:center;padding:18px}
+.gallery-modal.on{display:flex}
+.gallery-box{width:100%;max-width:560px;border:1px solid var(--line);border-radius:24px;background:#111;padding:16px;position:relative}
+.gallery-close{position:absolute;right:14px;top:10px;background:transparent;border:0;color:var(--gold);font-size:28px;cursor:pointer}
+.gallery-img{width:100%;height:62vh;max-height:520px;object-fit:contain;border-radius:18px;background:#000}
+.gallery-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.gallery-nav button{flex:1;padding:13px;border-radius:14px;border:1px solid var(--gold2);background:#111;color:var(--gold);font-weight:800;cursor:pointer}
+.gallery-count{color:var(--muted);font-size:13px;text-align:center;min-width:70px}
+.btn.danger{color:#fff;background:linear-gradient(135deg,#c0392b,#922b21)}
+.upload-box{border:1px dashed rgba(230,200,143,.4);border-radius:14px;padding:14px;margin:7px 0 13px;background:#0a0a0a}
+.upload-label{color:var(--muted);font-size:12px;margin-bottom:8px;display:block}
+.upload-progress{height:6px;background:rgba(230,200,143,.15);border-radius:3px;margin:8px 0 4px;overflow:hidden;display:none}
+.upload-progress.on{display:block}
+.upload-bar{height:100%;background:var(--gold2);border-radius:3px;width:0%;transition:width .3s}
+.upload-status{font-size:12px;color:var(--muted);min-height:16px}
+.lost-box{border:2px solid #d9534f;border-radius:18px;padding:16px;margin-bottom:18px;background:#2b1010}
+.lost-title{color:#ff8c8c;font-weight:800;margin-bottom:8px;text-align:center}
+.lost-text{text-align:center;line-height:1.6}
+.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+input[type=file]{padding:10px;cursor:pointer}
+.chat-messages{max-height:340px;overflow-y:auto;padding:8px 0;margin-bottom:12px}
+.chat-msg{margin-bottom:10px;display:flex;flex-direction:column}
+.chat-msg.guest{align-items:flex-start}
+.chat-msg.owner{align-items:flex-end}
+.chat-name{font-size:11px;color:var(--muted);margin-bottom:3px}
+.chat-bubble{max-width:82%;padding:10px 14px;border-radius:14px;line-height:1.5;font-size:14px;word-break:break-word}
+.chat-msg.guest .chat-bubble{background:#1e1e1e;border:1px solid rgba(230,200,143,.25);border-radius:14px 14px 14px 2px}
+.chat-msg.owner .chat-bubble{background:linear-gradient(135deg,#3a2a0d,#2a1d08);border:1px solid var(--gold2);border-radius:14px 14px 2px 14px;color:var(--gold)}
+.chat-time{font-size:10px;color:var(--muted);margin-top:3px}
+.chat-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.chat-input-row input{margin:0;flex:1}
+.btn.chat-send{width:auto;padding:14px 20px;margin:0;flex-shrink:0;font-size:14px}
+.chat-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
+.chat-box{border:1px solid rgba(230,200,143,.25);border-radius:18px;padding:14px;margin-top:16px;background:rgba(255,255,255,.02)}
+.msg-badge{display:inline-block;background:#c0392b;color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중입니다...</div></div></div>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbyhOt-UJ_lZ8Upyw9ZvGKCNT0B2BEM3asnwOuI9_q7GsHHCYglWkPYmgPoz7FvNcNua/exec';
+const params=new URLSearchParams(location.search);
+const CODE=params.get('code')||'CD-0001';
+const MODE=params.get('mode')||'view';
+let QR_DATA=null;
+let currentLang=localStorage.getItem('saegim_lang')||'ko';
+let CHAT_UNSUBSCRIBE=null;
+let OWNER_CHAT_UNSUBSCRIBE=null;
+let CHAT_NICKNAME=localStorage.getItem('bmt_chat_nick')||'';
+loadData();
+async function apiGet(action, extra={}){
+  const q=new URLSearchParams({action, ...extra});
+  const res=await fetch(API_URL+'?'+q.toString());
+  return await res.json();
+}
+async function apiPost(payload){
+  const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+  return await res.json();
+}
+async function loadData(){
+  try{
+    const data=await apiGet('getQrData',{code:CODE});
+    if(!data.success){renderError(data.message||'QR 정보를 불러오지 못했습니다.');return}
+    QR_DATA=data;
+    MODE==='edit'?renderPassword():renderView(data);
+  }catch(e){renderError('서버 연결 중 오류가 발생했습니다.')}
+}
+function brand(){
+  return `<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;
+}
+function renderView(data){
+  if(data.status==='미등록'){renderInactive(data);return;}
+  if(data.status==='판매완료'){renderRegister(data);return;}
+  if(data.status==='중지'){renderStopped(data);return;}
+  if(data.product_code==='BMT'){renderBmt(data);return;}
+  if(data.product_code==='CD'){renderCare(data);return;}
+  renderDefault(data);
+}
+function renderCare(data){
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">보호 중인 분을 발견하셨나요?</div>
+    <div class="sub">아래 연결 항목으로 연락 부탁드립니다.</div>
+    ${renderLinkButtons(data.links||[])}
+    <div class="section-title">정보</div>
+    <div class="info">
+      ${infoRow('이름',data.child_name||data.owner||'-')}
+      ${infoRow('보호자',data.guardian_name||'-')}
+      ${infoRow('특이사항',data.child_note||'-')}
+      ${infoRow('알레르기·질환',data.child_allergy||'-')}
+      ${infoRow('혈액형',data.blood_type||'-')}
+      ${infoRow('안내 메시지',data.child_message||'-')}
+    </div>
+    ${thanks()}
+    ${editBtn()}
+    <div class="footer">SAEGIM · ANSIM QR</div>`;
+}
+function renderBmtPrivate(data){
+  const lang=currentLang;
+  const t=I18N[lang]||I18N.ko;
+  const photos=[data.bmt_photo1,data.bmt_photo2,data.bmt_photo3,data.bmt_photo4,data.bmt_photo5].filter(Boolean);
+  let photoMode=data.bmt_photo_fit||'single';
+  if(photoMode!=='single'&&photoMode!=='slider') photoMode='single';
+  const pos=data.bmt_photo_position||'center';
+  let photoHtml='';
+  if(photos.length){
+    if(photoMode==='slider'){
+      photoHtml=`
+        <div class="bmt-slider">
+          ${photos.map(src=>`<div class="bmt-slide"><img class="bmt-photo" src="${esc(src)}" style="object-fit:cover;object-position:${esc(pos)}"></div>`).join('')}
+        </div>
+        <div class="bmt-dots">${photos.map(()=>`<span class="bmt-dot"></span>`).join('')}</div>`;
+    }else{
+      photoHtml=`
+        <div class="bmt-photo-single">
+          <img class="bmt-photo bmt-photo-click" src="${esc(photos[0])}" style="object-fit:cover;object-position:${esc(pos)}" onclick="openGallery(0)">
+          ${photos.length>1?`<div class="bmt-photo-hint">${t.photo_hint.replace('{n}',photos.length)}</div>`:''}
+        </div>`;
+    }
+  }
+  app.innerHTML=`
+    ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${lang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}
+    </div>
+    <div class="main-title">${esc(data.owner||'부산 메모리 태그')}</div>
+    <div class="sub">${t.sub}</div>
+    ${photoHtml}
+    <div class="section-title">${t.section}</div>
+    ${data.bmt_travel_memo?`<div class="bmt-memory"><div class="bmt-memory-title">${t.memo}</div><div class="bmt-memory-text">${esc(data.bmt_travel_memo)}</div></div>`:''}
+    ${data.bmt_places?`<div class="bmt-memory"><div class="bmt-memory-title">${t.places}</div><div class="bmt-memory-text">${esc(data.bmt_places)}</div></div>`:''}
+    ${data.bmt_voice?`<div class="bmt-audio"><div class="bmt-audio-title">${t.voice}</div><audio controls src="${esc(data.bmt_voice)}"></audio></div>`:''}
+    <div class="bmt-actions">${renderLinkButtons(data.links||[])}</div>
+    <div class="section-title" id="inboxTitle">📩 ${t.inbox_title}</div>
+    <div class="chat-box">
+      <div id="ownerChatMessages" class="chat-messages"><div class="chat-empty">${t.inbox_empty}</div></div>
+      <div class="chat-input-row">
+        <input id="owner_reply" placeholder="${t.reply_placeholder}" maxlength="300" onkeydown="if(event.key==='Enter')sendOwnerReply()">
+        <button class="btn chat-send" onclick="sendOwnerReply()">${t.send}</button>
+      </div>
+    </div>
+    <button id="pushBtn" class="btn sub" onclick="enablePushNotification()">${t.push_enable}</button>
+    ${editBtn()}
+    <div class="footer">SAEGIM · MEMORY QR</div>
+    ${galleryModalHtml(photos,pos)}`;
+  startOwnerChatListener(t);
+}
+function renderBmt(data){
+  const lang=currentLang;
+  const t=I18N[lang]||I18N.ko;
+  const noticeBox=`<div class="lost-box"><div class="lost-title">${t.notice_title}</div><div class="lost-text">${t.notice_text}</div></div>`;
+  const contactButton=data.lost_contact_url
+    ? `<a class="btn danger" href="${esc(normalizeLostUrl_(data.lost_contact_type,data.lost_contact_url))}">${esc(data.lost_contact_label||t.contact)}</a>`
+    : '';
+  app.innerHTML=`
+    ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${lang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}
+    </div>
+    ${noticeBox}
+    <div class="main-title">${esc(data.owner||t.bmt_title)}</div>
+    <div class="sub">${t.public_sub}</div>
+    <div class="bmt-actions">
+      ${contactButton}
+      <button class="btn" onclick="showChat()">💬 ${t.send_message}</button>
+      <button class="btn sub" onclick="showMemoryPassword()">🗂 ${t.memory_view}</button>
+      ${editBtn()}
+    </div>
+    <div class="footer">SAEGIM · MEMORY QR</div>`;
+}
+let GALLERY_PHOTOS=[];
+let GALLERY_INDEX=0;
+function galleryModalHtml(photos,pos){
+  GALLERY_PHOTOS=photos||[];
+  GALLERY_INDEX=0;
+  if(!GALLERY_PHOTOS.length) return '';
+  return `
+    <div id="galleryModal" class="gallery-modal" onclick="closeGallery(event)">
+      <div class="gallery-box" onclick="event.stopPropagation()">
+        <button class="gallery-close" onclick="closeGallery()">×</button>
+        <img id="galleryImg" class="gallery-img" src="${esc(GALLERY_PHOTOS[0])}" style="object-position:${esc(pos||'center')}">
+        <div class="gallery-nav">
+          <button onclick="moveGallery(-1)">${(I18N[currentLang]||I18N.ko).prev}</button>
+          <div id="galleryCount" class="gallery-count">1 / ${GALLERY_PHOTOS.length}</div>
+          <button onclick="moveGallery(1)">${(I18N[currentLang]||I18N.ko).next}</button>
+        </div>
+      </div>
+    </div>`;
+}
+function openGallery(index){
+  if(!GALLERY_PHOTOS.length) return;
+  GALLERY_INDEX=index||0;
+  updateGallery();
+  const modal=document.getElementById('galleryModal');
+  if(modal) modal.classList.add('on');
+}
+function closeGallery(e){
+  const modal=document.getElementById('galleryModal');
+  if(modal) modal.classList.remove('on');
+}
+function moveGallery(step){
+  if(!GALLERY_PHOTOS.length) return;
+  GALLERY_INDEX=(GALLERY_INDEX+step+GALLERY_PHOTOS.length)%GALLERY_PHOTOS.length;
+  updateGallery();
+}
+function updateGallery(){
+  const img=document.getElementById('galleryImg');
+  const count=document.getElementById('galleryCount');
+  if(img) img.src=GALLERY_PHOTOS[GALLERY_INDEX];
+  if(count) count.textContent=(GALLERY_INDEX+1)+' / '+GALLERY_PHOTOS.length;
+}
+
+function renderDefault(data){
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">${esc(data.owner||data.product||'새김 연결 태그')}</div>
+    <div class="sub">아래 연결 항목을 확인해주세요.</div>
+    ${renderLinkButtons(data.links||[])}
+    ${editBtn()}
+    <div class="footer">SAEGIM QR</div>`;
+}
+function renderInactive(data){
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">아직 등록되지 않은 QR입니다</div>
+    <div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있습니다.</div>
+    <div class="footer">SAEGIM QR</div>`;
+}
+function renderStopped(data){
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">사용이 중지된 QR입니다</div>
+    <div class="sub">현재 이 QR은 비활성화 상태입니다.</div>
+    <div class="footer">SAEGIM QR</div>`;
+}
+function renderLinkButtons(links){
+  if(!links||!links.length)return '<div class="sub">등록된 연결 항목이 없습니다.</div>';
+  return links.filter(l=>l.url).map((l,i)=>{
+    const label=l.label||l.type||'연결하기';
+    return `<a class="call-btn ${i?'secondary':''}" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+  }).join('');
+}
+function infoRow(label,value){return `<div class="row"><div class="label">${esc(label)}</div><div class="value">${value&&String(value).includes('<a ')?value:esc(value)}</div></div>`}
+function thanks(){return `<div class="thanks">도움을 주셔서 감사합니다.<div class="small">따뜻한 관심과 배려에 감사드립니다.</div></div>`}
+function editBtn(){
+  const t=I18N[currentLang]||I18N.ko;
+  return `<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=edit">${t.edit||'정보 수정하기'}</a>`;
+}
+function renderRegister(data){
+  const isBmt=(data.product_code==='BMT');
+  const cdFields=`
+    <label>아이 이름</label>
+    <input id="child_name" class="input" placeholder="아이 이름" value="${esc(data.child_name||'')}">
+    <label>보호자 연락처</label>
+    <input id="guardian_phone" class="input" placeholder="보호자 연락처" value="${esc(data.guardian_phone||'')}">
+    <label>알레르기·질환 정보</label>
+    <textarea id="child_allergy" class="input" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">${esc(data.child_allergy||'')}</textarea>
+    <label>혈액형</label>
+    <select id="blood_type" class="input">
+      <option value="">선택</option>
+      ${['A','B','O','AB','RH-'].map(v=>`<option value="${v}" ${data.blood_type===v?'selected':''}>${v}형</option>`).join('')}
+    </select>
+    <label>특이사항</label>
+    <textarea id="child_note" class="input" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">${esc(data.child_note||'')}</textarea>
+    <label>보호자 이름</label>
+    <input id="guardian_name" class="input" placeholder="보호자 이름" value="${esc(data.guardian_name||'')}">
+    <label>발견자에게 전달 메시지</label>
+    <textarea id="child_message" class="input" placeholder="안녕하세요.&#10;보호 중인 아이입니다.&#10;QR을 스캔해 주셔서 감사합니다.&#10;아래 연락처로 연락 부탁드립니다.">${esc(data.child_message||'')}</textarea>`;
+  const bmtFields=`
+    <label>소유자 이름</label>
+    <input id="owner" class="input" placeholder="소유자 이름" value="${esc(data.owner||'')}">
+    <div class="section-title">여행 사진</div>
+    ${uploadBox('bmt_photo1','대표 사진',data.bmt_photo1||'')}
+    ${uploadBox('bmt_photo2','갤러리 사진 2',data.bmt_photo2||'')}
+    ${uploadBox('bmt_photo3','갤러리 사진 3',data.bmt_photo3||'')}
+    ${uploadBox('bmt_photo4','갤러리 사진 4',data.bmt_photo4||'')}
+    ${uploadBox('bmt_photo5','갤러리 사진 5',data.bmt_photo5||'')}
+    <label>여행 메모</label>
+    <textarea id="bmt_travel_memo" class="input" placeholder="여행 메모 (날짜, 장소, 추억 등)">${esc(data.bmt_travel_memo||'')}</textarea>
+    <label>방문 장소</label>
+    <textarea id="bmt_places" class="input" placeholder="방문 장소">${esc(data.bmt_places||'')}</textarea>
+    <div class="section-title">여행 음성</div>
+    ${uploadBox('bmt_voice','음성 파일',data.bmt_voice||'','audio')}
+    <label>사진 표시 방식</label>
+    <select id="bmt_photo_fit" class="input">
+      <option value="single"${(data.bmt_photo_fit||'single')==='single'?' selected':''}>대표 사진 1장</option>
+      <option value="slider"${(data.bmt_photo_fit||'single')==='slider'?' selected':''}>슬라이드 모드</option>
+    </select>`;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">최초 등록</div>
+    <div class="sub">구매하신 QR을 처음 등록합니다.<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
+    ${isBmt?bmtFields:cdFields}
+    <div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>
+    <hr>
+    <input id="new_password" class="input" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">
+    <button class="btn" onclick="registerFirst()">등록 완료</button>`;
+}
+function renderPassword(){
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`
+    ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`
+        <button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">
+          ${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}
+        </button>
+      `).join('')}
+    </div>
+    <div class="main-title">${t.edit}</div>
+    <div class="sub">${t.edit_password_text}</div>
+    <input id="pw" type="password" placeholder="${t.password_placeholder}">
+    <button class="btn" onclick="checkPassword()">${t.confirm}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+}
+async function checkPassword(){
+  const password=document.getElementById('pw').value.trim();
+  if(!password){alert('비밀번호를 입력해주세요.');return}
+  const r=await apiGet('verifyPassword',{code:CODE,password});
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return}
+  renderEditForm(password);
+}
+function renderEditForm(password){
+  if(QR_DATA.product_code==='BMT'){renderBmtEditForm(password);return;}
+  renderCdEditForm(password);
+}
+function renderCdEditForm(password){
+  const d=QR_DATA;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">정보 수정</div>
+    <input id="password" type="hidden" value="${esc(password)}">
+    <div class="section-title">기본 정보</div>
+    <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
+    <label>이름</label><input id="child_name" value="${esc(d.child_name||'')}">
+    <label>보호자 연락처</label><input id="guardian_phone" value="${esc(d.guardian_phone||'')}">
+    <label>알레르기·질환</label><textarea id="child_allergy" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">${esc(d.child_allergy||'')}</textarea>
+    <label>혈액형</label><select id="blood_type">
+      <option value="">선택</option>
+      ${['A','B','O','AB','RH-'].map(v=>`<option value="${v}" ${d.blood_type===v?'selected':''}>${v}형</option>`).join('')}
+    </select>
+    <label>특이사항</label><textarea id="child_note" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">${esc(d.child_note||'')}</textarea>
+    <label>보호자</label><input id="guardian_name" value="${esc(d.guardian_name||'')}">
+    <label>안내 메시지</label><textarea id="child_message" placeholder="안녕하세요.&#10;보호 중인 아이입니다.&#10;QR을 스캔해 주셔서 감사합니다.&#10;아래 연락처로 연락 부탁드립니다.">${esc(d.child_message||'')}</textarea>
+    <div class="section-title">연결 항목</div>
+    <div id="linksEdit">${editLinks(d.links||[])}</div>
+    <button class="btn" onclick="saveEdit()">저장하기</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
+}
+function renderBmtEditForm(password){
+  const d=QR_DATA;
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">${t.bmt_edit_title}</div>
+    <input id="password" type="hidden" value="${esc(password)}">
+    <div class="section-title">${t.basic_info}</div>
+    <label>${t.owner}</label><input id="owner" value="${esc(d.owner||'')}">
+    <div class="section-title">${t.travel_record}</div>
+    ${uploadBox('bmt_photo1',t.cover_photo,d.bmt_photo1||'')}
+    ${uploadBox('bmt_photo2',t.gallery_photo_2,d.bmt_photo2||'')}
+    ${uploadBox('bmt_photo3',t.gallery_photo_3,d.bmt_photo3||'')}
+    ${uploadBox('bmt_photo4',t.gallery_photo_4,d.bmt_photo4||'')}
+    ${uploadBox('bmt_photo5',t.gallery_photo_5,d.bmt_photo5||'')}
+    <label>${t.travel_memo}</label><textarea id="bmt_travel_memo" placeholder="예: 아버지와 함께한 감천문화마을&#10;&#10;골목 사이로 보이는 바다와 형형색색의 집들이 기억에 남는다.">${esc(d.bmt_travel_memo||'')}</textarea>
+    <label>${t.places}</label><textarea id="bmt_places">${esc(d.bmt_places||'')}</textarea>
+    <div class="section-title">${t.travel_voice}</div>
+    ${uploadBox('bmt_voice',t.voice_file,d.bmt_voice||'','audio')}
+    <label>${t.photo_display}</label><select id="bmt_photo_fit">
+      <option value="single" ${(d.bmt_photo_fit||'single')==='single'?'selected':''}>${t.single_photo}</option>
+      <option value="slider" ${d.bmt_photo_fit==='slider'?'selected':''}>${t.slider_mode}</option>
+    </select>
+    <label>${t.photo_position}</label><select id="bmt_photo_position">
+      <option value="center" ${(d.bmt_photo_position||'center')==='center'?'selected':''}>${t.center}</option>
+      <option value="top" ${d.bmt_photo_position==='top'?'selected':''}>${t.top}</option>
+      <option value="bottom" ${d.bmt_photo_position==='bottom'?'selected':''}>${t.bottom}</option>
+    </select>
+    <div class="section-title">${t.contact_section}</div>
+    <label>${t.contact_type}</label>
+    <select id="lost_contact_type">
+      <option value="" ${!d.lost_contact_type?'selected':''}>${t.none}</option>
+      <option value="전화" ${d.lost_contact_type==='전화'?'selected':''}>${t.phone}</option>
+      <option value="카카오" ${d.lost_contact_type==='카카오'?'selected':''}>${t.kakao}</option>
+      <option value="이메일" ${d.lost_contact_type==='이메일'?'selected':''}>${t.email}</option>
+      <option value="왓츠앱" ${d.lost_contact_type==='왓츠앱'?'selected':''}>WhatsApp</option>
+      <option value="라인" ${d.lost_contact_type==='라인'?'selected':''}>LINE</option>
+      <option value="텔레그램" ${d.lost_contact_type==='텔레그램'?'selected':''}>Telegram</option>
+    </select>
+    <label>${t.contact_label}</label>
+    <input id="lost_contact_label" value="${esc(d.lost_contact_label||'')}" placeholder="주인에게 연락하기">
+    <label>${t.contact_url}</label>
+    <input id="lost_contact_url" value="${esc(d.lost_contact_url||'')}" placeholder="전화번호 또는 URL">
+    <label>${t.owner_email}</label>
+    <input id="owner_email" type="email" value="${esc(d.owner_email||'')}" placeholder="example@email.com">
+    <div class="section-title">${t.link_section}</div>
+    <div id="linksEdit">${editLinks(d.links||[])}</div>
+    <button class="btn" onclick="saveEdit()">${t.save}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.cancel}</a>`;
+}
+
+// ── 연결 항목 편집 (patch v1) ─────────────────────────────
+const LINK_TYPES=['전화','카카오','인스타그램','이메일','홈페이지','지도','왓츠앱','라인','텔레그램','기타'];
+
+function editLinks(links){
+  const t=I18N[currentLang]||I18N.ko;
+  let arr=(links||[]).filter(l=>l&&(l.label||l.url||l.type));
+  if(!arr.length){arr=[{type:'전화',label:'',url:''}];}
+  arr=arr.slice(0,5);
+  return `
+    ${arr.map((l,i)=>linkEditBox(l,i,arr.length)).join('')}
+    ${arr.length<5?`<button class="btn sub" onclick="addLinkItem()">${t.add_item}</button>`:''}
+  `;
+}
+
+function linkEditBox(l,i,total){
+  const t=I18N[currentLang]||I18N.ko;
+  return `
+    <div class="edit-group link-edit">
+      <label>${t.type}</label>
+      <select id="link${i}_type">
+        ${LINK_TYPES.map(type=>`<option value="${esc(type)}" ${String(l.type||'전화')===type?'selected':''}>${esc(type)}</option>`).join('')}
+      </select>
+      <label>${t.button_name}</label>
+      <input id="link${i}_label" value="${esc(l.label||'')}">
+      <label>${t.link_url}</label>
+      <input id="link${i}_url" value="${esc(String(l.url||'').replace(/^tel:/,''))}">
+      ${total>1?`<button class="btn sub" onclick="removeLinkItem(${i})">${t.remove_item}</button>`:''}
+    </div>
+  `;
+}
+
+function collectLinksRaw(){
+  const groups=document.querySelectorAll('.link-edit');
+  return Array.from(groups).map((g,i)=>({
+    type:val('link'+i+'_type')||'전화',
+    label:val('link'+i+'_label'),
+    url:val('link'+i+'_url')
+  }));
+}
+
+function collectLinks(){
+  return collectLinksRaw()
+    .filter(l=>l.url)
+    .map(l=>{
+      if(l.type==='지도'&&!l.url.startsWith('http')){
+        return{...l,label:l.label||l.url,url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.url)};
+      }
+      return l;
+    })
+    .slice(0,5);
+}
+
+function addLinkItem(){
+  const links=collectLinksRaw();
+  if(links.length>=5){alert('연결 항목은 최대 5개까지 가능합니다.');return;}
+  links.push({type:'전화',label:'',url:''});
+  document.getElementById('linksEdit').innerHTML=editLinks(links);
+}
+
+function removeLinkItem(index){
+  const links=collectLinksRaw();
+  links.splice(index,1);
+  document.getElementById('linksEdit').innerHTML=editLinks(links.length?links:[{type:'전화',label:'',url:''}]);
+}
+
+// ── Firebase Storage 업로드 UI ────────────────────────────
+function uploadBox(key,label,currentUrl,type='image'){
+  const t=I18N[currentLang]||I18N.ko;
+  const accept=type==='audio'?'audio/*':'image/*';
+  const onchange=type==='audio'?`previewAudio(this,'prev_${key}')`:`previewPhoto(this,'prev_${key}')`;
+  const hasUrl=!!currentUrl;
+  const preview=type==='audio'
+    ?`<audio id="prev_${key}" controls style="display:${hasUrl?'block':'none'};width:100%;margin-bottom:8px"${hasUrl?` src="${esc(currentUrl)}"`:''} ></audio>`
+    :`<img id="prev_${key}" style="display:${hasUrl?'block':'none'};width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-bottom:8px"${hasUrl?` src="${esc(currentUrl)}"`:''}>`;
+  return `<div class="upload-box">
+    <span class="upload-label">${label}${hasUrl?' ('+t.replace_file+')':' ('+t.choose_file+')'}</span>
+    ${preview}
+    <input type="file" id="file_${key}" accept="${accept}" onchange="${onchange}">
+    <input type="hidden" id="${key}" value="${esc(currentUrl)}">
+    <div id="prog_${key}" class="upload-progress"><div id="bar_${key}" class="upload-bar"></div></div>
+    <div id="stat_${key}" class="upload-status"></div>
+  </div>`;
+}
+function previewPhoto(input,previewId){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{const img=document.getElementById(previewId);if(img){img.src=e.target.result;img.style.display='block';}};
+  reader.readAsDataURL(file);
+}
+function previewAudio(input,previewId){
+  const file=input.files[0];if(!file)return;
+  const audio=document.getElementById(previewId);
+  if(audio){audio.src=URL.createObjectURL(file);audio.style.display='block';}
+}
+function setUploadProgress(key,pct){
+  const prog=document.getElementById('prog_'+key);
+  const bar=document.getElementById('bar_'+key);
+  if(prog)prog.classList.add('on');
+  if(bar)bar.style.width=pct+'%';
+}
+function setUploadStatus(key,msg){
+  const el=document.getElementById('stat_'+key);
+  if(el)el.textContent=msg;
+}
+async function uploadBmtFiles(){
+  if(!window.uploadToFirebase){alert('Firebase가 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.');return false;}
+  const slots=[
+    {key:'bmt_photo1',path:`bmt/${CODE}/cover`},
+    {key:'bmt_photo2',path:`bmt/${CODE}/photo2`},
+    {key:'bmt_photo3',path:`bmt/${CODE}/photo3`},
+    {key:'bmt_photo4',path:`bmt/${CODE}/photo4`},
+    {key:'bmt_photo5',path:`bmt/${CODE}/photo5`},
+  ];
+  for(const {key,path} of slots){
+    const fileEl=document.getElementById('file_'+key);
+    if(fileEl&&fileEl.files[0]){
+      const ext=fileEl.files[0].name.split('.').pop().toLowerCase();
+      const t=I18N[currentLang]||I18N.ko;
+      setUploadStatus(key,t.uploading);
+      try{
+        const url=await window.uploadToFirebase(fileEl.files[0],`${path}.${ext}`,pct=>setUploadProgress(key,pct));
+        document.getElementById(key).value=url;
+        setUploadStatus(key,t.upload_done);
+      }catch(e){alert(key+' 업로드 실패: '+e.message);return false;}
+    }
+  }
+  const voiceEl=document.getElementById('file_bmt_voice');
+  if(voiceEl&&voiceEl.files[0]){
+    const ext=voiceEl.files[0].name.split('.').pop().toLowerCase();
+    const tv=I18N[currentLang]||I18N.ko;
+    setUploadStatus('bmt_voice',tv.uploading);
+    try{
+      const url=await window.uploadToFirebase(voiceEl.files[0],`bmt/${CODE}/voice.${ext}`,pct=>setUploadProgress('bmt_voice',pct));
+      document.getElementById('bmt_voice').value=url;
+      setUploadStatus('bmt_voice',tv.upload_done);
+    }catch(e){alert('음성 업로드 실패: '+e.message);return false;}
+  }
+  return true;
+}
+// ─────────────────────────────────────────────────────────
+
+async function registerFirst(){
+  const pw=val('new_password');
+  if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
+  const isBmt=(QR_DATA.product_code==='BMT');
+  if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
+  const links = collectLinks();
+  const base={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify(links)};
+  let form;
+  if(isBmt){
+    form={...base};
+    ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url'].forEach(k=>form[k]=val(k));
+  }else{
+    form={...base};
+    ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
+  }
+  const r=await apiPost(form);
+  if(!r.success){alert(r.message||'등록 실패');return;}
+  alert('등록이 완료되었습니다!');
+  location.href='?code='+encodeURIComponent(CODE);
+}
+// ─────────────────────────────────────────────────────────
+
+async function saveEdit(){
+  if(QR_DATA.product_code==='BMT'){const ok=await uploadBmtFiles();if(!ok)return;}
+  const base={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(collectLinks())};
+  let form;
+  if(QR_DATA.product_code==='BMT'){
+    form={...base};
+    ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  }else{
+    form={...base};
+    ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
+  }
+  const r=await apiPost(form);
+  if(!r.success){alert(r.message||'저장 실패');return}
+  alert('저장되었습니다.');
+  location.href='?code='+encodeURIComponent(CODE);
+}
+function showMemoryPassword(){
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">${t.memory_view}</div>
+    <div class="sub">${t.memory_password_text}</div>
+    <input id="memory_pw" type="password" placeholder="${t.password_placeholder}">
+    <button class="btn" onclick="checkMemoryPassword()">${t.confirm}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>
+  `;
+}
+async function checkMemoryPassword(){
+  const password=val('memory_pw');
+  if(!password){alert('비밀번호를 입력해주세요.');return;}
+  const r=await apiGet('verifyPassword',{code:CODE,password:password});
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
+  renderBmtPrivate(QR_DATA);
+}
+// ── 채팅 기능 ─────────────────────────────────────────────
+function showChat(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(CHAT_UNSUBSCRIBE){CHAT_UNSUBSCRIBE();CHAT_UNSUBSCRIBE=null;}
+  app.innerHTML=`
+    ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}
+    </div>
+    <div class="main-title">💬 ${t.chat_title}</div>
+    <div class="sub">${t.chat_sub}</div>
+    ${!CHAT_NICKNAME?`
+      <div id="nicknameBox">
+        <label>${t.nickname_label}</label>
+        <input id="chat_nickname" placeholder="${t.nickname_placeholder}" maxlength="20">
+        <button class="btn" onclick="setChatNickname()">${t.confirm}</button>
+      </div>
+    `:`
+      <div class="chat-box">
+        <div id="chatMessages" class="chat-messages"><div class="chat-empty">${t.chat_loading}</div></div>
+        <div class="chat-input-row">
+          <input id="chat_msg" placeholder="${t.message_placeholder}" maxlength="300" onkeydown="if(event.key==='Enter')sendChatMessage()">
+          <button class="btn chat-send" onclick="sendChatMessage()">${t.send}</button>
+        </div>
+      </div>
+    `}
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+  if(CHAT_NICKNAME) startGuestChatListener(t);
+}
+function setChatNickname(){
+  const t=I18N[currentLang]||I18N.ko;
+  const nick=val('chat_nickname');
+  if(!nick){alert(t.nickname_required);return;}
+  CHAT_NICKNAME=nick;
+  localStorage.setItem('bmt_chat_nick',nick);
+  showChat();
+}
+function startGuestChatListener(t){
+  if(!window.firestoreDb)return;
+  const {collection,query,orderBy,onSnapshot}=window.firestoreApi;
+  const colRef=collection(window.firestoreDb,'chats',CODE,'messages');
+  const q=query(colRef,orderBy('createdAt','asc'));
+  CHAT_UNSUBSCRIBE=onSnapshot(q,snapshot=>{
+    const box=document.getElementById('chatMessages');
+    if(!box){if(CHAT_UNSUBSCRIBE)CHAT_UNSUBSCRIBE();return;}
+    if(snapshot.empty){box.innerHTML=`<div class="chat-empty">${t.chat_empty}</div>`;return;}
+    box.innerHTML=snapshot.docs.map(doc=>{
+      const d=doc.data();
+      const isOwner=d.user==='owner';
+      const name=isOwner?(t.owner_label||'주인'):(d.nickname||'발견자');
+      const time=d.createdAt?d.createdAt.slice(11,16):'';
+      return `<div class="chat-msg ${isOwner?'owner':'guest'}">
+        <div class="chat-name">${esc(name)}</div>
+        <div class="chat-bubble">${esc(d.message)}</div>
+        <div class="chat-time">${time}</div>
+      </div>`;
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  });
+}
+async function sendChatMessage(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다. 잠시 후 다시 시도해주세요.');return;}
+  const msg=val('chat_msg');
+  if(!msg){return;}
+  const {collection,addDoc}=window.firestoreApi;
+  const input=document.getElementById('chat_msg');
+  input.disabled=true;
+  try{
+    await addDoc(collection(window.firestoreDb,'chats',CODE,'messages'),{
+      user:'guest',
+      nickname:CHAT_NICKNAME,
+      message:msg,
+      createdAt:new Date().toISOString(),
+      lang:currentLang
+    });
+    apiPost({
+      action:'sendOwnerEmailAlert',
+      code:CODE,
+      nickname:CHAT_NICKNAME,
+      message:msg
+    }).catch(function(e){console.log('email alert failed',e);});
+    apiPost({
+      action:'sendOwnerPushAlert',
+      code:CODE,
+      nickname:CHAT_NICKNAME,
+      message:msg
+    }).catch(function(e){console.log('push alert failed',e);});
+    input.value='';
+  }catch(e){alert(t.send_fail+': '+e.message);}
+  finally{input.disabled=false;input.focus();}
+}
+function startOwnerChatListener(t){
+  if(!window.firestoreDb)return;
+  const {collection,query,orderBy,onSnapshot}=window.firestoreApi;
+  const colRef=collection(window.firestoreDb,'chats',CODE,'messages');
+  const q=query(colRef,orderBy('createdAt','asc'));
+  if(OWNER_CHAT_UNSUBSCRIBE){OWNER_CHAT_UNSUBSCRIBE();OWNER_CHAT_UNSUBSCRIBE=null;}
+  OWNER_CHAT_UNSUBSCRIBE=onSnapshot(q,snapshot=>{
+    const box=document.getElementById('ownerChatMessages');
+    if(!box){if(OWNER_CHAT_UNSUBSCRIBE)OWNER_CHAT_UNSUBSCRIBE();return;}
+    if(snapshot.empty){box.innerHTML=`<div class="chat-empty">${t.inbox_empty}</div>`;return;}
+    box.innerHTML=snapshot.docs.map(doc=>{
+      const d=doc.data();
+      const isOwner=d.user==='owner';
+      const name=isOwner?(t.owner_label||'주인'):(d.nickname||'발견자');
+      const time=d.createdAt?d.createdAt.slice(11,16):'';
+      return `<div class="chat-msg ${isOwner?'owner':'guest'}">
+        <div class="chat-name">${esc(name)}</div>
+        <div class="chat-bubble">${esc(d.message)}</div>
+        <div class="chat-time">${time}</div>
+      </div>`;
+    }).join('');
+    // 새 메시지 배지
+    const guestMsgs=snapshot.docs.filter(d=>d.data().user==='guest').length;
+    const badge=document.getElementById('inboxTitle');
+    if(badge&&guestMsgs>0)badge.innerHTML=`📩 ${t.inbox_title} <span class="msg-badge">${guestMsgs}</span>`;
+    box.scrollTop=box.scrollHeight;
+  });
+}
+async function sendOwnerReply(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
+  const msg=val('owner_reply');
+  if(!msg)return;
+  const {collection,addDoc}=window.firestoreApi;
+  const input=document.getElementById('owner_reply');
+  input.disabled=true;
+  try{
+    await addDoc(collection(window.firestoreDb,'chats',CODE,'messages'),{
+      user:'owner',
+      message:msg,
+      createdAt:new Date().toISOString()
+    });
+    input.value='';
+  }catch(e){alert(t.send_fail+': '+e.message);}
+  finally{input.disabled=false;input.focus();}
+}
+async function enablePushNotification(){
+  const t=I18N[currentLang]||I18N.ko;
+  try{
+    // 이미 subscription ID 있으면 바로 저장
+    let id=OneSignal?.User?.PushSubscription?.id;
+    if(!id){
+      // 권한 없으면 요청
+      if(Notification.permission!=='granted'){
+        const perm=await Notification.requestPermission();
+        if(perm!=='granted'){alert('알림 권한을 허용해주세요.');return;}
+      }
+      // opt-in 후 ID 대기 (최대 5초)
+      OneSignal.User.PushSubscription.optIn();
+      for(let i=0;i<10&&!id;i++){
+        await new Promise(r=>setTimeout(r,500));
+        id=OneSignal?.User?.PushSubscription?.id;
+      }
+    }
+    if(!id){alert('알림 설정 실패. 다시 시도해주세요.');return;}
+    const saveResult=await apiPost({action:'savePushToken',code:CODE,token:id});
+    if(!saveResult||!saveResult.success){alert('토큰 저장 실패: '+(saveResult&&saveResult.message||'오류'));return;}
+    const btn=document.getElementById('pushBtn');
+    if(btn){btn.textContent=t.push_enabled;btn.disabled=true;}
+  }catch(e){console.error('OneSignal error',e);alert('알림 설정 실패: '+e.message);}
+}
+function normalizeLostUrl_(type,url){
+  const v=String(url||'').trim();
+  if(!v)return'';
+  if(type==='전화')return v.startsWith('tel:')?v:'tel:'+v.replace(/[^0-9+]/g,'');
+  if(type==='이메일')return v.startsWith('mailto:')?v:'mailto:'+v;
+  return v;
+}
+function val(id){const el=document.getElementById(id);return el?el.value.trim():''}
+function renderError(msg){app.innerHTML=`<div class="error">${esc(msg)}</div>`}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('saegim_lang',lang);
+  if(!QR_DATA) return;
+  if(MODE==='edit'){
+    renderPassword();
+  }else{
+    renderView(QR_DATA);
+  }
+}
+const I18N={
+  ko:{
+    bmt_title:'부산 메모리 태그',
+    notice_title:'이 태그를 발견하셨나요?',
+    notice_text:'아래 연락수단으로 주인에게 연락해주세요.',
+    public_sub:'부산 여행의 추억이 담긴 태그입니다.',
+    contact:'주인에게 연락하기',
+    memory_view:'메모리 보기',
+    edit:'정보 수정하기',
+    memory_password_text:'소유자만 볼 수 있습니다.<br>비밀번호를 입력해주세요.',
+    password_placeholder:'비밀번호',
+    confirm:'확인',
+    back:'돌아가기',
+    sub:'부산 여행의 장면과 기억을 담은 태그입니다.',
+    section:'부산 여행 기록',
+    memo:'여행 메모',places:'방문 장소',voice:'음성 기록',
+    bmt_edit_title:'부산 메모리 태그 수정',
+    edit_password_text:'등록된 비밀번호를 입력해주세요.',
+    basic_info:'기본 정보',
+    owner:'표시 이름',
+    travel_record:'부산 여행 기록',
+    travel_memo:'여행 메모',
+    travel_voice:'여행 음성',
+    photo_display:'사진 표시 방식',
+    photo_position:'사진 위치',
+    contact_section:'분실 연락수단',
+    contact_type:'연락 방식',
+    contact_label:'버튼명',
+    contact_url:'연결 주소',
+    save:'저장하기',
+    cancel:'취소',
+    type:'종류',
+    button_name:'버튼 이름',
+    link_url:'연결 주소',
+    remove_item:'항목 제거',
+    add_item:'항목 추가',
+    replace_file:'교체하려면 새 파일 선택',
+    choose_file:'파일 선택',
+    uploading:'업로드 중...',
+    upload_done:'✓ 완료',
+    cover_photo:'대표 사진',
+    gallery_photo_2:'갤러리 사진 2',
+    gallery_photo_3:'갤러리 사진 3',
+    gallery_photo_4:'갤러리 사진 4',
+    gallery_photo_5:'갤러리 사진 5',
+    voice_file:'음성 파일',
+    single_photo:'대표 사진',
+    slider_mode:'슬라이드',
+    center:'가운데',
+    top:'위',
+    bottom:'아래',
+    none:'선택안함',
+    phone:'전화',
+    kakao:'카카오',
+    email:'이메일',
+    link_section:'연결 항목',
+    prev:'이전',
+    next:'다음',
+    photo_hint:'사진을 누르면 전체 사진 {n}장을 볼 수 있습니다.',
+    send_message:'메시지 보내기',
+    chat_title:'메시지 보내기',
+    chat_sub:'태그 주인에게 메시지를 남겨주세요.',
+    nickname_label:'닉네임',
+    nickname_placeholder:'닉네임을 입력해주세요',
+    nickname_required:'닉네임을 입력해주세요.',
+    message_placeholder:'메시지를 입력하세요...',
+    send:'전송',
+    chat_empty:'아직 메시지가 없습니다.',
+    chat_loading:'메시지를 불러오는 중...',
+    owner_label:'주인',
+    inbox_title:'습득 메시지함',
+    inbox_empty:'아직 받은 메시지가 없습니다.',
+    reply_placeholder:'답장을 입력하세요...',
+    send_fail:'전송 실패',
+    owner_email:'알림 이메일',
+    push_enable:'🔔 실시간 알림 받기',
+    push_enabled:'✅ 알림 활성화됨',
+    push_denied:'알림 권한이 거부되어 있습니다. 브라우저 설정에서 허용해주세요.',
+    push_title:'새김 알림'
+  },
+  en:{
+    bmt_title:'Busan Memory Tag',
+    notice_title:'Have you found this tag?',
+    notice_text:'Please contact the owner using the contact button below.',
+    public_sub:'This tag holds memories from a trip to Busan.',
+    contact:'Contact Owner',
+    memory_view:'View Memory',
+    edit:'Edit Information',
+    memory_password_text:'Only the owner can view this memory.<br>Please enter the password.',
+    password_placeholder:'Password',
+    confirm:'Confirm',
+    back:'Back',
+    sub:'A tag preserving scenes and memories of a Busan trip.',
+    section:'Busan Travel Record',
+    memo:'Travel Memo',places:'Places Visited',voice:'Voice Record',
+    bmt_edit_title:'Edit Busan Memory Tag',
+    edit_password_text:'Please enter the registered password.',
+    basic_info:'Basic Information',
+    owner:'Display Name',
+    travel_record:'Busan Travel Record',
+    travel_memo:'Travel Memo',
+    travel_voice:'Voice Recording',
+    photo_display:'Photo Display Mode',
+    photo_position:'Photo Position',
+    contact_section:'Contact Information',
+    contact_type:'Contact Method',
+    contact_label:'Button Label',
+    contact_url:'Contact URL',
+    save:'Save',
+    cancel:'Cancel',
+    type:'Type',
+    button_name:'Button Name',
+    link_url:'URL',
+    remove_item:'Remove',
+    add_item:'Add Item',
+    replace_file:'Choose a new file to replace',
+    choose_file:'Choose file',
+    uploading:'Uploading...',
+    upload_done:'✓ Done',
+    cover_photo:'Cover Photo',
+    gallery_photo_2:'Gallery Photo 2',
+    gallery_photo_3:'Gallery Photo 3',
+    gallery_photo_4:'Gallery Photo 4',
+    gallery_photo_5:'Gallery Photo 5',
+    voice_file:'Voice File',
+    single_photo:'Cover Photo',
+    slider_mode:'Slider',
+    center:'Center',
+    top:'Top',
+    bottom:'Bottom',
+    none:'None',
+    phone:'Phone',
+    kakao:'KakaoTalk',
+    email:'Email',
+    link_section:'Links',
+    prev:'Previous',
+    next:'Next',
+    photo_hint:'Tap the photo to view all {n} photos.',
+    send_message:'Send Message',
+    chat_title:'Send a Message',
+    chat_sub:'Leave a message for the tag owner.',
+    nickname_label:'Nickname',
+    nickname_placeholder:'Enter your nickname',
+    nickname_required:'Please enter a nickname.',
+    message_placeholder:'Type a message...',
+    send:'Send',
+    chat_empty:'No messages yet.',
+    chat_loading:'Loading messages...',
+    owner_label:'Owner',
+    inbox_title:'Inbox',
+    inbox_empty:'No messages received yet.',
+    reply_placeholder:'Type a reply...',
+    send_fail:'Send failed',
+    owner_email:'Notification Email',
+    push_enable:'🔔 Enable Notifications',
+    push_enabled:'✅ Notifications Enabled',
+    push_denied:'Notification permission denied. Please allow in browser settings.',
+    push_title:'SAEGIM Notification'
+  },
+  ja:{
+    bmt_title:'釜山メモリータグ',
+    notice_title:'このタグを見つけましたか？',
+    notice_text:'下の連絡ボタンから持ち主へご連絡ください。',
+    public_sub:'釜山旅行の思い出が込められたタグです。',
+    contact:'持ち主に連絡する',
+    memory_view:'メモリーを見る',
+    edit:'情報を修正する',
+    memory_password_text:'持ち主のみ閲覧できます。<br>パスワードを入力してください。',
+    password_placeholder:'パスワード',
+    confirm:'確認',
+    back:'戻る',
+    sub:'釜山旅行の場面と思い出を刻んだタグです。',
+    section:'釜山旅行記録',
+    memo:'旅行メモ',places:'訪れた場所',voice:'音声記録',
+    bmt_edit_title:'釜山メモリータグを修正',
+    edit_password_text:'登録されたパスワードを入力してください。',
+    basic_info:'基本情報',
+    owner:'表示名',
+    travel_record:'釜山旅行記録',
+    travel_memo:'旅行メモ',
+    travel_voice:'音声記録',
+    photo_display:'写真表示方式',
+    photo_position:'写真位置',
+    contact_section:'連絡先',
+    contact_type:'連絡方法',
+    contact_label:'ボタン名',
+    contact_url:'連絡先URL',
+    save:'保存',
+    cancel:'キャンセル',
+    type:'種類',
+    button_name:'ボタン名',
+    link_url:'URL',
+    remove_item:'削除',
+    add_item:'追加',
+    replace_file:'変更するには新しいファイルを選択',
+    choose_file:'ファイルを選択',
+    uploading:'アップロード中...',
+    upload_done:'✓ 完了',
+    cover_photo:'代表写真',
+    gallery_photo_2:'ギャラリー写真 2',
+    gallery_photo_3:'ギャラリー写真 3',
+    gallery_photo_4:'ギャラリー写真 4',
+    gallery_photo_5:'ギャラリー写真 5',
+    voice_file:'音声ファイル',
+    single_photo:'代表写真',
+    slider_mode:'スライダー',
+    center:'中央',
+    top:'上',
+    bottom:'下',
+    none:'選択なし',
+    phone:'電話',
+    kakao:'カカオトーク',
+    email:'メール',
+    link_section:'リンク項目',
+    prev:'前へ',
+    next:'次へ',
+    photo_hint:'写真をタップすると全{n}枚を表示できます。',
+    send_message:'メッセージを送る',
+    chat_title:'メッセージを送る',
+    chat_sub:'タグの持ち主にメッセージを残してください。',
+    nickname_label:'ニックネーム',
+    nickname_placeholder:'ニックネームを入力してください',
+    nickname_required:'ニックネームを入力してください。',
+    message_placeholder:'メッセージを入力...',
+    send:'送信',
+    chat_empty:'まだメッセージはありません。',
+    chat_loading:'メッセージを読み込み中...',
+    owner_label:'持ち主',
+    inbox_title:'受信メッセージ',
+    inbox_empty:'まだメッセージはありません。',
+    reply_placeholder:'返信を入力...',
+    send_fail:'送信失敗',
+    owner_email:'通知メール',
+    push_enable:'🔔 リアルタイム通知を受け取る',
+    push_enabled:'✅ 通知が有効です',
+    push_denied:'通知権限が拒否されています。ブラウザ設定で許可してください。',
+    push_title:'新刻通知'
+  },
+  zh:{
+    bmt_title:'釜山记忆标签',
+    notice_title:'您发现了这个标签吗？',
+    notice_text:'请通过下方联系方式联系失主。',
+    public_sub:'这是记录釜山旅行回忆的标签。',
+    contact:'联系失主',
+    memory_view:'查看记忆',
+    edit:'修改信息',
+    memory_password_text:'只有失主可以查看此记忆。<br>请输入密码。',
+    password_placeholder:'密码',
+    confirm:'确认',
+    back:'返回',
+    sub:'记录釜山旅行场景与记忆的标签。',
+    section:'釜山旅行记录',
+    memo:'旅行备忘录',places:'到访地点',voice:'语音记录',
+    bmt_edit_title:'修改釜山记忆标签',
+    edit_password_text:'请输入已注册的密码。',
+    basic_info:'基本信息',
+    owner:'显示名称',
+    travel_record:'釜山旅行记录',
+    travel_memo:'旅行备忘录',
+    travel_voice:'语音记录',
+    photo_display:'照片显示方式',
+    photo_position:'照片位置',
+    contact_section:'联系方式',
+    contact_type:'联系方法',
+    contact_label:'按钮名称',
+    contact_url:'联系地址',
+    save:'保存',
+    cancel:'取消',
+    type:'类型',
+    button_name:'按钮名称',
+    link_url:'链接地址',
+    remove_item:'删除',
+    add_item:'新增',
+    replace_file:'如需替换请选择新文件',
+    choose_file:'选择文件',
+    uploading:'上传中...',
+    upload_done:'✓ 完成',
+    cover_photo:'封面照片',
+    gallery_photo_2:'相册照片 2',
+    gallery_photo_3:'相册照片 3',
+    gallery_photo_4:'相册照片 4',
+    gallery_photo_5:'相册照片 5',
+    voice_file:'语音文件',
+    single_photo:'封面照片',
+    slider_mode:'轮播模式',
+    center:'居中',
+    top:'上方',
+    bottom:'下方',
+    none:'不选择',
+    phone:'电话',
+    kakao:'KakaoTalk',
+    email:'电子邮件',
+    link_section:'链接项目',
+    prev:'上一张',
+    next:'下一张',
+    photo_hint:'点击照片可查看全部 {n} 张照片。',
+    send_message:'发送消息',
+    chat_title:'发送消息',
+    chat_sub:'请向标签失主留下消息。',
+    nickname_label:'昵称',
+    nickname_placeholder:'请输入昵称',
+    nickname_required:'请输入昵称。',
+    message_placeholder:'输入消息...',
+    send:'发送',
+    chat_empty:'暂无消息。',
+    chat_loading:'消息加载中...',
+    owner_label:'失主',
+    inbox_title:'收件箱',
+    inbox_empty:'暂时没有收到任何消息。',
+    reply_placeholder:'输入回复...',
+    send_fail:'发送失败',
+    owner_email:'通知邮箱',
+    push_enable:'🔔 接收实时通知',
+    push_enabled:'✅ 通知已启用',
+    push_denied:'通知权限被拒绝，请在浏览器设置中允许。',
+    push_title:'新刻通知'
+  }
+};
+</script>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+const firebaseConfig={
+  apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",
+  authDomain:"saegim-memory.firebaseapp.com",
+  projectId:"saegim-memory",
+  storageBucket:"saegim-memory.firebasestorage.app",
+  messagingSenderId:"888229102391",
+  appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"
+};
+const fbApp=initializeApp(firebaseConfig);
+const storage=getStorage(fbApp);
+const db=getFirestore(fbApp);
+window.firestoreDb=db;
+window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+window.uploadToFirebase=function(file,path,onProgress){
+  return new Promise((resolve,reject)=>{
+    const storageRef=ref(storage,path);
+    const task=uploadBytesResumable(storageRef,file);
+    task.on('state_changed',
+      snap=>{if(onProgress)onProgress(Math.round(snap.bytesTransferred/snap.totalBytes*100));},
+      err=>reject(err),
+      async()=>{resolve(await getDownloadURL(task.snapshot.ref));}
+    );
+  });
+};
+</script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+window.OneSignalDeferred=window.OneSignalDeferred||[];
+OneSignalDeferred.push(async function(OneSignal){
+  await OneSignal.init({
+    appId:'4454afde-61d3-4c7a-9f09-84de382a029d',
+    welcomeNotification:{disable:true},
+    notifyButton:{enable:false},
+    promptOptions:{slidedown:{prompts:[]}}
+  });
+});
+</script>
+</body>
+</html>
