@@ -463,6 +463,7 @@ function renderEditForm(password){
 }
 function renderTTEditForm(password){
   const d=QR_DATA;
+  const t=I18N[currentLang]||I18N.ko;
   app.innerHTML=`
     ${brand()}
     <div class="main-title">✈️ Travel Tag 수정</div>
@@ -471,6 +472,8 @@ function renderTTEditForm(password){
     <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
     <label>연락처 (분실 시 연락할 번호)</label><input id="owner_phone" value="${esc(d.owner_phone||'')}">
     <label>이메일 (선택)</label><input id="owner_email" type="email" value="${esc(d.owner_email||'')}">
+    <div class="section-title">알림 설정</div>
+    <button id="ttPushBtn" class="btn sub" onclick="enablePushNotification()">${t.push_enable}</button>
     <button class="btn" onclick="saveEdit()">저장하기</button>
     <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
 }
