@@ -80,6 +80,18 @@ input[type=file]{padding:10px;cursor:pointer}
 .chat-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
 .chat-box{border:1px solid rgba(230,200,143,.25);border-radius:18px;padding:14px;margin-top:16px;background:rgba(255,255,255,.02)}
 .msg-badge{display:inline-block;background:#c0392b;color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+/* TT Travel Tag */
+.tt-header{text-align:center;margin-bottom:20px}
+.tt-tagline{color:var(--gold);font-size:13px;letter-spacing:.12em;margin-bottom:6px}
+.tt-question{font-size:20px;font-weight:800;line-height:1.35}
+.tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 6px}
+.tt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:20px 10px;border-radius:18px;border:1px solid rgba(230,200,143,.3);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;width:100%}
+.tt-btn:active{background:rgba(230,200,143,.12);border-color:var(--gold)}
+.tt-btn-icon{font-size:26px}
+.tt-divider{border:0;border-top:1px solid rgba(122,96,64,.3);margin:22px 0}
+.tt-loc-status{text-align:center;color:var(--muted);font-size:12px;min-height:18px;margin:6px 0}
+.tt-lost-title{color:var(--gold);font-weight:800;font-size:15px;text-align:center;margin-bottom:6px}
+.tt-lost-sub{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;margin-bottom:16px}
 </style>
 </head>
 <body>
@@ -121,6 +133,7 @@ function renderView(data){
   if(data.status==='중지'){renderStopped(data);return;}
   if(data.product_code==='BMT'){renderBmt(data);return;}
   if(data.product_code==='CD'){renderCare(data);return;}
+  if(data.product_code==='TT'){renderTT(data);return;}
   renderDefault(data);
 }
 function renderCare(data){
@@ -141,6 +154,70 @@ function renderCare(data){
     ${thanks()}
     ${editBtn()}
     <div class="footer">SAEGIM · ANSIM QR</div>`;
+}
+function renderTT(data){
+  const lang=currentLang;
+  const t=I18N[lang]||I18N.ko;
+  const tt=t.tt||I18N.ko.tt;
+  const facilities=[
+    {icon:'🚻',key:'restroom'},
+    {icon:'☕',key:'cafe'},
+    {icon:'🏪',key:'convenience'},
+    {icon:'🚌',key:'bus'},
+    {icon:'🚇',key:'subway'},
+    {icon:'🏥',key:'hospital'},
+    {icon:'🏧',key:'atm'},
+    {icon:'📍',key:'tourist'},
+  ];
+  const gridHtml=facilities.map(f=>`
+    <button class="tt-btn" onclick="findNearby('${f.key}')">
+      <span class="tt-btn-icon">${f.icon}</span>
+      <span>${esc(tt.facilities[f.key])}</span>
+    </button>`).join('');
+  const phoneBtn=data.owner_phone?`<a class="btn sub" href="tel:${esc(data.owner_phone)}">📞 ${esc(tt.call)}</a>`:'';
+  const emailBtn=data.owner_email?`<a class="btn sub" href="mailto:${esc(data.owner_email)}">✉️ ${esc(tt.email_contact)}</a>`:'';
+  app.innerHTML=`
+    ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${lang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}
+    </div>
+    <div class="tt-header">
+      <div class="tt-tagline">✈️ Travel Tag</div>
+      <div class="tt-question">${esc(tt.find_question)}</div>
+    </div>
+    <div class="tt-grid">${gridHtml}</div>
+    <div id="ttLocStatus" class="tt-loc-status"></div>
+    <hr class="tt-divider">
+    <div class="tt-lost-title">${esc(tt.lost_title)}</div>
+    <div class="tt-lost-sub">${esc(tt.lost_sub)}</div>
+    <button class="btn" onclick="showChat()">💬 ${esc(tt.chat)}</button>
+    ${phoneBtn}${emailBtn}
+    ${editBtn()}
+    <div class="footer">SAEGIM · TRAVEL TAG</div>`;
+}
+function findNearby(facilityKey){
+  const lang=currentLang;
+  const tt=(I18N[lang]||I18N.ko).tt||(I18N.ko.tt);
+  const query=tt.facilities[facilityKey]||(I18N.ko.tt.facilities[facilityKey]);
+  const statusEl=document.getElementById('ttLocStatus');
+  const baseUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(query);
+  if(statusEl)statusEl.textContent=tt.locating;
+  if(!navigator.geolocation){
+    window.open(baseUrl,'_blank');
+    if(statusEl)statusEl.textContent='';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      if(statusEl)statusEl.textContent='';
+      window.open(baseUrl+'&location='+pos.coords.latitude+','+pos.coords.longitude,'_blank');
+    },
+    ()=>{
+      if(statusEl){statusEl.textContent=tt.loc_fail;setTimeout(()=>{statusEl.textContent='';},3000);}
+      window.open(baseUrl,'_blank');
+    },
+    {timeout:8000,enableHighAccuracy:false}
+  );
 }
 function renderBmtPrivate(data){
   const lang=currentLang;
@@ -903,7 +980,15 @@ const I18N={
     push_enable:'🔔 실시간 알림 받기',
     push_enabled:'✅ 알림 활성화됨',
     push_denied:'알림 권한이 거부되어 있습니다. 브라우저 설정에서 허용해주세요.',
-    push_title:'새김 알림'
+    push_title:'새김 알림',
+    tt:{
+      find_question:'무엇을 찾고 계신가요?',
+      facilities:{restroom:'화장실',cafe:'카페',convenience:'편의점',bus:'버스정류장',subway:'지하철역',hospital:'병원',atm:'ATM',tourist:'관광안내소'},
+      lost_title:'이 태그를 발견하셨나요?',
+      lost_sub:'주인에게 연락해 주세요.',
+      chat:'채팅하기',call:'전화하기',email_contact:'이메일 보내기',
+      locating:'현재 위치 확인 중...',loc_fail:'위치 확인 실패. 일반 검색을 사용합니다.'
+    }
   },
   en:{
     bmt_title:'Busan Memory Tag',
@@ -982,7 +1067,15 @@ const I18N={
     push_enable:'🔔 Enable Notifications',
     push_enabled:'✅ Notifications Enabled',
     push_denied:'Notification permission denied. Please allow in browser settings.',
-    push_title:'SAEGIM Notification'
+    push_title:'SAEGIM Notification',
+    tt:{
+      find_question:'What are you looking for?',
+      facilities:{restroom:'Restroom',cafe:'Café',convenience:'Convenience Store',bus:'Bus Stop',subway:'Subway Station',hospital:'Hospital',atm:'ATM',tourist:'Tourist Info'},
+      lost_title:'Found this tag?',
+      lost_sub:'Please contact the owner.',
+      chat:'Chat',call:'Call',email_contact:'Send Email',
+      locating:'Locating...',loc_fail:'Location unavailable. Using general search.'
+    }
   },
   ja:{
     bmt_title:'釜山メモリータグ',
@@ -1061,7 +1154,15 @@ const I18N={
     push_enable:'🔔 リアルタイム通知を受け取る',
     push_enabled:'✅ 通知が有効です',
     push_denied:'通知権限が拒否されています。ブラウザ設定で許可してください。',
-    push_title:'新刻通知'
+    push_title:'新刻通知',
+    tt:{
+      find_question:'お探しのものは何ですか？',
+      facilities:{restroom:'トイレ',cafe:'カフェ',convenience:'コンビニ',bus:'バス停',subway:'地下鉄駅',hospital:'病院',atm:'ATM',tourist:'観光案内所'},
+      lost_title:'このタグを見つけましたか？',
+      lost_sub:'持ち主へご連絡ください。',
+      chat:'チャット',call:'電話する',email_contact:'メールを送る',
+      locating:'位置確認中...',loc_fail:'位置を取得できません。通常検索を使用します。'
+    }
   },
   zh:{
     bmt_title:'釜山记忆标签',
@@ -1140,7 +1241,15 @@ const I18N={
     push_enable:'🔔 接收实时通知',
     push_enabled:'✅ 通知已启用',
     push_denied:'通知权限被拒绝，请在浏览器设置中允许。',
-    push_title:'新刻通知'
+    push_title:'新刻通知',
+    tt:{
+      find_question:'您在寻找什么？',
+      facilities:{restroom:'卫生间',cafe:'咖啡厅',convenience:'便利店',bus:'公交站',subway:'地铁站',hospital:'医院',atm:'ATM',tourist:'旅游咨询处'},
+      lost_title:'发现这个标签了吗？',
+      lost_sub:'请联系失主。',
+      chat:'发消息',call:'打电话',email_contact:'发邮件',
+      locating:'定位中...',loc_fail:'位置获取失败，使用普通搜索。'
+    }
   }
 };
 </script>
