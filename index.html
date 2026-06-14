@@ -371,7 +371,9 @@ function editBtn(){
   return `<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=edit">${t.edit||'정보 수정하기'}</a>`;
 }
 function renderRegister(data){
-  const isBmt=(data.product_code==='BMT');
+  const pc=data.product_code||'';
+  const isBmt=(pc==='BMT');
+  const isTT=(pc==='TT');
   const cdFields=`
     <label>아이 이름</label>
     <input id="child_name" class="input" placeholder="아이 이름" value="${esc(data.child_name||'')}">
@@ -410,12 +412,22 @@ function renderRegister(data){
       <option value="single"${(data.bmt_photo_fit||'single')==='single'?' selected':''}>대표 사진 1장</option>
       <option value="slider"${(data.bmt_photo_fit||'single')==='slider'?' selected':''}>슬라이드 모드</option>
     </select>`;
+  const ttFields=`
+    <label>표시 이름 (소유자 이름)</label>
+    <input id="owner" class="input" placeholder="예) 홍길동" value="${esc(data.owner||'')}">
+    <label>연락처 (분실 시 연락할 번호)</label>
+    <input id="owner_phone" class="input" placeholder="예) 010-1234-5678" value="${esc(data.owner_phone||'')}">
+    <label>이메일 (선택)</label>
+    <input id="owner_email" class="input" type="email" placeholder="example@email.com" value="${esc(data.owner_email||'')}">`;
+  const fields=isBmt?bmtFields:(isTT?ttFields:cdFields);
+  const linksSection=isTT?'':`<div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>`;
+  const productLabel=isBmt?'부산 메모리 태그':isTT?'Travel Tag':'안심태그(CD)';
   app.innerHTML=`
     ${brand()}
     <div class="main-title">최초 등록</div>
-    <div class="sub">구매하신 QR을 처음 등록합니다.<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
-    ${isBmt?bmtFields:cdFields}
-    <div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>
+    <div class="sub">📦 ${esc(productLabel)}<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
+    ${fields}
+    ${linksSection}
     <hr>
     <input id="new_password" class="input" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">
     <button class="btn" onclick="registerFirst()">등록 완료</button>`;
@@ -446,7 +458,21 @@ async function checkPassword(){
 }
 function renderEditForm(password){
   if(QR_DATA.product_code==='BMT'){renderBmtEditForm(password);return;}
+  if(QR_DATA.product_code==='TT'){renderTTEditForm(password);return;}
   renderCdEditForm(password);
+}
+function renderTTEditForm(password){
+  const d=QR_DATA;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">✈️ Travel Tag 수정</div>
+    <input id="password" type="hidden" value="${esc(password)}">
+    <div class="section-title">소유자 정보</div>
+    <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
+    <label>연락처 (분실 시 연락할 번호)</label><input id="owner_phone" value="${esc(d.owner_phone||'')}">
+    <label>이메일 (선택)</label><input id="owner_email" type="email" value="${esc(d.owner_email||'')}">
+    <button class="btn" onclick="saveEdit()">저장하기</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
 }
 function renderCdEditForm(password){
   const d=QR_DATA;
@@ -666,14 +692,19 @@ async function uploadBmtFiles(){
 async function registerFirst(){
   const pw=val('new_password');
   if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
-  const isBmt=(QR_DATA.product_code==='BMT');
+  const pc=QR_DATA.product_code||'';
+  const isBmt=(pc==='BMT');
+  const isTT=(pc==='TT');
   if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
-  const links = collectLinks();
+  const links=isTT?[]:collectLinks();
   const base={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify(links)};
   let form;
   if(isBmt){
     form={...base};
     ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url'].forEach(k=>form[k]=val(k));
+  }else if(isTT){
+    form={...base};
+    ['owner_phone','owner_email'].forEach(k=>form[k]=val(k));
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
@@ -686,12 +717,19 @@ async function registerFirst(){
 // ─────────────────────────────────────────────────────────
 
 async function saveEdit(){
-  if(QR_DATA.product_code==='BMT'){const ok=await uploadBmtFiles();if(!ok)return;}
-  const base={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(collectLinks())};
+  const pc=QR_DATA.product_code||'';
+  const isBmt=(pc==='BMT');
+  const isTT=(pc==='TT');
+  if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
+  const links=isTT?[]:collectLinks();
+  const base={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(links)};
   let form;
-  if(QR_DATA.product_code==='BMT'){
+  if(isBmt){
     form={...base};
     ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  }else if(isTT){
+    form={...base};
+    ['owner_phone','owner_email'].forEach(k=>form[k]=val(k));
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
