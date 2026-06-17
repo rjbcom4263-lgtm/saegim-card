@@ -1610,39 +1610,106 @@ function wtAgain(){
   },350);
 }
 
-function renderGardenTag(data){
-  const slots=[
-    {plant:'🌱',name:'민들레 새싹',stage:1,points:12,nextPt:8,visits:3,waters:2},
-    null,null,null,null,null,null,null,null
-  ];
-  const activePlant=slots.find(s=>s);
+async function renderGardenTag(data){
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-wrap">
+      <div class="gt-title">SAEGIM GARDEN</div>
+      <div class="gt-sub">정원을 불러오는 중입니다...</div>
+    </div>
+    <div class="footer">SAEGIM · GARDEN TAG</div>
+  `;
+  if(!window.firestoreDb){renderGardenTagFallback();return;}
+  const garden=await getOrCreateGardenData();
+  renderGardenTagView(garden);
+}
+async function getOrCreateGardenData(){
+  const {doc,getDoc,setDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(snap.exists()){return snap.data();}
+  const now=new Date().toISOString();
+  const initData={
+    code:CODE,
+    owner:QR_DATA.owner||'',
+    garden_slots:[
+      {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:12,next_point:8,unlocked:true},
+      {slot:1,unlocked:false},{slot:2,unlocked:false},{slot:3,unlocked:false},
+      {slot:4,unlocked:false},{slot:5,unlocked:false},{slot:6,unlocked:false},
+      {slot:7,unlocked:false},{slot:8,unlocked:false}
+    ],
+    water_count:0,visit_count:1,streak_count:1,
+    created_at:now,last_visit_at:now,last_watered_at:''
+  };
+  await setDoc(ref,initData);
+  return initData;
+}
+function renderGardenTagFallback(){
+  app.innerHTML=`${brand()}<div class="gt-wrap"><div class="gt-sub" style="color:#f66">Firebase 연결 오류</div></div>`;
+}
+function renderGardenTagView(garden){
+  const slots=garden.garden_slots||[];
+  const activePlant=slots.find(s=>s&&s.unlocked);
+  const percent=Math.min(100,Math.round(activePlant.growth_point/(activePlant.growth_point+activePlant.next_point)*100));
   app.innerHTML=`
     ${brand()}
     <div class="gt-wrap">
       <div class="gt-title">SAEGIM GARDEN</div>
       <div class="gt-sub">오늘도 정원을 돌봐주세요 🌱</div>
       <div class="gt-garden">
-        ${slots.map(s=>s
-          ?`<div class="gt-slot"><div class="gt-plant">${s.plant}</div></div>`
+        ${slots.map(s=>s&&s.unlocked
+          ?`<div class="gt-slot"><div class="gt-plant">${s.emoji||'🌱'}</div></div>`
           :`<div class="gt-slot locked"><span class="gt-lock">🔒</span></div>`
         ).join('')}
       </div>
       <div class="gt-info">
-        <div class="gt-plant-name">${activePlant.name} ${activePlant.plant}</div>
-        <div class="gt-progress-text">다음 단계까지 <b style="color:var(--gold)">${activePlant.nextPt} 포인트</b></div>
-        <div class="gt-bar"><div class="gt-bar-fill" style="width:${Math.round(activePlant.points/(activePlant.points+activePlant.nextPt)*100)}%"></div></div>
+        <div class="gt-plant-name">${esc(activePlant.plant_name||'나의 식물')} ${activePlant.emoji||''}</div>
+        <div class="gt-progress-text">다음 단계까지 <b style="color:var(--gold)">${activePlant.next_point||0} 포인트</b></div>
+        <div class="gt-bar"><div class="gt-bar-fill" style="width:${percent}%"></div></div>
         <div class="gt-progress-text" style="display:flex;justify-content:space-between;margin-top:4px">
-          <span>총 방문 ${activePlant.visits}회</span>
-          <span>물주기 ${activePlant.waters}회</span>
+          <span>총 방문 ${garden.visit_count||0}회</span>
+          <span>물주기 ${garden.water_count||0}회</span>
         </div>
-        <button class="btn" onclick="gtWaterTest()">💧 물주기</button>
+        <button class="btn" onclick="waterGarden()">💧 물주기</button>
       </div>
     </div>
     ${editBtn()}
-    <div class="footer">SAEGIM · GARDEN TAG</div>`;
+    <div class="footer">SAEGIM · GARDEN TAG</div>
+  `;
 }
-function gtWaterTest(){
-  alert('물주기 기능은 다음 단계에서 Firebase에 연결합니다.');
+async function waterGarden(){
+  if(!window.firestoreDb){alert('Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.');return;}
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터를 찾을 수 없습니다.');return;}
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  const activeIndex=slots.findIndex(s=>s&&s.unlocked);
+  if(activeIndex<0){alert('키울 식물이 없습니다.');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const lastWater=(garden.last_watered_at||'').slice(0,10);
+  if(today===lastWater){alert('오늘은 이미 물을 주었습니다.');return;}
+  const plant=slots[activeIndex];
+  plant.growth_point=(plant.growth_point||0)+3;
+  plant.next_point=Math.max(0,(plant.next_point||0)-3);
+  if(plant.next_point===0){
+    plant.stage=(plant.stage||1)+1;
+    plant.next_point=10;
+    if(plant.stage>=5){plant.stage=5;plant.emoji='🌼';plant.plant_name='활짝 핀 민들레';plant.next_point=0;}
+    else if(plant.stage===2){plant.emoji='🌿';plant.plant_name='민들레 어린잎';}
+    else if(plant.stage===3){plant.emoji='🪴';plant.plant_name='자라는 민들레';}
+    else if(plant.stage===4){plant.emoji='🌷';plant.plant_name='민들레 꽃봉오리';}
+  }
+  slots[activeIndex]=plant;
+  await updateDoc(ref,{
+    garden_slots:slots,
+    water_count:(garden.water_count||0)+1,
+    last_watered_at:new Date().toISOString()
+  });
+  alert('물을 주었습니다. +3 포인트');
+  const newSnap=await getDoc(ref);
+  renderGardenTagView(newSnap.data());
 }
 function renderDefault(data){
   app.innerHTML=`
@@ -2654,7 +2721,7 @@ const I18N={
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
-import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,doc,getDoc,setDoc,updateDoc}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 const firebaseConfig={
   apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",
   authDomain:"saegim-memory.firebaseapp.com",
@@ -2667,7 +2734,7 @@ const fbApp=initializeApp(firebaseConfig);
 const storage=getStorage(fbApp);
 const db=getFirestore(fbApp);
 window.firestoreDb=db;
-window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot,doc,getDoc,setDoc,updateDoc};
 window.uploadToFirebase=function(file,path,onProgress){
   return new Promise((resolve,reject)=>{
     const storageRef=ref(storage,path);
