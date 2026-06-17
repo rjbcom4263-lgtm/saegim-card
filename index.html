@@ -1695,7 +1695,8 @@ function renderGardenTagView(garden){
       {slot:7,unlocked:false},{slot:8,unlocked:false}
     ];
   }
-  const activePlant=slots.find(s=>s&&s.unlocked)||slots[0];
+  const activePlant=slots.find(s=>s&&s.unlocked&&!s.empty)||slots.find(s=>s&&s.unlocked)||slots[0];
+  _lastGarden=garden;
   const growth=activePlant.growth_point||0;
   const next=activePlant.next_point||10;
   const percent=Math.min(100,Math.round(growth/(growth+next)*100));
@@ -1705,10 +1706,11 @@ function renderGardenTagView(garden){
       <div class="gt-title">SAEGIM GARDEN</div>
       <div class="gt-sub">오늘도 정원을 돌봐주세요 🌱</div>
       <div class="gt-garden">
-        ${slots.map(s=>s&&s.unlocked
-          ?`<div class="gt-slot"><div class="gt-plant">${s.emoji||'🌱'}</div></div>`
-          :`<div class="gt-slot locked"><span class="gt-lock">🔒</span></div>`
-        ).join('')}
+        ${slots.map(s=>{
+          if(s&&s.unlocked&&s.empty)return`<div class="gt-slot" onclick="gtSelectSeed(${s.slot})" style="cursor:pointer;flex-direction:column;gap:4px"><span style="font-size:22px">🌱</span><span style="font-size:10px;color:rgba(230,200,143,.7)">씨앗 심기</span></div>`;
+          if(s&&s.unlocked)return`<div class="gt-slot"><div class="gt-plant">${s.emoji||'🌱'}</div></div>`;
+          return`<div class="gt-slot locked"><span class="gt-lock">🔒</span></div>`;
+        }).join('')}
       </div>
       <div class="gt-info">
         <div class="gt-plant-name">${esc(activePlant.plant_name||'민들레 새싹')} ${activePlant.emoji||'🌱'}</div>
@@ -1724,6 +1726,55 @@ function renderGardenTagView(garden){
     ${editBtn()}
     <div class="footer">SAEGIM · GARDEN TAG</div>
   `;
+}
+
+async function gtSelectSeed(slotIndex){
+  const PLANTS=[
+    {type:'dandelion',name:'민들레',emoji:'🌱'},
+    {type:'sunflower',name:'해바라기',emoji:'🌻'},
+    {type:'cosmos',name:'코스모스',emoji:'🌸'},
+    {type:'lavender',name:'라벤더',emoji:'💜'},
+    {type:'cactus',name:'선인장',emoji:'🌵'},
+    {type:'clover',name:'토끼풀',emoji:'🍀'},
+  ];
+
+  const list=PLANTS.map((p,i)=>`<button class="btn" style="margin:4px 0" onclick="gtPlantSeed(${slotIndex},'${p.type}','${p.name}','${p.emoji}')">${p.emoji} ${p.name}</button>`).join('');
+
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-wrap">
+      <div class="gt-title">씨앗 선택</div>
+      <div class="gt-sub">심을 식물을 선택하세요 🌱</div>
+      ${list}
+      <button class="btn sub" onclick="renderGardenTagView(_lastGarden)">취소</button>
+    </div>
+  `;
+}
+
+let _lastGarden=null;
+
+async function gtPlantSeed(slotIndex,plantType,plantName,emoji){
+  if(!window.firestoreDb){alert('Firebase 연결 오류');return;}
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터 없음');return;}
+  const garden=snap.data();
+  const slots=Array.isArray(garden.garden_slots)?garden.garden_slots:[];
+  slots[slotIndex]={
+    slot:slotIndex,
+    plant_type:plantType,
+    plant_name:plantName+' 씨앗',
+    emoji:emoji,
+    stage:1,
+    growth_point:0,
+    next_point:10,
+    unlocked:true
+  };
+  await updateDoc(ref,{garden_slots:slots});
+  const newSnap=await getDoc(ref);
+  _lastGarden=newSnap.data();
+  renderGardenTagView(_lastGarden);
 }
 async function waterGarden(){
   if(!window.firestoreDb){alert('Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.');return;}
@@ -1764,16 +1815,7 @@ async function waterGarden(){
       plant.stage=5;plant.emoji='🌼';plant.plant_name='활짝 핀 민들레';plant.next_point=0;
       const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
       if(nextLockedIndex>=0){
-        slots[nextLockedIndex]={
-          slot:nextLockedIndex,
-          plant_type:'sunflower',
-          plant_name:'해바라기 씨앗',
-          emoji:'🌱',
-          stage:1,
-          growth_point:0,
-          next_point:10,
-          unlocked:true
-        };
+        slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
       }
     }
   }
