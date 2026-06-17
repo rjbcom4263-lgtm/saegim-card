@@ -120,6 +120,14 @@ input[type=file]{padding:10px;cursor:pointer}
 .gt-progress-text{color:var(--muted);font-size:14px;margin-bottom:8px}
 .gt-bar{height:10px;background:#222;border-radius:999px;overflow:hidden;margin:10px 0 16px}
 .gt-bar-fill{height:100%;width:12%;background:var(--gold2);border-radius:999px}
+.gt-slot.empty-open{cursor:pointer;border-color:var(--gold2)}
+.gt-seed-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.gt-seed-modal.on{display:flex}
+.gt-seed-box{width:100%;max-width:420px;border:1px solid var(--line);border-radius:24px;background:#111;padding:22px}
+.gt-seed-title{text-align:center;color:var(--gold);font-weight:800;font-size:18px;margin-bottom:16px}
+.gt-seed-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gt-seed-btn{padding:16px 10px;border-radius:16px;border:1px solid rgba(230,200,143,.35);background:rgba(255,255,255,.04);color:var(--text);font-weight:800;cursor:pointer}
+.gt-seed-btn span{display:block;font-size:28px;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -1707,7 +1715,7 @@ function renderGardenTagView(garden){
       <div class="gt-sub">오늘도 정원을 돌봐주세요 🌱</div>
       <div class="gt-garden">
         ${slots.map(s=>{
-          if(s&&s.unlocked&&s.empty)return`<div class="gt-slot" onclick="gtSelectSeed(${s.slot})" style="cursor:pointer;flex-direction:column;gap:4px"><span style="font-size:22px">🌱</span><span style="font-size:10px;color:rgba(230,200,143,.7)">씨앗 심기</span></div>`;
+          if(s&&s.unlocked&&s.empty)return`<div class="gt-slot empty-open" onclick="openSeedModal(${s.slot})"><div class="gt-plant">＋</div></div>`;
           if(s&&s.unlocked)return`<div class="gt-slot"><div class="gt-plant">${s.emoji||'🌱'}</div></div>`;
           return`<div class="gt-slot locked"><span class="gt-lock">🔒</span></div>`;
         }).join('')}
@@ -1723,38 +1731,12 @@ function renderGardenTagView(garden){
         <button class="btn" onclick="waterGarden()">💧 물주기</button>
       </div>
     </div>
+    ${seedModalHtml()}
     ${editBtn()}
     <div class="footer">SAEGIM · GARDEN TAG</div>
   `;
 }
 
-async function gtSelectSeed(slotIndex){
-  const PLANTS=[
-    {type:'dandelion',name:'민들레',emoji:'🌱'},
-    {type:'sunflower',name:'해바라기',emoji:'🌻'},
-    {type:'cosmos',name:'코스모스',emoji:'🌸'},
-    {type:'lavender',name:'라벤더',emoji:'💜'},
-    {type:'cactus',name:'선인장',emoji:'🌵'},
-    {type:'clover',name:'토끼풀',emoji:'🍀'},
-  ];
-
-  const list=PLANTS.map((p,i)=>`<button class="btn" style="margin:4px 0" onclick="gtPlantSeed(${slotIndex},'${p.type}','${p.name}','${p.emoji}')">${p.emoji} ${p.name}</button>`).join('');
-
-  app.innerHTML=`
-    ${brand()}
-    <div class="gt-wrap">
-      <div class="gt-title">씨앗 선택</div>
-      <div class="gt-sub">심을 식물을 선택하세요 🌱</div>
-      ${list}
-      <button class="btn sub" onclick="renderGardenTagView(_lastGarden)">취소</button>
-    </div>
-  `;
-}
-
-let _lastGarden=null;
-
-async function gtPlantSeed(slotIndex,plantType,plantName,emoji){
-  if(!window.firestoreDb){alert('Firebase 연결 오류');return;}
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
@@ -1775,6 +1757,48 @@ async function gtPlantSeed(slotIndex,plantType,plantName,emoji){
   const newSnap=await getDoc(ref);
   _lastGarden=newSnap.data();
   renderGardenTagView(_lastGarden);
+}
+
+const GT_SEEDS=[
+  {type:'sunflower',name:'해바라기 씨앗',emoji:'🌻'},
+  {type:'cosmos',name:'코스모스 씨앗',emoji:'🌸'},
+  {type:'camellia',name:'동백꽃 씨앗',emoji:'🌺'},
+  {type:'cactus',name:'선인장 씨앗',emoji:'🌵'},
+  {type:'clover',name:'토끼풀 씨앗',emoji:'🍀'}
+];
+let GT_SELECTED_SLOT=null;
+let _lastGarden=null;
+
+function seedModalHtml(){
+  return `
+    <div id="gtSeedModal" class="gt-seed-modal" onclick="closeSeedModal()">
+      <div class="gt-seed-box" onclick="event.stopPropagation()">
+        <div class="gt-seed-title">어떤 씨앗을 심을까요?</div>
+        <div class="gt-seed-grid">
+          ${GT_SEEDS.map(seed=>`
+            <button class="gt-seed-btn" onclick="plantSeed('${seed.type}')">
+              <span>${seed.emoji}</span>
+              ${seed.name}
+            </button>
+          `).join('')}
+        </div>
+        <button class="btn sub" onclick="closeSeedModal()">취소</button>
+      </div>
+    </div>
+  `;
+}
+function openSeedModal(slot){
+  GT_SELECTED_SLOT=slot;
+  document.getElementById('gtSeedModal').classList.add('on');
+}
+function closeSeedModal(){
+  const modal=document.getElementById('gtSeedModal');
+  if(modal)modal.classList.remove('on');
+}
+function plantSeed(type){
+  const seed=GT_SEEDS.find(s=>s.type===type);
+  alert(seed.name+'을 심습니다. 저장 기능은 다음 단계에서 연결합니다.');
+  closeSeedModal();
 }
 async function waterGarden(){
   if(!window.firestoreDb){alert('Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.');return;}
