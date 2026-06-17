@@ -387,13 +387,18 @@ function wtRandomSentence(){
 }
 function renderWishTag(data){
   const sentence=wtRandomSentence();
+  const wtLabels={ko:['오늘의 바램','마음속 질문을 떠올려 보세요','다시 받기'],en:['Today\'s Wish','Take a moment to think of a question','Try Again'],ja:['今日の願い','心の中の問いを思い浮かべてください','もう一度'],zh:['今日心愿','请在心中想一个问题','再来一次']};
+  const lbl=wtLabels[currentLang]||wtLabels.ko;
   app.innerHTML=`
     ${brand()}
+    <div class="lang-bar">
+      ${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}
+    </div>
     <div class="wt-wrap">
-      <div class="wt-label">오늘의 바램</div>
-      <div class="wt-sub">마음속 질문을 떠올려 보세요</div>
+      <div class="wt-label">${lbl[0]}</div>
+      <div class="wt-sub">${lbl[1]}</div>
       <div class="wt-card"><div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div></div>
-      <button class="wt-again" onclick="wtAgain()">다시 받기</button>
+      <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
     </div>
     <div class="footer">SAEGIM WT</div>`;
 }
