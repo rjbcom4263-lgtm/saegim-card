@@ -1663,9 +1663,19 @@ function renderGardenTagFallback(){
   app.innerHTML=`${brand()}<div class="gt-wrap"><div class="gt-sub" style="color:#f66">Firebase 연결 오류</div></div>`;
 }
 function renderGardenTagView(garden){
-  const slots=garden.garden_slots||[];
-  const activePlant=slots.find(s=>s&&s.unlocked);
-  const percent=Math.min(100,Math.round(activePlant.growth_point/(activePlant.growth_point+activePlant.next_point)*100));
+  let slots=Array.isArray(garden.garden_slots)?garden.garden_slots:[];
+  if(!slots.length){
+    slots=[
+      {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:12,next_point:8,unlocked:true},
+      {slot:1,unlocked:false},{slot:2,unlocked:false},{slot:3,unlocked:false},
+      {slot:4,unlocked:false},{slot:5,unlocked:false},{slot:6,unlocked:false},
+      {slot:7,unlocked:false},{slot:8,unlocked:false}
+    ];
+  }
+  const activePlant=slots.find(s=>s&&s.unlocked)||slots[0];
+  const growth=activePlant.growth_point||0;
+  const next=activePlant.next_point||10;
+  const percent=Math.min(100,Math.round(growth/(growth+next)*100));
   app.innerHTML=`
     ${brand()}
     <div class="gt-wrap">
@@ -1678,8 +1688,8 @@ function renderGardenTagView(garden){
         ).join('')}
       </div>
       <div class="gt-info">
-        <div class="gt-plant-name">${esc(activePlant.plant_name||'나의 식물')} ${activePlant.emoji||''}</div>
-        <div class="gt-progress-text">다음 단계까지 <b style="color:var(--gold)">${activePlant.next_point||0} 포인트</b></div>
+        <div class="gt-plant-name">${esc(activePlant.plant_name||'민들레 새싹')} ${activePlant.emoji||'🌱'}</div>
+        <div class="gt-progress-text">다음 단계까지 <b style="color:var(--gold)">${next} 포인트</b></div>
         <div class="gt-bar"><div class="gt-bar-fill" style="width:${percent}%"></div></div>
         <div class="gt-progress-text" style="display:flex;justify-content:space-between;margin-top:4px">
           <span>총 방문 ${garden.visit_count||0}회</span>
