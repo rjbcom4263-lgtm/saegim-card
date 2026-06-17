@@ -1224,8 +1224,9 @@ async function saveEdit(){
   const pc=QR_DATA.product_code||'';
   const isBmt=(pc==='BMT');
   const isTT=(pc==='TT');
+  const isWT=(pc==='WT');
   if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
-  const links=isTT?[]:collectLinks();
+  const links=(isTT||isWT)?[]:collectLinks();
   const base={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(links)};
   let form;
   if(isBmt){
@@ -1234,6 +1235,8 @@ async function saveEdit(){
   }else if(isTT){
     form={...base};
     ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  }else if(isWT){
+    form={...base};
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
