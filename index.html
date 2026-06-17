@@ -1732,9 +1732,20 @@ async function waterGarden(){
   const snap=await getDoc(ref);
   if(!snap.exists()){alert('정원 데이터를 찾을 수 없습니다.');return;}
   const garden=snap.data();
-  const slots=garden.garden_slots||[];
-  const activeIndex=slots.findIndex(s=>s&&s.unlocked);
-  if(activeIndex<0){alert('키울 식물이 없습니다.');return;}
+  let slots=Array.isArray(garden.garden_slots)?garden.garden_slots:[];
+  if(!slots.length){
+    slots=[
+      {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:12,next_point:8,unlocked:true},
+      {slot:1,unlocked:false},{slot:2,unlocked:false},{slot:3,unlocked:false},
+      {slot:4,unlocked:false},{slot:5,unlocked:false},{slot:6,unlocked:false},
+      {slot:7,unlocked:false},{slot:8,unlocked:false}
+    ];
+  }
+  let activeIndex=slots.findIndex(s=>s&&s.unlocked);
+  if(activeIndex<0){
+    activeIndex=0;
+    slots[0]={slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:12,next_point:8,unlocked:true};
+  }
   const today=new Date().toISOString().slice(0,10);
   const lastWater=(garden.last_watered_at||'').slice(0,10);
   if(today===lastWater){alert('오늘은 이미 물을 주었습니다.');return;}
