@@ -103,6 +103,18 @@ input[type=file]{padding:10px;cursor:pointer}
 .wt-sentence.fade{opacity:0}
 .wt-again{display:block;width:100%;padding:17px;border-radius:18px;border:1px solid var(--gold2);background:#111;color:var(--gold);font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px}
 .wt-again:active{background:rgba(230,200,143,.1)}
+
+/* GT 가든 태그 */
+.gt-wrap{text-align:center;padding:10px 0}
+.gt-label{color:#7ec87e;font-size:12px;letter-spacing:.2em;margin-bottom:6px;font-family:monospace}
+.gt-canvas{image-rendering:pixelated;border-radius:16px;background:#1a2e1a;border:2px solid rgba(126,200,126,.3);display:block;margin:0 auto}
+.gt-stage-badge{display:inline-block;background:rgba(126,200,126,.15);border:1px solid rgba(126,200,126,.4);border-radius:20px;padding:4px 14px;color:#7ec87e;font-size:11px;font-family:monospace;margin:6px 0 2px}
+.gt-pts{color:#aaa;font-size:12px;font-family:monospace;margin-bottom:10px}
+.gt-water-btn{display:block;width:100%;padding:17px;border-radius:18px;border:2px solid #4a9e4a;background:#0d1f0d;color:#7ec87e;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:10px;font-family:monospace;box-sizing:border-box}
+.gt-water-btn:disabled{opacity:.4;cursor:not-allowed}
+.gt-pw-input{width:100%;padding:16px;border-radius:14px;border:1px solid rgba(126,200,126,.3);background:#0d1f0d;color:#7ec87e;font-size:20px;font-family:monospace;text-align:center;letter-spacing:.3em;box-sizing:border-box}
+.gt-info-row{display:flex;justify-content:space-between;font-size:12px;color:#888;font-family:monospace;margin:4px 0}
+.gt-stat-box{background:rgba(126,200,126,.07);border-radius:12px;padding:10px 14px;margin:8px 0}
 </style>
 </head>
 <body>
@@ -146,6 +158,7 @@ function renderView(data){
   if(data.product_code==='CD'){renderCare(data);return;}
   if(data.product_code==='TT'){renderTT(data);return;}
   if(data.product_code==='WT'){renderWishTag(data);return;}
+  if(data.product_code==='GT'){renderGardenTag(data);return;}
   renderDefault(data);
 }
 function renderCare(data){
@@ -1690,12 +1703,27 @@ function renderRegister(data){
     <label>알림 이메일 (선택 · 채팅 메시지 수신 알림)</label>
     <input id="owner_email" class="input" type="email" placeholder="example@email.com" value="${esc(data.owner_email||'')}">`;
   const isWT=(pc==='WT');
+  const isGT=(pc==='GT');
+  const gtFields=`
+    <label>가든 이름</label>
+    <input id="gt_garden_name" class="input" placeholder="나의 가든" value="${esc(data.gt_garden_name||'')}">
+    <label>식물 선택</label>
+    <select id="gt_plant_type" class="input">
+      <option value="dandelion">🌼 민들레</option>
+      <option value="sunflower">🌻 해바라기</option>
+      <option value="cosmos">🌸 코스모스</option>
+      <option value="cherry">🌸 벚꽃</option>
+      <option value="camellia">🌺 동백꽃</option>
+      <option value="lavender">💜 라벤더</option>
+      <option value="cactus">🌵 선인장</option>
+      <option value="clover">🍀 토끼풀</option>
+    </select>`;
   const wtFields=`
     <label>사용자 이름</label>
     <input id="owner" class="input" placeholder="이름을 입력해주세요" value="${esc(data.owner||'')}">`;
-  const fields=isBmt?bmtFields:(isTT?ttFields:(isWT?wtFields:cdFields));
-  const linksSection=(isTT||isWT)?'':`<div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>`;
-  const productLabel=isBmt?'부산 메모리 태그':isTT?'길동무 태그':isWT?'오늘의 바램 태그':'안심태그(CD)';
+  const fields=isBmt?bmtFields:(isTT?ttFields:(isWT?wtFields:(isGT?gtFields:cdFields)));
+  const linksSection=(isTT||isWT||isGT)?'':`<div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>`;
+  const productLabel=isBmt?'부산 메모리 태그':isTT?'길동무 태그':isWT?'오늘의 바램 태그':isGT?'새김 가든 태그':'안심태그(CD)';
   app.innerHTML=`
     ${brand()}
     <div class="main-title">최초 등록</div>
@@ -1997,8 +2025,9 @@ async function registerFirst(){
   const isBmt=(pc==='BMT');
   const isTT=(pc==='TT');
   const isWT=(pc==='WT');
+  const isGT=(pc==='GT');
   if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
-  const links=(isTT||isWT)?[]:collectLinks();
+  const links=(isTT||isWT||isGT)?[]:collectLinks();
   const base={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify(links)};
   let form;
   if(isBmt){
@@ -2009,6 +2038,28 @@ async function registerFirst(){
     ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   }else if(isWT){
     form={...base};
+  }else if(isGT){
+    const db=window.firestoreDb;
+    if(!db){alert('Firebase 초기화 오류');return;}
+    const pwHash=btoa(pw);
+    const gardenName=val('gt_garden_name')||'나의 가든';
+    const plantType=val('gt_plant_type')||'dandelion';
+    try{
+      const{doc,setDoc}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+      await setDoc(doc(db,'garden_tags',CODE),{
+        code:CODE,
+        garden_name:gardenName,
+        plant_type:plantType,
+        pw_hash:pwHash,
+        points:0,
+        stage:0,
+        visit_log:{},
+        water_log:{},
+        streak:0,
+        created_at:new Date().toISOString()
+      });
+    }catch(e){alert('가든 생성 실패: '+e.message);return;}
+    form={...base,owner:gardenName};
   }else{
     form={...base};
     ['child_name','guardian_name','guardian_phone','child_note','child_allergy','blood_type','child_message'].forEach(k=>form[k]=val(k));
@@ -2018,6 +2069,173 @@ async function registerFirst(){
   alert('등록이 완료되었습니다!');
   location.href='?code='+encodeURIComponent(CODE);
 }
+
+// ════════════════════════════════════════════
+// GT 가든 태그
+// ════════════════════════════════════════════
+const GT_PLANTS={
+  dandelion:{name:'민들레',color:'#f5c842',stem:'#5d8a3c'},
+  sunflower:{name:'해바라기',color:'#f5a623',stem:'#5d8a3c'},
+  cosmos:{name:'코스모스',color:'#e87ca0',stem:'#5d8a3c'},
+  cherry:{name:'벚꽃',color:'#ffb7c5',stem:'#8B4513'},
+  camellia:{name:'동백꽃',color:'#c0392b',stem:'#5d8a3c'},
+  lavender:{name:'라벤더',color:'#9b59b6',stem:'#5d8a3c'},
+  cactus:{name:'선인장',color:'#27ae60',stem:'#27ae60'},
+  clover:{name:'토끼풀',color:'#2ecc71',stem:'#5d8a3c'},
+};
+const GT_STAGES=[
+  {name:'씨앗',emoji:'🌰',label:'SEED',points:0},
+  {name:'새싹',emoji:'🌱',label:'SPROUT',points:10},
+  {name:'어린잎',emoji:'🌿',label:'SEEDLING',points:25},
+  {name:'성장기',emoji:'🪴',label:'GROWING',points:45},
+  {name:'꽃봉오리',emoji:'🌷',label:'BUDDING',points:70},
+  {name:'개화',emoji:'🌸',label:'BLOOM',points:100},
+];
+function gtGetStage(pts){
+  let s=0;
+  for(let i=0;i<GT_STAGES.length;i++){if(pts>=GT_STAGES[i].points)s=i;}
+  return s;
+}
+function gtDrawPlant(canvas,stage,plantType){
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1a2e1a';
+  ctx.fillRect(0,0,W,H);
+  const p=GT_PLANTS[plantType]||GT_PLANTS.dandelion;
+  const px=W/16;
+  function dot(x,y,c,s){s=s||1;ctx.fillStyle=c;ctx.fillRect(x*px,y*px,px*s,px*s);}
+  ctx.fillStyle='#3d2b1f';
+  ctx.fillRect(px*2,px*13,px*12,px*3);
+  ctx.fillStyle='#5a3e2b';
+  ctx.fillRect(px*2,px*13,px*12,px*1);
+  if(stage===0){
+    dot(7,11,'#8B6914',2);dot(7,10,'#a07820',2);
+  }else if(stage===1){
+    dot(8,12,p.stem);dot(8,11,p.stem);dot(8,10,p.stem);
+    dot(6,10,p.color,2);dot(9,9,p.color,2);
+  }else if(stage===2){
+    dot(8,12,p.stem);dot(8,11,p.stem);dot(8,10,p.stem);dot(8,9,p.stem);
+    dot(5,10,p.color,3);dot(9,8,p.color,3);dot(7,7,p.color,2);
+  }else if(stage===3){
+    dot(8,12,p.stem);dot(8,11,p.stem);dot(8,10,p.stem);dot(8,9,p.stem);dot(8,8,p.stem);dot(8,7,p.stem);
+    dot(4,10,p.color,3);dot(10,9,p.color,3);dot(5,7,p.color,3);dot(9,6,p.color,3);dot(7,5,p.color,2);
+  }else if(stage===4){
+    dot(8,12,p.stem);dot(8,11,p.stem);dot(8,10,p.stem);dot(8,9,p.stem);dot(8,8,p.stem);dot(8,7,p.stem);
+    dot(5,10,p.color,2);dot(10,9,p.color,2);dot(5,7,p.color,2);dot(10,6,p.color,2);
+    dot(7,5,'#888',2);dot(8,4,'#aaa',1);
+  }else{
+    dot(8,12,p.stem);dot(8,11,p.stem);dot(8,10,p.stem);dot(8,9,p.stem);dot(8,8,p.stem);
+    dot(7,4,p.color,2);dot(9,4,p.color,2);dot(6,5,p.color,2);dot(10,5,p.color,2);
+    dot(6,7,p.color,2);dot(10,7,p.color,2);dot(7,8,p.color,2);dot(9,8,p.color,2);
+    dot(7,6,'#fff566',2);dot(4,10,p.stem,3);dot(10,9,p.stem,3);
+  }
+}
+async function renderGardenTag(data){
+  const db=window.firestoreDb;
+  if(!db){app.innerHTML=brand()+'<div class="sub" style="color:#f66">Firebase 초기화 오류</div>';return;}
+  const{doc,getDoc}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+  const snap=await getDoc(doc(db,'garden_tags',CODE));
+  if(!snap.exists()){app.innerHTML=brand()+'<div class="sub">가든 정보를 찾을 수 없습니다.</div>';return;}
+  gtShowPasswordScreen(snap.data(),CODE,data);
+}
+function gtShowPasswordScreen(gtDoc,code,data){
+  const pts=gtDoc.points||0;
+  const stage=gtGetStage(pts);
+  const stageInfo=GT_STAGES[stage];
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-wrap">
+      <div class="gt-label">🌿 새김 가든 태그</div>
+      <canvas id="gtCanvas" class="gt-canvas" width="128" height="128"></canvas>
+      <div class="gt-stage-badge">${stageInfo.label} · ${stageInfo.name} ${stageInfo.emoji}</div>
+      <div class="gt-pts">${gtDoc.garden_name||'나의 가든'} · ${pts}pt</div>
+    </div>
+    <div style="background:rgba(126,200,126,.07);border-radius:16px;padding:16px;margin:12px 0">
+      <div style="color:#7ec87e;font-size:14px;font-weight:700;margin-bottom:10px">🔐 가든에 입장하려면</div>
+      <input id="gtPwInput" class="gt-pw-input" type="password" inputmode="numeric" placeholder="비밀번호 입력" maxlength="6">
+      <button class="gt-water-btn" style="margin-top:10px" onclick="gtCheckPassword('${code}')">입장하기 →</button>
+    </div>`;
+  const cvs=document.getElementById('gtCanvas');
+  if(cvs)gtDrawPlant(cvs,stage,gtDoc.plant_type||'dandelion');
+}
+async function gtCheckPassword(code){
+  const input=document.getElementById('gtPwInput');
+  if(!input)return;
+  const pw=input.value.trim();
+  if(!pw){alert('비밀번호를 입력해주세요.');return;}
+  const db=window.firestoreDb;
+  const{doc,getDoc}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+  const snap=await getDoc(doc(db,'garden_tags',code));
+  if(!snap.exists())return;
+  const gtDoc=snap.data();
+  if(btoa(pw)!==gtDoc.pw_hash){alert('비밀번호가 틀렸습니다.');input.value='';return;}
+  gtShowGarden(gtDoc,code);
+}
+async function gtShowGarden(gtDoc,code){
+  const db=window.firestoreDb;
+  const{doc,updateDoc}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+  const today=new Date().toISOString().slice(0,10);
+  const visitLog=gtDoc.visit_log||{};
+  let pts=gtDoc.points||0;
+  let streak=gtDoc.streak||0;
+  if(!visitLog[today]){
+    visitLog[today]=true;pts+=1;
+    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if(visitLog[yesterday]){streak++;if(streak>=7)pts+=10;else if(streak>=3)pts+=5;}else{streak=1;}
+    try{await updateDoc(doc(db,'garden_tags',code),{points:pts,visit_log:visitLog,streak});}catch(e){}
+  }
+  const stage=gtGetStage(pts);
+  const stageInfo=GT_STAGES[stage];
+  const nextStage=GT_STAGES[stage+1];
+  const waterLog=gtDoc.water_log||{};
+  const wateredToday=!!waterLog[today];
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-wrap">
+      <div class="gt-label">🌿 ${gtDoc.garden_name||'나의 가든'}</div>
+      <canvas id="gtCanvas" class="gt-canvas" width="128" height="128"></canvas>
+      <div class="gt-stage-badge">${stageInfo.label} · ${stageInfo.name} ${stageInfo.emoji}</div>
+      <div class="gt-pts">${pts}pt${nextStage?' · 다음까지 '+(nextStage.points-pts)+'pt':' · 🎉 만개!'}</div>
+    </div>
+    <div class="gt-stat-box">
+      <div class="gt-info-row"><span>🔥 연속 방문</span><span style="color:#7ec87e">${streak}일</span></div>
+      <div class="gt-info-row"><span>🌱 성장 단계</span><span style="color:#7ec87e">${stage+1}/6</span></div>
+      <div class="gt-info-row"><span>💧 오늘 물주기</span><span style="color:#7ec87e">${wateredToday?'완료 ✓':'미완료'}</span></div>
+    </div>
+    <button class="gt-water-btn" id="gtWaterBtn" ${wateredToday?'disabled':''} onclick="gtWater('${code}',${pts},${stage})">
+      ${wateredToday?'💧 오늘 물 주기 완료':'💧 물 주기 (+3pt)'}
+    </button>
+    <button class="gt-water-btn" style="background:transparent;border-color:rgba(126,200,126,.3);color:#666;font-size:13px;padding:12px" onclick="location.href='?code='+encodeURIComponent('${code}')">나가기</button>`;
+  const cvs=document.getElementById('gtCanvas');
+  if(cvs)gtDrawPlant(cvs,stage,gtDoc.plant_type||'dandelion');
+}
+async function gtWater(code,currentPts,currentStage){
+  const db=window.firestoreDb;
+  const{doc,updateDoc,getDoc}=await import('https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js');
+  const today=new Date().toISOString().slice(0,10);
+  const snap=await getDoc(doc(db,'garden_tags',code));
+  if(!snap.exists())return;
+  const gtDoc=snap.data();
+  const waterLog=gtDoc.water_log||{};
+  if(waterLog[today]){alert('오늘은 이미 물을 주었습니다!');return;}
+  waterLog[today]=true;
+  const newPts=(gtDoc.points||0)+3;
+  try{
+    await updateDoc(doc(db,'garden_tags',code),{points:newPts,water_log:waterLog});
+    const newStage=gtGetStage(newPts);
+    const stageInfo=GT_STAGES[newStage];
+    const btn=document.getElementById('gtWaterBtn');
+    if(btn){btn.disabled=true;btn.textContent='💧 오늘 물 주기 완료';}
+    const cvs=document.getElementById('gtCanvas');
+    if(cvs)gtDrawPlant(cvs,newStage,gtDoc.plant_type||'dandelion');
+    const ptsEl=document.querySelector('.gt-pts');
+    if(ptsEl)ptsEl.textContent=newPts+'pt'+(GT_STAGES[newStage+1]?' · 다음까지 '+(GT_STAGES[newStage+1].points-newPts)+'pt':' · 🎉 만개!');
+    if(newStage>currentStage)alert('🎉 식물이 성장했어요! '+stageInfo.name+' '+stageInfo.emoji+' 단계!');
+  }catch(e){alert('오류: '+e.message);}
+}
+// ════════════════════════════════════════════
+
 // ─────────────────────────────────────────────────────────
 
 async function saveEdit(){
@@ -2025,8 +2243,9 @@ async function saveEdit(){
   const isBmt=(pc==='BMT');
   const isTT=(pc==='TT');
   const isWT=(pc==='WT');
+  const isGT=(pc==='GT');
   if(isBmt){const ok=await uploadBmtFiles();if(!ok)return;}
-  const links=(isTT||isWT)?[]:collectLinks();
+  const links=(isTT||isWT||isGT)?[]:collectLinks();
   const base={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(links)};
   let form;
   if(isBmt){
