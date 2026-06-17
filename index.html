@@ -1619,9 +1619,24 @@ async function renderGardenTag(data){
     </div>
     <div class="footer">SAEGIM · GARDEN TAG</div>
   `;
-  if(!window.firestoreDb){renderGardenTagFallback();return;}
-  const garden=await getOrCreateGardenData();
-  renderGardenTagView(garden);
+  try{
+    if(!window.firestoreDb||!window.firestoreApi){
+      throw new Error('Firestore 초기화 미완료 (firestoreDb: '+(!!window.firestoreDb)+', firestoreApi: '+(!!window.firestoreApi)+')');
+    }
+    if(!window.firestoreApi.doc){
+      throw new Error('firestoreApi에 doc/getDoc/setDoc 누락. import 확인 필요');
+    }
+    const garden=await getOrCreateGardenData();
+    renderGardenTagView(garden);
+  }catch(e){
+    console.error('GT Firestore Error:',e);
+    app.innerHTML=`
+      ${brand()}
+      <div class="main-title" style="color:#f66">정원 로딩 오류</div>
+      <div class="sub" style="word-break:break-all;font-size:13px">${esc(e.message)}</div>
+      <div class="footer">SAEGIM · GARDEN TAG</div>
+    `;
+  }
 }
 async function getOrCreateGardenData(){
   const {doc,getDoc,setDoc}=window.firestoreApi;
