@@ -103,6 +103,21 @@ input[type=file]{padding:10px;cursor:pointer}
 .wt-sentence.fade{opacity:0}
 .wt-again{display:block;width:100%;padding:17px;border-radius:18px;border:1px solid var(--gold2);background:#111;color:var(--gold);font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px}
 .wt-again:active{background:rgba(230,200,143,.1)}
+/* GT Garden Tag */
+.gt-wrap{text-align:center}
+.gt-title{font-size:22px;font-weight:800;color:var(--gold);margin-bottom:6px;letter-spacing:.08em}
+.gt-sub{color:var(--muted);font-size:14px;margin-bottom:18px;line-height:1.6}
+.gt-garden{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.gt-slot{aspect-ratio:1/1;border:1px solid rgba(230,200,143,.35);border-radius:14px;background:linear-gradient(180deg,#4a351f,#2d1f12);display:flex;align-items:center;justify-content:center;font-size:34px;position:relative;overflow:hidden}
+.gt-slot::before{content:"";position:absolute;left:8px;right:8px;bottom:8px;height:20%;border-radius:0 0 10px 10px;background:rgba(80,48,22,.75)}
+.gt-slot.empty::after{content:"+";color:rgba(230,200,143,.35);font-size:28px;z-index:2}
+.gt-plant{position:relative;z-index:3;animation:gtWiggle 1.8s ease-in-out infinite;transform-origin:bottom center}
+@keyframes gtWiggle{0%{transform:rotate(0deg)}25%{transform:rotate(-3deg)}50%{transform:rotate(0deg)}75%{transform:rotate(3deg)}100%{transform:rotate(0deg)}}
+.gt-info{border:1px solid rgba(230,200,143,.3);border-radius:18px;padding:16px;margin-top:14px;background:rgba(255,255,255,.03)}
+.gt-plant-name{color:var(--gold);font-weight:800;font-size:16px;margin-bottom:8px}
+.gt-progress-text{color:var(--muted);font-size:14px;margin-bottom:8px}
+.gt-bar{height:10px;background:#222;border-radius:999px;overflow:hidden;margin:10px 0 16px}
+.gt-bar-fill{height:100%;width:12%;background:var(--gold2);border-radius:999px}
 </style>
 </head>
 <body>
@@ -146,6 +161,7 @@ function renderView(data){
   if(data.product_code==='CD'){renderCare(data);return;}
   if(data.product_code==='TT'){renderTT(data);return;}
   if(data.product_code==='WT'){renderWishTag(data);return;}
+  if(data.product_code==='GT'){renderGardenTag(data);return;}
   renderDefault(data);
 }
 function renderCare(data){
@@ -1590,6 +1606,37 @@ function wtAgain(){
     el.innerHTML=esc(wtRandomSentence()).replace(/\n/g,'<br>');
     el.classList.remove('fade');
   },350);
+}
+
+function renderGardenTag(data){
+  const slots=[
+    {plant:'🌱',name:'민들레 씨앗',stage:0,point:6,percent:12},
+    null,null,null,null,null,null,null,null
+  ];
+  const activePlant=slots.find(s=>s);
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-wrap">
+      <div class="gt-title">SAEGIM GARDEN</div>
+      <div class="gt-sub">QR로 키우는 나의 작은 정원</div>
+      <div class="gt-garden">
+        ${slots.map(s=>s
+          ?`<div class="gt-slot"><div class="gt-plant">${s.plant}</div></div>`
+          :`<div class="gt-slot empty"></div>`
+        ).join('')}
+      </div>
+      <div class="gt-info">
+        <div class="gt-plant-name">${activePlant.name}</div>
+        <div class="gt-progress-text">성장률 ${activePlant.percent}%</div>
+        <div class="gt-bar"><div class="gt-bar-fill" style="width:${activePlant.percent}%"></div></div>
+        <button class="btn" onclick="gtWaterTest()">💧 물주기</button>
+      </div>
+    </div>
+    ${editBtn()}
+    <div class="footer">SAEGIM · GARDEN TAG</div>`;
+}
+function gtWaterTest(){
+  alert('물주기 기능은 다음 단계에서 Firebase에 연결합니다.');
 }
 function renderDefault(data){
   app.innerHTML=`
