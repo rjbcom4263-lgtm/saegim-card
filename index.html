@@ -1626,7 +1626,8 @@ async function renderGardenTag(data){
     if(!window.firestoreApi.doc){
       throw new Error('firestoreApi에 doc/getDoc/setDoc 누락. import 확인 필요');
     }
-    const garden=await getOrCreateGardenData();
+    let garden=await getOrCreateGardenData();
+    garden=await applyDailyVisitBonus(garden);
     renderGardenTagView(garden);
   }catch(e){
     console.error('GT Firestore Error:',e);
@@ -1637,6 +1638,28 @@ async function renderGardenTag(data){
       <div class="footer">SAEGIM · GARDEN TAG</div>
     `;
   }
+}
+async function applyDailyVisitBonus(garden){
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const today=new Date().toISOString().slice(0,10);
+  const lastVisit=(garden.last_visit_at||'').slice(0,10);
+  if(today===lastVisit){return garden;}
+  const slots=garden.garden_slots||[];
+  const activeIndex=slots.findIndex(s=>s&&s.unlocked);
+  if(activeIndex>=0){
+    const plant=slots[activeIndex];
+    plant.growth_point=(plant.growth_point||0)+1;
+    plant.next_point=Math.max(0,(plant.next_point||0)-1);
+    slots[activeIndex]=plant;
+  }
+  await updateDoc(ref,{
+    garden_slots:slots,
+    visit_count:(garden.visit_count||0)+1,
+    last_visit_at:new Date().toISOString()
+  });
+  const newSnap=await getDoc(ref);
+  return newSnap.data();
 }
 async function getOrCreateGardenData(){
   const {doc,getDoc,setDoc}=window.firestoreApi;
