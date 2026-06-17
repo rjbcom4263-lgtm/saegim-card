@@ -92,6 +92,17 @@ input[type=file]{padding:10px;cursor:pointer}
 .tt-loc-status{text-align:center;color:var(--muted);font-size:12px;min-height:18px;margin:6px 0}
 .tt-lost-title{color:var(--gold);font-weight:800;font-size:15px;text-align:center;margin-bottom:6px}
 .tt-lost-sub{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;margin-bottom:16px}
+/* WT 오늘의 바램 태그 */
+.wt-wrap{text-align:center;padding:10px 0}
+.wt-label{color:var(--gold);font-size:12px;letter-spacing:.2em;margin-bottom:6px}
+.wt-title{font-size:22px;font-weight:800;margin-bottom:4px}
+.wt-sub{color:var(--muted);font-size:14px;margin-bottom:32px;line-height:1.6}
+.wt-card{border:1px solid rgba(230,200,143,.35);border-radius:24px;padding:36px 24px;background:rgba(255,255,255,.03);margin:0 0 28px;min-height:140px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.wt-card::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(230,200,143,.07),transparent 70%);pointer-events:none}
+.wt-sentence{font-size:19px;font-weight:700;line-height:1.7;color:var(--text);word-break:keep-all;transition:opacity .35s}
+.wt-sentence.fade{opacity:0}
+.wt-again{display:block;width:100%;padding:17px;border-radius:18px;border:1px solid var(--gold2);background:#111;color:var(--gold);font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px}
+.wt-again:active{background:rgba(230,200,143,.1)}
 </style>
 </head>
 <body>
@@ -134,6 +145,7 @@ function renderView(data){
   if(data.product_code==='BMT'){renderBmt(data);return;}
   if(data.product_code==='CD'){renderCare(data);return;}
   if(data.product_code==='TT'){renderTT(data);return;}
+  if(data.product_code==='WT'){renderWishTag(data);return;}
   renderDefault(data);
 }
 function renderCare(data){
@@ -335,6 +347,41 @@ function updateGallery(){
   if(count) count.textContent=(GALLERY_INDEX+1)+' / '+GALLERY_PHOTOS.length;
 }
 
+const WT_SENTENCES=[
+  '조금 늦어도 괜찮습니다.\n당신의 길은 사라지지 않습니다.',
+  '답을 찾으려 하기보다\n질문과 함께 걸어가 보세요.',
+  '오늘의 망설임도\n당신을 지키기 위한 마음일 수 있습니다.',
+  '지금 필요한 것은\n더 빠른 걸음이 아니라 잠시 멈춤일 수 있습니다.',
+  '당신은 생각보다\n잘하고 있습니다.'
+];
+let _wtLastIdx=-1;
+function wtRandomSentence(){
+  let idx;
+  do{idx=Math.floor(Math.random()*WT_SENTENCES.length);}while(WT_SENTENCES.length>1&&idx===_wtLastIdx);
+  _wtLastIdx=idx;
+  return WT_SENTENCES[idx];
+}
+function renderWishTag(data){
+  const sentence=wtRandomSentence();
+  app.innerHTML=`
+    ${brand()}
+    <div class="wt-wrap">
+      <div class="wt-label">오늘의 바램</div>
+      <div class="wt-sub">마음속 질문을 떠올려 보세요</div>
+      <div class="wt-card"><div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div></div>
+      <button class="wt-again" onclick="wtAgain()">다시 받기</button>
+    </div>
+    <div class="footer">SAEGIM WT</div>`;
+}
+function wtAgain(){
+  const el=document.getElementById('wtSentence');
+  if(!el)return;
+  el.classList.add('fade');
+  setTimeout(()=>{
+    el.innerHTML=esc(wtRandomSentence()).replace(/\n/g,'<br>');
+    el.classList.remove('fade');
+  },350);
+}
 function renderDefault(data){
   app.innerHTML=`
     ${brand()}
