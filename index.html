@@ -347,19 +347,43 @@ function updateGallery(){
   if(count) count.textContent=(GALLERY_INDEX+1)+' / '+GALLERY_PHOTOS.length;
 }
 
-const WT_SENTENCES=[
-  '조금 늦어도 괜찮습니다.\n당신의 길은 사라지지 않습니다.',
-  '답을 찾으려 하기보다\n질문과 함께 걸어가 보세요.',
-  '오늘의 망설임도\n당신을 지키기 위한 마음일 수 있습니다.',
-  '지금 필요한 것은\n더 빠른 걸음이 아니라 잠시 멈춤일 수 있습니다.',
-  '당신은 생각보다\n잘하고 있습니다.'
-];
+const WT_SENTENCES={
+  ko:[
+    '조금 늦어도 괜찮습니다.\n당신의 길은 사라지지 않습니다.',
+    '답을 찾으려 하기보다\n질문과 함께 걸어가 보세요.',
+    '오늘의 망설임도\n당신을 지키기 위한 마음일 수 있습니다.',
+    '지금 필요한 것은\n더 빠른 걸음이 아니라 잠시 멈춤일 수 있습니다.',
+    '당신은 생각보다\n잘하고 있습니다.'
+  ],
+  en:[
+    "It's okay to take your time.\nYour path isn't going anywhere.",
+    "Instead of chasing the answer,\ntry walking alongside the question.",
+    "Even today's hesitation\nmight be your heart looking out for you.",
+    "What you need right now\nmight not be faster steps, but a moment to breathe.",
+    "You're doing better\nthan you think."
+  ],
+  ja:[
+    'ゆっくりでも、大丈夫です。\nあなたの道は消えません。',
+    '答えを探すより、\n問いと一緒に歩いてみてください。',
+    '今日の迷いも、\nあなた自身を守ろうとする心かもしれません。',
+    '今必要なのは\n速さではなく、少し立ち止まることかもしれません。',
+    'あなたは思っているより、\nずっとうまくやっています。'
+  ],
+  zh:[
+    '慢一点也没关系。\n你的路不会消失。',
+    '与其寻找答案，\n不如带着问题一起前行。',
+    '今天的犹豫，\n也许是你内心在保护自己。',
+    '现在需要的，\n也许不是更快的步伐，而是片刻的停留。',
+    '你比自己想象的，\n做得更好。'
+  ]
+};
 let _wtLastIdx=-1;
 function wtRandomSentence(){
+  const list=WT_SENTENCES[currentLang]||WT_SENTENCES.ko;
   let idx;
-  do{idx=Math.floor(Math.random()*WT_SENTENCES.length);}while(WT_SENTENCES.length>1&&idx===_wtLastIdx);
+  do{idx=Math.floor(Math.random()*list.length);}while(list.length>1&&idx===_wtLastIdx);
   _wtLastIdx=idx;
-  return WT_SENTENCES[idx];
+  return list[idx];
 }
 function renderWishTag(data){
   const sentence=wtRandomSentence();
