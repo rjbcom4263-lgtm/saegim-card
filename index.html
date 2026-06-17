@@ -1737,28 +1737,6 @@ function renderGardenTagView(garden){
   `;
 }
 
-  const {doc,getDoc,updateDoc}=window.firestoreApi;
-  const ref=doc(window.firestoreDb,'garden_tags',CODE);
-  const snap=await getDoc(ref);
-  if(!snap.exists()){alert('정원 데이터 없음');return;}
-  const garden=snap.data();
-  const slots=Array.isArray(garden.garden_slots)?garden.garden_slots:[];
-  slots[slotIndex]={
-    slot:slotIndex,
-    plant_type:plantType,
-    plant_name:plantName+' 씨앗',
-    emoji:emoji,
-    stage:1,
-    growth_point:0,
-    next_point:10,
-    unlocked:true
-  };
-  await updateDoc(ref,{garden_slots:slots});
-  const newSnap=await getDoc(ref);
-  _lastGarden=newSnap.data();
-  renderGardenTagView(_lastGarden);
-}
-
 const GT_SEEDS=[
   {type:'sunflower',name:'해바라기 씨앗',emoji:'🌻'},
   {type:'cosmos',name:'코스모스 씨앗',emoji:'🌸'},
