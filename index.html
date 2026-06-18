@@ -131,6 +131,13 @@ input[type=file]{padding:10px;cursor:pointer}
 .gt-seed-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .gt-seed-btn{padding:16px 10px;border-radius:16px;border:1px solid rgba(230,200,143,.35);background:rgba(255,255,255,.04);color:var(--text);font-weight:800;cursor:pointer}
 .gt-seed-btn span{display:block;font-size:28px;margin-bottom:6px}
+.gt-resource-bar{display:flex;justify-content:center;gap:14px;margin-bottom:14px}
+.gt-resource{padding:8px 14px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(230,200,143,.18);font-size:18px;min-width:44px;text-align:center}
+.gt-growth-card{margin-top:14px}
+.gt-growth-name{font-size:18px;font-weight:700;color:var(--gold);margin-bottom:10px}
+.gt-growth-bar{height:10px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.gt-growth-fill{height:100%;background:linear-gradient(90deg,#d4af6a,#f2d59c);transition:width .4s ease}
+.gt-growth-text{margin-top:8px;font-size:13px;opacity:.8}
 </style>
 </head>
 <body>
@@ -1973,14 +1980,18 @@ function renderGardenTagView(garden){
   }
   const activePlant=slots.find(s=>s&&s.unlocked&&!s.empty)||slots.find(s=>s&&s.unlocked)||slots[0];
   _lastGarden=garden;
-  const growth=activePlant.growth_point||0;
-  const next=activePlant.next_point||10;
-  const percent=Math.min(100,Math.round(growth/(growth+next)*100));
+  const next=activePlant.next_point??10;
+  const percent=Math.max(0,Math.min(100,Math.round((1-next/10)*100)));
+  const waterCount=Math.max(0,garden.daily_water??3);
+  const fertCount=Math.max(0,garden.daily_fertilizer??1);
+  const waterBar=waterCount>0?'💧'.repeat(waterCount):'─';
+  const fertBar=fertCount>0?'🌾'.repeat(fertCount):'─';
+  const ownerName=garden.owner||'새김';
   app.innerHTML=`
     ${brand()}
     <div class="gt-wrap">
-      <div class="gt-title">SAEGIM GARDEN</div>
-      <div class="gt-sub">오늘도 정원을 돌봐주세요 🌱</div>
+      <div class="gt-title">🌿 ${esc(ownerName)}의 정원</div>
+      <div class="gt-sub">오늘도 천천히 자라고 있습니다.</div>
       <div class="gt-garden">
         ${slots.map(s=>{
           if(s&&s.unlocked&&s.empty)return`<div class="gt-slot empty-open" onclick="openSeedModal(${s.slot})"><div class="gt-plant">＋</div></div>`;
@@ -1989,16 +2000,18 @@ function renderGardenTagView(garden){
         }).join('')}
       </div>
       <div class="gt-info">
-        <div class="gt-plant-name">${esc(activePlant.plant_name||'민들레 새싹')} ${activePlant.emoji||'🌱'}</div>
-        <div class="gt-progress-text">다음 단계까지 <b style="color:var(--gold)">${next} 포인트</b></div>
-        <div class="gt-bar"><div class="gt-bar-fill" style="width:${percent}%"></div></div>
-        <div class="gt-progress-text" style="display:flex;justify-content:space-between;margin-top:4px">
+        <div class="gt-resource-bar">
+          <div class="gt-resource">${waterBar}</div>
+          <div class="gt-resource">${fertBar}</div>
+        </div>
+        <div class="gt-growth-card">
+          <div class="gt-growth-name">${activePlant.emoji||'🌱'} ${esc(activePlant.plant_name||'민들레 새싹')}</div>
+          <div class="gt-growth-bar"><div class="gt-growth-fill" style="width:${percent}%"></div></div>
+          <div class="gt-growth-text">다음 단계까지 <b style="color:var(--gold)">${next} 포인트</b></div>
+        </div>
+        <div class="gt-progress-text" style="display:flex;justify-content:space-between;margin-top:14px">
           <span>총 방문 ${garden.visit_count||0}회</span>
           <span>물주기 ${garden.water_count||0}회</span>
-        </div>
-        <div class="gt-progress-text" style="display:flex;justify-content:center;gap:14px;margin:10px 0 4px">
-          <span>오늘의 물 💧 ${garden.daily_water??3}</span>
-          <span>비료 🌾 ${garden.daily_fertilizer??1}</span>
         </div>
         <button class="btn" onclick="waterGarden()">💧 물주기</button>
         <button class="btn sub" onclick="fertilizeGarden()">🌾 비료주기</button>
@@ -2150,7 +2163,12 @@ async function applyGrowthResource({point,waterDelta,fertilizerDelta}){
       plant.stage=5;
       plant.next_point=0;
       const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
-      if(nextLockedIndex>=0) slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
+      if(nextLockedIndex>=0){
+        slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
+        setTimeout(()=>alert('🎉 꽃이 피었습니다!\n새로운 화분이 열렸습니다.'),300);
+      } else {
+        setTimeout(()=>alert('🎉 꽃이 피었습니다!'),300);
+      }
     }else{
       plant.next_point=10;
     }
