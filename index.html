@@ -138,6 +138,10 @@ input[type=file]{padding:10px;cursor:pointer}
 .gt-growth-name{color:var(--gold);font-weight:800;font-size:17px;margin-bottom:8px}
 .gt-growth-text{margin-top:8px;color:var(--muted);font-size:13px}
 .gt-empty-tip{color:var(--muted);font-size:13px;line-height:1.6;margin-top:8px}
+.gt-loading{text-align:center;padding:30px 0 10px}
+.gt-loading-plant{font-size:44px;animation:gtWiggle 1.4s ease-in-out infinite;margin-bottom:10px}
+.gt-loading-dots{color:var(--muted);font-size:13px;margin-top:8px;animation:gtFade 1.6s ease-in-out infinite}
+@keyframes gtFade{0%,100%{opacity:.35}50%{opacity:1}}
 </style>
 </head>
 <body>
@@ -1886,7 +1890,11 @@ async function renderGardenTag(data){
     ${brand()}
     <div class="gt-wrap">
       <div class="gt-title">SAEGIM GARDEN</div>
-      <div class="gt-sub">정원을 불러오는 중입니다...</div>
+      <div class="gt-loading">
+        <div class="gt-loading-plant">🌱</div>
+        <div class="gt-sub">정원으로 가는 중입니다...</div>
+        <div class="gt-loading-dots">작은 새싹을 깨우고 있어요</div>
+      </div>
     </div>
     <div class="footer">SAEGIM · GARDEN TAG</div>
   `;
