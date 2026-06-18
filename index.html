@@ -157,6 +157,7 @@ async function loadData(){
     const data=await apiGet('getQrData',{code:CODE});
     if(!data.success){renderError(data.message||'QR 정보를 불러오지 못했습니다.');return}
     QR_DATA=data;
+    if(MODE==='gtadmin'){renderGardenAdminPassword();return;}
     MODE==='edit'?renderPassword():renderView(data);
   }catch(e){renderError('서버 연결 중 오류가 발생했습니다.')}
 }
@@ -1617,6 +1618,117 @@ function wtAgain(){
     el.classList.remove('fade');
   },350);
 }
+
+/* ───── GT 운영자 모드 ───── */
+function renderGardenAdminPassword(){
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">GT 운영자 모드</div>
+    <div class="sub">관리자 비밀번호를 입력해주세요.</div>
+    <input id="gt_admin_pw" type="password" placeholder="관리자 비밀번호">
+    <button class="btn" onclick="checkGardenAdminPassword()">확인</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">돌아가기</a>
+  `;
+}
+function checkGardenAdminPassword(){
+  const pw=val('gt_admin_pw');
+  if(pw!=='4263'){
+    alert('관리자 비밀번호가 다릅니다.');
+    return;
+  }
+  renderGardenAdmin();
+}
+async function renderGardenAdmin(){
+  if(!window.firestoreDb){
+    alert('Firestore 연결 중입니다.');
+    return;
+  }
+  const {doc,getDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){
+    alert('정원 데이터가 없습니다.');
+    return;
+  }
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">GT 운영자 모드</div>
+    <div class="sub">${esc(CODE)} 정원 관리</div>
+    <div class="info">
+      ${infoRow('정원 이름', garden.garden_name||'-')}
+      ${infoRow('방문 수', garden.visit_count||0)}
+      ${infoRow('물주기 수', garden.water_count||0)}
+      ${infoRow('마지막 방문', garden.last_visit_at||'-')}
+      ${infoRow('마지막 물주기', garden.last_watered_at||'-')}
+    </div>
+    <div class="section-title">슬롯 관리</div>
+    ${slots.map((s,i)=>`
+      <div class="edit-group">
+        <div class="bmt-memory-title">슬롯 ${i}</div>
+        <div class="sub" style="text-align:left;margin-bottom:10px">
+          상태: ${s.unlocked?'열림':'잠김'} ${s.empty?'· 비어있음':''}<br>
+          식물: ${s.plant_name||'-'} ${s.emoji||''}<br>
+          stage: ${s.stage??'-'} / point: ${s.growth_point??'-'} / next: ${s.next_point??'-'}
+        </div>
+        <button class="btn sub" onclick="adminUnlockSlot(${i})">슬롯 열기</button>
+        <button class="btn sub" onclick="adminEmptySlot(${i})">빈 슬롯으로 변경</button>
+        <button class="btn sub" onclick="adminResetSlot(${i})">슬롯 초기화</button>
+      </div>
+    `).join('')}
+    <div class="section-title">테스트 관리</div>
+    <button class="btn" onclick="adminResetWater()">오늘 물주기 초기화</button>
+    <button class="btn sub" onclick="adminResetVisit()">오늘 방문 초기화</button>
+    <button class="btn danger" onclick="adminResetGarden()">정원 전체 초기화</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">사용자 화면 보기</a>
+  `;
+}
+async function adminUpdateGarden(update){
+  const {doc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  await updateDoc(ref,update);
+  await renderGardenAdmin();
+}
+async function adminUnlockSlot(index){
+  const {doc,getDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  const slots=snap.data().garden_slots||[];
+  slots[index]={slot:index,unlocked:true,empty:true};
+  await adminUpdateGarden({garden_slots:slots});
+}
+async function adminEmptySlot(index){
+  await adminUnlockSlot(index);
+}
+async function adminResetSlot(index){
+  const {doc,getDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  const slots=snap.data().garden_slots||[];
+  slots[index]={slot:index,unlocked:false};
+  await adminUpdateGarden({garden_slots:slots});
+}
+async function adminResetWater(){
+  await adminUpdateGarden({last_watered_at:'',water_log:{}});
+}
+async function adminResetVisit(){
+  await adminUpdateGarden({last_visit_at:'',visit_log:{}});
+}
+async function adminResetGarden(){
+  if(!confirm('정원을 전체 초기화할까요?'))return;
+  const slots=[
+    {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:0,next_point:10,unlocked:true,empty:false},
+    {slot:1,unlocked:false},{slot:2,unlocked:false},{slot:3,unlocked:false},
+    {slot:4,unlocked:false},{slot:5,unlocked:false},{slot:6,unlocked:false},
+    {slot:7,unlocked:false},{slot:8,unlocked:false}
+  ];
+  await adminUpdateGarden({
+    garden_slots:slots,water_count:0,visit_count:0,streak_count:0,
+    last_watered_at:'',last_visit_at:'',water_log:{},visit_log:{}
+  });
+}
+/* ───── GT 운영자 모드 끝 ───── */
 
 async function renderGardenTag(data){
   app.innerHTML=`
