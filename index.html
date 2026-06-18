@@ -123,6 +123,9 @@ input[type=file]{padding:10px;cursor:pointer}
 .gt-slot.empty-open{cursor:pointer;border-color:var(--gold2)}
 .gt-seed-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
 .gt-seed-modal.on{display:flex}
+.gt-admin-growth{display:flex;justify-content:center;gap:8px;margin:10px 0 14px}
+.gt-admin-stage{width:36px;height:36px;border:1px solid rgba(230,200,143,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;opacity:.45;background:rgba(255,255,255,.03)}
+.gt-admin-stage.active{opacity:1;border-color:var(--gold);background:rgba(230,200,143,.13);transform:scale(1.08)}
 .gt-seed-box{width:100%;max-width:420px;border:1px solid var(--line);border-radius:24px;background:#111;padding:22px}
 .gt-seed-title{text-align:center;color:var(--gold);font-weight:800;font-size:18px;margin-bottom:16px}
 .gt-seed-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -1619,6 +1622,20 @@ function wtAgain(){
   },350);
 }
 
+function getPlantStages(type){
+  return GT_PLANT_STAGES[type]||GT_PLANT_STAGES.dandelion;
+}
+function adminGrowthPreview(s){
+  if(!s||!s.unlocked||s.empty){
+    return `<div style="color:rgba(230,200,143,.4);font-size:13px;margin:8px 0">심어진 식물이 없습니다.</div>`;
+  }
+  const stages=getPlantStages(s.plant_type);
+  const cur=s.stage||1;
+  return `<div class="gt-admin-growth">${stages.map((em,idx)=>{
+    const active=(idx+1===cur)?' active':'';
+    return`<span class="gt-admin-stage${active}">${em}</span>`;
+  }).join('')}</div>`;
+}
 /* ───── GT 운영자 모드 ───── */
 function renderGardenAdminPassword(){
   app.innerHTML=`
@@ -1672,6 +1689,7 @@ async function renderGardenAdmin(){
           식물: ${s.plant_name||'-'} ${s.emoji||''}<br>
           stage: ${s.stage??'-'} / point: ${s.growth_point??'-'} / next: ${s.next_point??'-'}
         </div>
+        ${adminGrowthPreview(s)}
         <button class="btn sub" onclick="adminUnlockSlot(${i})">슬롯 열기</button>
         <button class="btn sub" onclick="adminEmptySlot(${i})">빈 슬롯으로 변경</button>
         <button class="btn sub" onclick="adminResetSlot(${i})">슬롯 초기화</button>
