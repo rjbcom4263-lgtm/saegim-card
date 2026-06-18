@@ -1703,6 +1703,17 @@ async function renderGardenAdmin(){
     <button class="btn" onclick="adminGrowOne()">+1 단계 성장</button>
     <button class="btn" onclick="adminBloom()">🌼 즉시 개화</button>
     <button class="btn sub" onclick="adminGrowAll()">전체 +1 성장</button>
+    <div class="section-title">자원 패널</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <button class="btn sub" onclick="adminAddWater(1)">💧 +1</button>
+      <button class="btn sub" onclick="adminAddWater(5)">💧 +5</button>
+      <button class="btn sub" onclick="adminSetWater(0)">💧 → 0</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+      <button class="btn sub" onclick="adminAddFertilizer(1)">🌾 +1</button>
+      <button class="btn sub" onclick="adminAddFertilizer(5)">🌾 +5</button>
+      <button class="btn sub" onclick="adminSetFertilizer(0)">🌾 → 0</button>
+    </div>
     <div class="section-title">초기화</div>
     <button class="btn sub" onclick="adminResetResources()">오늘 자원 다시 채우기</button>
     <button class="btn" onclick="adminResetWater()">오늘 물주기 초기화</button>
@@ -1739,6 +1750,24 @@ async function adminResetSlot(index){
 async function adminResetResources(){
   const today=new Date().toISOString().slice(0,10);
   await adminUpdateGarden({daily_water:3,daily_fertilizer:1,resource_date:today});
+}
+async function adminAddWater(n){
+  const {doc,getDoc}=window.firestoreApi;
+  const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
+  const cur=(snap.data().daily_water||0);
+  await adminUpdateGarden({daily_water:cur+n});
+}
+async function adminAddFertilizer(n){
+  const {doc,getDoc}=window.firestoreApi;
+  const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
+  const cur=(snap.data().daily_fertilizer||0);
+  await adminUpdateGarden({daily_fertilizer:cur+n});
+}
+async function adminSetWater(n){
+  await adminUpdateGarden({daily_water:n});
+}
+async function adminSetFertilizer(n){
+  await adminUpdateGarden({daily_fertilizer:n});
 }
 async function adminResetWater(){
   await adminUpdateGarden({last_watered_at:'',water_log:{}});
