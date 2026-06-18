@@ -1677,9 +1677,13 @@ async function renderGardenAdmin(){
         <button class="btn sub" onclick="adminResetSlot(${i})">슬롯 초기화</button>
       </div>
     `).join('')}
-    <div class="section-title">테스트 관리</div>
-    <button class="btn" onclick="adminResetWater()">오늘 물주기 초기화</button>
+    <div class="section-title">성장 관리</div>
     <button class="btn" onclick="adminWaterUnlimited()">💧 물주기 무한 테스트</button>
+    <button class="btn" onclick="adminGrowOne()">+1 단계 성장</button>
+    <button class="btn" onclick="adminBloom()">🌼 즉시 개화</button>
+    <button class="btn sub" onclick="adminGrowAll()">전체 +1 성장</button>
+    <div class="section-title">초기화</div>
+    <button class="btn" onclick="adminResetWater()">오늘 물주기 초기화</button>
     <button class="btn sub" onclick="adminResetVisit()">오늘 방문 초기화</button>
     <button class="btn danger" onclick="adminResetGarden()">정원 전체 초기화</button>
     <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">사용자 화면 보기</a>
@@ -1763,7 +1767,76 @@ async function adminWaterUnlimited(){
     garden_slots:slots,
     water_count:(garden.water_count||0)+1
   });
-  await renderGardenAdmin();
+  location.reload();
+}
+async function adminGrowOne(){
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
+  if(activeIndex<0) activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty);
+  if(activeIndex<0){alert('성장할 식물이 없습니다.');return;}
+  const plant=slots[activeIndex];
+  plant.stage=Math.min(5,(plant.stage||1)+1);
+  const stageIndex=Math.min(4,plant.stage-1);
+  const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
+  plant.emoji=stageEmojis[stageIndex];
+  if(plant.stage===2) plant.next_point=10;
+  else if(plant.stage===3) plant.next_point=15;
+  else if(plant.stage===4) plant.next_point=20;
+  else if(plant.stage>=5){
+    plant.next_point=0;
+    const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
+    if(nextLockedIndex>=0) slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
+  }
+  slots[activeIndex]=plant;
+  await updateDoc(ref,{garden_slots:slots});
+  location.reload();
+}
+async function adminBloom(){
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
+  if(activeIndex<0){alert('개화할 식물이 없습니다.');return;}
+  const plant=slots[activeIndex];
+  plant.stage=5;
+  plant.next_point=0;
+  const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
+  plant.emoji=stageEmojis[4];
+  const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
+  if(nextLockedIndex>=0) slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
+  slots[activeIndex]=plant;
+  await updateDoc(ref,{garden_slots:slots});
+  location.reload();
+}
+async function adminGrowAll(){
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  slots.forEach((plant,i)=>{
+    if(!plant||!plant.unlocked||plant.empty)return;
+    plant.stage=Math.min(5,(plant.stage||1)+1);
+    const stageIndex=Math.min(4,plant.stage-1);
+    const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
+    plant.emoji=stageEmojis[stageIndex];
+    if(plant.stage===2) plant.next_point=10;
+    else if(plant.stage===3) plant.next_point=15;
+    else if(plant.stage===4) plant.next_point=20;
+    else if(plant.stage>=5) plant.next_point=0;
+    slots[i]=plant;
+  });
+  await updateDoc(ref,{garden_slots:slots});
+  location.reload();
 }
 /* ───── GT 운영자 모드 끝 ───── */
 
