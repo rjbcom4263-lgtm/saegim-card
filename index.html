@@ -1679,6 +1679,7 @@ async function renderGardenAdmin(){
     `).join('')}
     <div class="section-title">테스트 관리</div>
     <button class="btn" onclick="adminResetWater()">오늘 물주기 초기화</button>
+    <button class="btn" onclick="adminWaterUnlimited()">💧 물주기 무한 테스트</button>
     <button class="btn sub" onclick="adminResetVisit()">오늘 방문 초기화</button>
     <button class="btn danger" onclick="adminResetGarden()">정원 전체 초기화</button>
     <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">사용자 화면 보기</a>
@@ -1727,6 +1728,43 @@ async function adminResetGarden(){
     garden_slots:slots,water_count:0,visit_count:0,streak_count:0,
     last_watered_at:'',last_visit_at:'',water_log:{},visit_log:{}
   });
+}
+async function adminWaterUnlimited(){
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
+  if(activeIndex<0) activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty);
+  if(activeIndex<0){alert('물을 줄 식물이 없습니다.');return;}
+  const plant=slots[activeIndex];
+  plant.growth_point=(plant.growth_point||0)+3;
+  plant.next_point=Math.max(0,(plant.next_point||0)-3);
+  if(plant.next_point===0){
+    plant.stage=Math.min(5,(plant.stage||1)+1);
+    const stageIndex=Math.min(4,plant.stage-1);
+    const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
+    plant.emoji=stageEmojis[stageIndex];
+    if(plant.stage===2) plant.next_point=10;
+    else if(plant.stage===3) plant.next_point=15;
+    else if(plant.stage===4) plant.next_point=20;
+    else if(plant.stage>=5){
+      plant.next_point=0;
+      const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
+      if(nextLockedIndex>=0){
+        slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
+      }
+    }
+  }
+  slots[activeIndex]=plant;
+  await updateDoc(ref,{
+    garden_slots:slots,
+    water_count:(garden.water_count||0)+1,
+    last_watered_at:new Date().toISOString()
+  });
+  await renderGardenAdmin();
 }
 /* ───── GT 운영자 모드 끝 ───── */
 
