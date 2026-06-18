@@ -1773,10 +1773,36 @@ function closeSeedModal(){
   const modal=document.getElementById('gtSeedModal');
   if(modal)modal.classList.remove('on');
 }
-function plantSeed(type){
+async function plantSeed(type){
+  if(GT_SELECTED_SLOT===null){
+    alert('슬롯을 선택해주세요.');
+    return;
+  }
   const seed=GT_SEEDS.find(s=>s.type===type);
-  alert(seed.name+'을 심습니다. 저장 기능은 다음 단계에서 연결합니다.');
+  const {doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const snap=await getDoc(ref);
+  if(!snap.exists()){
+    alert('정원 데이터를 찾을 수 없습니다.');
+    return;
+  }
+  const garden=snap.data();
+  const slots=garden.garden_slots||[];
+  slots[GT_SELECTED_SLOT]={
+    slot:GT_SELECTED_SLOT,
+    plant_type:type,
+    plant_name:seed.name,
+    emoji:'🌱',
+    stage:1,
+    growth_point:0,
+    next_point:10,
+    unlocked:true,
+    empty:false
+  };
+  await updateDoc(ref,{garden_slots:slots});
   closeSeedModal();
+  const newSnap=await getDoc(ref);
+  renderGardenTagView(newSnap.data());
 }
 async function waterGarden(){
   if(!window.firestoreDb){alert('Firebase 연결 중입니다. 잠시 후 다시 시도해주세요.');return;}
