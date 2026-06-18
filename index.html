@@ -1850,12 +1850,20 @@ function renderGardenTagView(garden){
 }
 
 const GT_SEEDS=[
-  {type:'sunflower',name:'해바라기 씨앗',emoji:'🌻'},
-  {type:'cosmos',name:'코스모스 씨앗',emoji:'🌸'},
-  {type:'camellia',name:'동백꽃 씨앗',emoji:'🌺'},
-  {type:'cactus',name:'선인장 씨앗',emoji:'🌵'},
-  {type:'clover',name:'토끼풀 씨앗',emoji:'🍀'}
+  {type:'sunflower',name:'해바라기',emoji:'🌻'},
+  {type:'cosmos',name:'코스모스',emoji:'🌸'},
+  {type:'camellia',name:'동백꽃',emoji:'🌺'},
+  {type:'cactus',name:'선인장',emoji:'🌵'},
+  {type:'clover',name:'토끼풀',emoji:'🍀'}
 ];
+const GT_PLANT_STAGES={
+  sunflower:['🌱','🌿','🌿','🌻','🌻'],
+  cosmos:   ['🌱','🌿','🌸','🌸','🌸'],
+  camellia: ['🌱','🌿','🌺','🌺','🌺'],
+  cactus:   ['🌵','🌵','🌵','🌵','🌵'],
+  clover:   ['🍀','🍀','🍀','🍀','🍀'],
+  dandelion:['🌱','🌿','🪴','🌷','🌼']
+};
 let GT_SELECTED_SLOT=null;
 let _lastGarden=null;
 
@@ -1904,7 +1912,7 @@ async function plantSeed(type){
     slot:GT_SELECTED_SLOT,
     plant_type:type,
     plant_name:seed.name,
-    emoji:'🌱',
+    emoji:(GT_PLANT_STAGES[type]||GT_PLANT_STAGES.dandelion)[0],
     stage:1,
     growth_point:0,
     next_point:10,
@@ -1944,15 +1952,15 @@ async function waterGarden(){
   plant.growth_point=(plant.growth_point||0)+3;
   plant.next_point=Math.max(0,(plant.next_point||0)-3);
   if(plant.next_point===0){
-    plant.stage=(plant.stage||1)+1;
-    if(plant.stage===2){
-      plant.emoji='🌿';plant.plant_name='민들레 어린잎';plant.next_point=10;
-    }else if(plant.stage===3){
-      plant.emoji='🪴';plant.plant_name='자라는 민들레';plant.next_point=15;
-    }else if(plant.stage===4){
-      plant.emoji='🌷';plant.plant_name='민들레 꽃봉오리';plant.next_point=20;
-    }else if(plant.stage>=5){
-      plant.stage=5;plant.emoji='🌼';plant.plant_name='활짝 핀 민들레';plant.next_point=0;
+    plant.stage=Math.min(5,(plant.stage||1)+1);
+    const stageIndex=Math.min(4,plant.stage-1);
+    const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
+    plant.emoji=stageEmojis[stageIndex];
+    if(plant.stage===2) plant.next_point=10;
+    else if(plant.stage===3) plant.next_point=15;
+    else if(plant.stage===4) plant.next_point=20;
+    else if(plant.stage>=5){
+      plant.next_point=0;
       const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
       if(nextLockedIndex>=0){
         slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
