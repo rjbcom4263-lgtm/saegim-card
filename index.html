@@ -1791,26 +1791,15 @@ async function adminGrowOne(){
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
-  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
   const garden=snap.data();
   const slots=garden.garden_slots||[];
-  let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
-  if(activeIndex<0) activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty);
-  if(activeIndex<0){alert('성장할 식물이 없습니다.');return;}
-  const plant=slots[activeIndex];
+  const idx=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
+  if(idx<0){alert('성장 가능한 식물이 없습니다.');return;}
+  const plant=slots[idx];
   plant.stage=Math.min(5,(plant.stage||1)+1);
-  const stageIndex=Math.min(4,plant.stage-1);
-  const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
-  plant.emoji=stageEmojis[stageIndex];
-  if(plant.stage===2) plant.next_point=10;
-  else if(plant.stage===3) plant.next_point=15;
-  else if(plant.stage===4) plant.next_point=20;
-  else if(plant.stage>=5){
-    plant.next_point=0;
-    const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
-    if(nextLockedIndex>=0) slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
-  }
-  slots[activeIndex]=plant;
+  plant.next_point=plant.stage>=5?0:10;
+  plant.emoji=getPlantStages(plant.plant_type)[plant.stage-1];
+  slots[idx]=plant;
   await updateDoc(ref,{garden_slots:slots});
   location.reload();
 }
@@ -1818,19 +1807,15 @@ async function adminBloom(){
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
-  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
   const garden=snap.data();
   const slots=garden.garden_slots||[];
-  let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
-  if(activeIndex<0){alert('개화할 식물이 없습니다.');return;}
-  const plant=slots[activeIndex];
+  const idx=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
+  if(idx<0){alert('개화 가능한 식물이 없습니다.');return;}
+  const plant=slots[idx];
   plant.stage=5;
   plant.next_point=0;
-  const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
-  plant.emoji=stageEmojis[4];
-  const nextLockedIndex=slots.findIndex(s=>s&&!s.unlocked);
-  if(nextLockedIndex>=0) slots[nextLockedIndex]={slot:nextLockedIndex,unlocked:true,empty:true};
-  slots[activeIndex]=plant;
+  plant.emoji=getPlantStages(plant.plant_type)[4];
+  slots[idx]=plant;
   await updateDoc(ref,{garden_slots:slots});
   location.reload();
 }
@@ -1838,20 +1823,14 @@ async function adminGrowAll(){
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
-  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
   const garden=snap.data();
   const slots=garden.garden_slots||[];
-  slots.forEach((plant,i)=>{
-    if(!plant||!plant.unlocked||plant.empty)return;
-    plant.stage=Math.min(5,(plant.stage||1)+1);
-    const stageIndex=Math.min(4,plant.stage-1);
-    const stageEmojis=GT_PLANT_STAGES[plant.plant_type]||GT_PLANT_STAGES.dandelion;
-    plant.emoji=stageEmojis[stageIndex];
-    if(plant.stage===2) plant.next_point=10;
-    else if(plant.stage===3) plant.next_point=15;
-    else if(plant.stage===4) plant.next_point=20;
-    else if(plant.stage>=5) plant.next_point=0;
-    slots[i]=plant;
+  slots.forEach(plant=>{
+    if(plant&&plant.unlocked&&!plant.empty&&plant.stage<5){
+      plant.stage++;
+      plant.emoji=getPlantStages(plant.plant_type)[plant.stage-1];
+      plant.next_point=plant.stage>=5?0:10;
+    }
   });
   await updateDoc(ref,{garden_slots:slots});
   location.reload();
