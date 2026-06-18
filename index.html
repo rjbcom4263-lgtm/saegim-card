@@ -1761,8 +1761,7 @@ async function adminWaterUnlimited(){
   slots[activeIndex]=plant;
   await updateDoc(ref,{
     garden_slots:slots,
-    water_count:(garden.water_count||0)+1,
-    last_watered_at:new Date().toISOString()
+    water_count:(garden.water_count||0)+1
   });
   await renderGardenAdmin();
 }
