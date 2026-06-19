@@ -63,7 +63,7 @@ const MODE=params.get('mode')||'view';
 let QR_DATA=null;
 let currentLang=localStorage.getItem('saegim_lang')||'ko';
 let CHAT_UNSUBSCRIBE=null;
-let CHAT_NICKNAME=localStorage.getItem('bmt_chat_nick')||'';
+let CHAT_NICKNAME=localStorage.getItem('tt_chat_nick')||'';
 const app=document.getElementById('app');
 
 async function apiGet(action,extra={}){
@@ -108,7 +108,7 @@ function renderTT(data){
     <hr class="tt-divider">
     <div class="tt-lost-title">${esc(t.lost_title)}</div>
     <div class="tt-lost-sub">${esc(t.lost_sub)}</div>
-    <button class="btn" onclick="showChat()">💬 ${esc(t.chat)}</button>
+    <button class="btn" onclick="showChat()">✉️ ${esc(t.chat)}</button>
     ${contactBtn}
     ${editBtn()}
     <div class="footer">SAEGIM · 길동무 태그</div>`;
@@ -131,7 +131,7 @@ function showChat(){
   const t=I18N[currentLang]||I18N.ko;
   if(CHAT_UNSUBSCRIBE){CHAT_UNSUBSCRIBE();CHAT_UNSUBSCRIBE=null;}
   app.innerHTML=`${brand()}${langBar()}
-    <div class="main-title">💬 ${t.tt.chat}</div>
+    <div class="main-title">✉️ ${t.tt.chat}</div>
     <div class="sub">${t.chat_sub||'태그 주인에게 메시지를 남겨주세요.'}</div>
     ${!CHAT_NICKNAME?`<div id="nicknameBox"><label>${t.nickname_label}</label><input id="chat_nickname" placeholder="${t.nickname_placeholder}" maxlength="20"><button class="btn" onclick="setChatNickname()">${t.confirm}</button></div>`:`
     <div class="chat-box">
@@ -147,7 +147,7 @@ function showChat(){
 function setChatNickname(){
   const t=I18N[currentLang]||I18N.ko;
   const nick=val('chat_nickname');if(!nick){alert(t.nickname_required);return;}
-  CHAT_NICKNAME=nick;localStorage.setItem('bmt_chat_nick',nick);showChat();
+  CHAT_NICKNAME=nick;localStorage.setItem('tt_chat_nick',nick);showChat();
 }
 function startGuestChatListener(t){
   if(!window.firestoreDb)return;
@@ -275,4 +275,4 @@ window.firestoreDb=db;
 window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
 </script>
 </body>
-</html>
+</html
