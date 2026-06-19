@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>새김 오늘의 바램</title>
+<style>
+:root{--bg:#111;--card:#171717;--line:#7a6040;--gold:#e6c88f;--gold2:#c7a05d;--text:#f6ead4;--muted:#b7a88f}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 100%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:28px 18px}
+.card{border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,#181818,#101010);padding:26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.brand{text-align:center;margin-bottom:24px}.logo{font-family:serif;font-size:34px;letter-spacing:.18em;color:var(--gold)}.slogan{margin-top:8px;color:var(--muted);font-size:14px}
+.loading,.error{text-align:center;color:var(--muted);padding:70px 20px}
+.footer{text-align:center;margin-top:20px;color:var(--muted);font-size:12px;letter-spacing:.18em}
+.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+/* WT */
+.wt-wrap{padding:10px 0}
+.wt-label{text-align:center;color:var(--gold);font-size:13px;letter-spacing:.18em;font-weight:800;margin-bottom:8px}
+.wt-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.6}
+.wt-card{border:1px solid rgba(230,200,143,.35);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));padding:34px 24px;margin-bottom:22px;box-shadow:0 4px 32px rgba(0,0,0,.28)}
+.wt-sentence{text-align:center;font-size:18px;line-height:1.8;font-weight:500;color:var(--text);white-space:pre-line;letter-spacing:.03em}
+.wt-sentence.fade{opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
+.wt-again{display:block;width:100%;margin-top:0;padding:18px;border-radius:18px;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중...</div></div></div>
+<script>
+const WT_SENTENCES={
+  ko:[
+    '조금 늦어도 괜찮습니다.\n당신의 길은 사라지지 않습니다.',
+    '답을 찾으려 하기보다\n질문과 함께 걸어가 보세요.',
+    '오늘의 망설임도\n당신을 지키기 위한 마음일 수 있습니다.',
+    '지금 필요한 것은\n더 빠른 걸음이 아니라 잠시 멈춤일 수 있습니다.',
+    '당신은 생각보다\n잘하고 있습니다.',
+    '모든 꽃이\n같은 계절에 피지는 않습니다.',
+    '작은 용기가\n큰 변화를 만듭니다.',
+    '오늘의 걱정이\n내일의 답이 되기도 합니다.',
+    '마음이 가는 방향을\n한 번 믿어보세요.',
+    '완벽한 준비보다\n한 걸음이 더 중요합니다.',
+    '당신의 속도를\n의심하지 마세요.',
+    '쉬어가는 길도\n길입니다.',
+    '조급함보다\n믿음이 필요한 날입니다.',
+    '흔들림 없는 사람은\n없습니다.',
+    '오늘은 자신에게\n조금 더 친절해지세요.',
+    '불안은 새로운 시작 앞에서\n자주 찾아옵니다.',
+    '당신의 노력은 보이지 않아도\n쌓이고 있습니다.',
+    '답이 늦게 오는\n날도 있습니다.',
+    '지금의 고민은\n진심의 증거입니다.',
+    '내일의 당신도\n오늘의 선택을 응원할 것입니다.',
+    '작은 행복을\n지나치지 마세요.',
+    '지금 이 순간도\n충분히 의미 있습니다.',
+    '모든 만남에는\n이유가 있습니다.',
+    '당신의 바램은\n생각보다 가까이에 있습니다.',
+    '길을 잃었다고 느껴질 때도\n길 위에 있습니다.',
+    '오늘의 침묵도\n필요한 시간입니다.',
+    '스스로를\n너무 다그치지 마세요.',
+    '당신은 이미\n많은 것을 해냈습니다.',
+    '늦었다고 생각한 순간이\n시작일 수 있습니다.',
+    '오늘은 천천히 걸어도\n괜찮습니다.',
+    '마음속 목소리를\n한 번 들어보세요.',
+    '쉬어간다고\n뒤처지는 것은 아닙니다.',
+    '작은 선택이\n큰 방향을 만듭니다.',
+    '당신은\n혼자가 아닙니다.',
+    '지금의 시간도\n결국 추억이 됩니다.',
+    '모든 답을\n오늘 찾을 필요는 없습니다.',
+    '기다림도\n하나의 과정입니다.',
+    '당신은\n충분히 소중한 사람입니다.',
+    '오늘의 실수도\n내일의 자산이 됩니다.',
+    '완벽하지 않아도\n괜찮습니다.',
+    '기대보다 경험이\n더 큰 선물이 될 수 있습니다.',
+    '지금은 씨앗을 심는\n시간일 수 있습니다.',
+    '조용한 하루에도\n의미는 존재합니다.',
+    '당신의 흔적은\n생각보다 깊게 남습니다.',
+    '포기하지 않은 것만으로도\n대단합니다.',
+    '오늘의 미소가\n누군가의 위로가 됩니다.',
+    '답이 없어 보이는 길에도\n의미는 있습니다.',
+    '작은 변화가\n시작되고 있습니다.',
+    '당신의 바램을\n잊지 마세요.',
+    '마음은 이미\n답을 알고 있을지도 모릅니다.',
+    '너무 멀리\n보지 않아도 됩니다.',
+    '지금 필요한 것은\n믿음일 수 있습니다.',
+    '새로운 길은\n낯설기 마련입니다.',
+    '용기는 두려움이\n없는 것이 아닙니다.',
+    '당신은\n성장하고 있습니다.',
+    '오늘은\n어제보다 나아질 수 있습니다.',
+    '지나간 일보다\n다가올 일을 바라보세요.',
+    '마음의 여백을\n남겨두세요.',
+    '모든 계절은\n지나갑니다.',
+    '당신의 진심은\n전해집니다.',
+    '스스로를\n믿어보세요.',
+    '작은 친절이\n큰 기적을 만듭니다.',
+    '오늘의 선택이\n내일의 방향이 됩니다.',
+    '때로는 멈춤이\n가장 빠른 길입니다.',
+    '당신은\n생각보다 강합니다.',
+    '지금의 고민도\n언젠가 추억이 됩니다.',
+    '바람이 분다고\n길이 사라지지는 않습니다.',
+    '당신의 이야기는\n아직 끝나지 않았습니다.',
+    '새로운 가능성은\n늘 존재합니다.',
+    '오늘은 기대를\n내려놓아 보세요.',
+    '마음이 편안한 방향을\n선택하세요.',
+    '모든 것은\n제때 찾아옵니다.',
+    '작은 희망을\n놓지 마세요.',
+    '지금 이 순간을\n소중히 여기세요.',
+    '당신은\n충분히 괜찮은 사람입니다.',
+    '때로는 우회로가\n더 좋은 길입니다.',
+    '오늘의 질문은\n내일의 지혜가 됩니다.',
+    '자신을 믿는 연습을\n해보세요.',
+    '행복은\n가까운 곳에 있습니다.',
+    '당신의 길은\n당신만의 것입니다.',
+    '오늘은 조금\n웃어보세요.',
+    '새로운 시작은\n늘 두렵습니다.',
+    '지금도\n잘 해내고 있습니다.',
+    '스스로를\n응원해 주세요.',
+    '기다림 끝에 만나는 풍경도\n아름답습니다.',
+    '당신의 가능성을\n제한하지 마세요.',
+    '작은 성공도\n축하해 주세요.',
+    '모든 길은\n의미를 남깁니다.',
+    '오늘은 마음을\n쉬게 해주세요.',
+    '좋은 일은 예상치 못한\n순간에 찾아옵니다.',
+    '당신의 바램은\n이미 움직이고 있습니다.',
+    '걱정보다 기대를\n선택해 보세요.',
+    '오늘도\n충분히 가치 있는 하루입니다.',
+    '당신은 필요한 만큼\n성장하고 있습니다.',
+    '모든 것은\n결국 지나갑니다.',
+    '지금 이 순간도\n선물입니다.',
+    '마음속 빛을\n잊지 마세요.',
+    '당신은 생각보다\n더 멀리 왔습니다.',
+    '오늘의 한 걸음이\n미래를 만듭니다.',
+    '당신의 바램이\n따뜻하게 피어나길 바랍니다.',
+    '오늘의 여유가\n내일의 힘이 됩니다.',
+    '천천히 가는 길에도\n풍경은 있습니다.',
+    '마음이 무거운 날일수록\n하늘을 한 번 올려다보세요.',
+    '지금의 노력은\n언젠가 당신을 웃게 할 것입니다.',
+    '작은 시작을\n두려워하지 마세요.',
+    '오늘의 실패가\n당신을 정의하지는 않습니다.',
+    '조용히 이어가는 걸음도\n충분히 아름답습니다.',
+    '당신은 이미\n필요한 것을 많이 가지고 있습니다.',
+    '새로운 기회는\n낯선 모습으로 찾아오기도 합니다.',
+    '오늘 하루를 무사히 보낸 것만으로도\n충분합니다.',
+    '아무 이유 없이\n쉬어도 괜찮습니다.',
+    '걸어온 길을 돌아보면\n생각보다 멀리 와 있습니다.',
+    '서두른다고 해서\n답이 빨리 오지는 않습니다.',
+    '마음이 향하는 곳에는\n이유가 있습니다.',
+    '당신의 내일은\n아직 쓰이지 않았습니다.',
+    '오늘의 용기는\n아주 작은 것일 수도 있습니다.',
+    '무언가를 내려놓는 것도\n용기입니다.',
+    '좋은 날은\n반드시 다시 옵니다.',
+    '오늘의 선택을\n너무 두려워하지 마세요.',
+    '당신은 생각보다 많은 사람의\n힘이 되고 있습니다.',
+    '행복은\n예상치 못한 순간에 숨어 있습니다.',
+    '지금의 흔들림도\n성장의 일부입니다.',
+    '완벽하지 않아도\n됩니다.',
+    '오늘은 스스로를\n칭찬해 주세요.',
+    '작은 기쁨이 모이면\n큰 행복이 됩니다.',
+    '당신의 진심은\n반드시 닿습니다.',
+    '모든 것은 조금씩\n제자리를 찾아갑니다.',
+    '오늘은 잠깐\n숨을 고르는 날일지도 모릅니다.',
+    '마음속 걱정을\n잠시 내려두어 보세요.',
+    '지금의 당신도\n충분히 아름다운 존재입니다.',
+    '서두름보다\n꾸준함이 더 오래 갑니다.',
+    '오늘의 한 걸음은\n결코 작지 않습니다.',
+    '당신은 이미 많은\n어려움을 이겨냈습니다.',
+    '생각보다 많은 것이\n저절로 풀려갑니다.',
+    '지금 필요한 것은\n답이 아니라 방향일 수 있습니다.',
+    '오늘의 바람이\n새로운 길을 열어줄 수도 있습니다.',
+    '모든 시작은\n처음엔 서툽니다.',
+    '마음의 쉼표도\n삶의 일부입니다.',
+    '지금은 꽃보다\n뿌리를 기를 때일 수도 있습니다.',
+    '당신의 이야기는\n아직 계속되고 있습니다.',
+    '오늘은 스스로를 믿는\n연습을 해보세요.',
+    '느린 변화도\n분명한 변화입니다.',
+    '멀리 가지 않아도\n행복은 있습니다.',
+    '당신의 시간은\n당신만의 속도로 흐릅니다.',
+    '오늘의 고민도\n언젠가는 지나갑니다.',
+    '모든 길에는\n저마다의 의미가 있습니다.',
+    '마음을 다한 하루는\n헛되지 않습니다.',
+    '지금 이 순간도\n소중한 기억이 됩니다.',
+    '당신은 생각보다\n단단한 사람입니다.',
+    '오늘은 기대보다\n감사함을 먼저 떠올려 보세요.',
+    '잊고 있던 꿈을 꺼내\n다시 바라봐 주세요.',
+    '오늘의 작은 도전이\n미래를 바꿉니다.',
+    '좋은 것은\n조용히 찾아오기도 합니다.',
+    '오늘도 당신만의 방식으로\n충분합니다.',
+    '마음이 쉬어야\n생각도 정돈됩니다.',
+    '당신은 이미\n성장하는 길 위에 있습니다.',
+    '작은 친절 하나가\n세상을 바꿉니다.',
+    '오늘은 조금 덜\n걱정해도 됩니다.',
+    '삶은 생각보다\n당신 편일 수 있습니다.',
+    '당신의 바램은\n아직 살아있습니다.',
+    '오늘은 마음의 문을\n조금 열어보세요.',
+    '생각지 못한 곳에서\n답을 만날 수도 있습니다.',
+    '멈추지 않는 한\n길은 이어집니다.',
+    '지금의 불안은\n지나가는 바람입니다.',
+    '오늘은 작은 용기를\n선택해 보세요.',
+    '자신에게 건네는 말이\n하루를 바꿉니다.',
+    '아직\n늦지 않았습니다.',
+    '걸어온 길이\n헛되지 않았습니다.',
+    '지치는 날엔 따뜻한 것을\n가까이 두세요.',
+    '오늘의 평범한 일상도\n소중한 선물입니다.',
+    '좋은 방향은\n언제나 조용히 옵니다.',
+    '당신의 선택이 조금씩\n당신을 만들어갑니다.',
+    '모든 걸 한꺼번에\n해결하려 하지 마세요.',
+    '오늘은 할 만큼만\n해도 됩니다.',
+    '당신의 마음에도\n쉴 공간이 필요합니다.',
+    '지금 눈앞의 작은 빛을\n따라가 보세요.',
+    '모든 인연에는\n저마다의 계절이 있습니다.',
+    '당신의 오늘이\n누군가의 의미가 될 수 있습니다.',
+    '오늘은 자신을 탓하지 않는\n하루가 되길 바랍니다.',
+    '마음이 가벼워지는 쪽으로\n걸어가 보세요.',
+    '새로운 시작은\n작은 정리에서 비롯됩니다.',
+    '당신은 더 좋은 방향으로\n나아가고 있습니다.',
+    '오늘의 눈물이\n내일의 힘이 될 수 있습니다.',
+    '조용한 노력은\n쉽게 사라지지 않습니다.',
+    '마음을 담아 살아온 시간은\n남습니다.',
+    '당신의 바램은\n시간을 만나 자랍니다.',
+    '잠시 멈춰도\n당신의 계절은 이어집니다.',
+    '오늘은 나를 위한\n선택을 해보세요.',
+    '조금이라도 웃을 수 있다면\n그것으로도 충분한 시작입니다.',
+    '모든 감정을 당장\n정리할 필요는 없습니다.',
+    '당신의 삶에는\n아직 많은 가능성이 남아있습니다.',
+    '오늘의 미완성도\n당신의 일부입니다.',
+    '급하지 않아도 되는\n것들이 있습니다.',
+    '마음이 흔들릴 땐\n기본으로 돌아가 보세요.',
+    '당신은 이미\n충분히 애쓰고 있습니다.',
+    '오늘은 좀 더 부드러운\n말을 써보세요.',
+    '모든 끝에는\n새로운 시작이 담겨 있습니다.',
+    '당신의 작은 선택이\n누군가의 빛이 될 수 있습니다.',
+    '지금 이 길 위의\n당신을 믿어보세요.',
+    '오늘의 바램이\n조용히 당신 곁에 머물길 바랍니다.',
+    '오늘의 작은 기쁨을\n놓치지 마세요.',
+    '당신의 마음은 생각보다\n많은 답을 알고 있습니다.',
+    '천천히 자라는 나무가\n오래 갑니다.',
+    '지금의 하루도\n충분히 의미 있습니다.',
+    '당신은 이미\n잘 버텨내고 있습니다.',
+    '오늘은 자신을 믿는\n하루가 되길 바랍니다.',
+    '모든 변화는\n작은 움직임에서 시작됩니다.',
+    '당신이 걷는 길도\n누군가에게는 희망입니다.',
+    '마음의 방향을\n따라가 보세요.',
+    '지금은 조용히\n준비하는 시간일 수 있습니다.',
+    '모든 걱정이\n현실이 되는 것은 아닙니다.',
+    '당신은 생각보다 더 많은\n가능성을 가지고 있습니다.',
+    '오늘은 어깨의 힘을\n조금 빼보세요.',
+    '가끔은 쉬어가는\n용기도 필요합니다.',
+    '당신의 진심은\n결국 빛을 보게 됩니다.',
+    '지금의 노력은\n사라지지 않습니다.',
+    '오늘은 작은 행복을\n찾아보세요.',
+    '모든 시작은\n작은 결심에서 시작됩니다.',
+    '당신은 충분히\n소중한 존재입니다.',
+    '오늘 하루도\n잘 살아냈습니다.',
+    '지나간 아쉬움보다\n다가올 기대를 바라보세요.',
+    '당신의 바램은\n이미 길을 찾고 있습니다.',
+    '마음이 편안한\n선택을 해보세요.',
+    '좋은 인연은\n생각보다 가까이에 있습니다.',
+    '당신은 이미\n많은 것을 이뤄냈습니다.',
+    '오늘은 자신에게\n미소를 선물해 보세요.',
+    '모든 꽃은\n피어날 때가 있습니다.',
+    '지금의 기다림도\n의미가 있습니다.',
+    '당신의 이야기는\n아직 진행 중입니다.',
+    '오늘은 조금 더\n가벼워지길 바랍니다.',
+    '당신의 하루를\n응원합니다.',
+    '마음속 희망을\n놓지 마세요.',
+    '오늘의 선택은\n내일의 씨앗이 됩니다.',
+    '모든 길은\n언젠가 연결됩니다.',
+    '당신은 생각보다\n더 강한 사람입니다.',
+    '지금도 충분히\n잘하고 있습니다.',
+    '오늘은 자신을\n칭찬해 주세요.',
+    '새로운 기회는\n언제나 존재합니다.',
+    '당신의 노력은\n헛되지 않습니다.',
+    '오늘도 당신만의 속도로\n걸어가세요.',
+    '작은 용기가\n큰 변화를 만듭니다.',
+    '당신은 이미 필요한 만큼\n성장하고 있습니다.',
+    '오늘은 잠시\n하늘을 올려다보세요.',
+    '마음의 평화를\n먼저 선택해 보세요.',
+    '당신의 진심은\n언젠가 닿게 됩니다.',
+    '모든 계절에는\n이유가 있습니다.',
+    '오늘의 여유가\n내일의 힘이 됩니다.',
+    '당신의 가능성은\n아직 끝나지 않았습니다.',
+    '지금의 고민도\n언젠가 의미가 됩니다.',
+    '오늘 하루도\n충분히 가치 있습니다.',
+    '당신은\n혼자가 아닙니다.',
+    '작은 친절이\n큰 변화를 만듭니다.',
+    '오늘은 스스로를\n믿어보세요.',
+    '좋은 일은 예상치 못한\n순간에 찾아옵니다.',
+    '당신의 길은\n당신만의 것입니다.',
+    '오늘은 조금 느려도\n괜찮습니다.',
+    '당신은 생각보다\n멀리 와 있습니다.',
+    '모든 답은\n때가 되면 보입니다.',
+    '오늘도 새로운 가능성이\n열려 있습니다.',
+    '마음속 목소리에\n귀를 기울여 보세요.',
+    '당신은 이미\n충분히 아름답습니다.',
+    '오늘은 걱정보다\n기대를 선택해 보세요.',
+    '모든 경험은\n당신의 일부가 됩니다.',
+    '당신의 내일은\n아직 열려 있습니다.',
+    '오늘의 한 걸음이\n큰 변화를 만듭니다.',
+    '당신은\n잘하고 있습니다.',
+    '오늘은 마음을\n조금 쉬게 해주세요.',
+    '당신의 꿈을\n잊지 마세요.',
+    '모든 길에는\n배움이 있습니다.',
+    '오늘도 자신을\n응원해 주세요.',
+    '당신은 생각보다\n더 단단합니다.',
+    '지금의 선택도\n충분히 의미 있습니다.',
+    '오늘은 감사할 일을\n하나 찾아보세요.',
+    '당신의 바램은\n천천히 자라고 있습니다.',
+    '좋은 날은\n반드시 다시 옵니다.',
+    '오늘도\n성장하고 있습니다.',
+    '당신의 노력은\n분명 결실을 맺습니다.',
+    '모든 순간은\n지나가게 됩니다.',
+    '오늘은 자신을\n아껴주세요.',
+    '당신은\n이미 충분합니다.',
+    '지금의 도전은\n미래의 자산이 됩니다.',
+    '오늘은 마음 가는 곳을\n따라가 보세요.',
+    '당신의 가능성을\n믿어보세요.',
+    '모든 만남은\n의미를 남깁니다.',
+    '오늘은 조금 더\n웃어보세요.',
+    '당신의 이야기는\n특별합니다.',
+    '지금 이 순간도\n소중한 시간입니다.',
+    '오늘의 고민이\n내일의 지혜가 됩니다.',
+    '당신은 이미\n많은 것을 해냈습니다.',
+    '오늘은 작은 휴식을\n허락해 주세요.',
+    '당신의 길은\n사라지지 않습니다.',
+    '모든 변화는\n시간과 함께 찾아옵니다.',
+    '오늘은 자신을 믿어도\n괜찮습니다.',
+    '당신의 바램은\n생각보다 가까이에 있습니다.',
+    '지금도 충분히\n잘하고 있습니다.',
+    '오늘은 한 번 더\n용기를 내보세요.',
+    '당신은\n사랑받을 가치가 있습니다.',
+    '모든 계절은\n결국 지나갑니다.',
+    '오늘도\n희망을 품어보세요.',
+    '당신의 내일을\n응원합니다.'
+  ],
+  en:["It's okay to take your time.\nYour path isn't going anywhere.","Instead of chasing the answer,\ntry walking alongside the question.","Even today's hesitation\nmight be your heart looking out for you.","What you need right now\nmight not be faster steps, but a moment to breathe.","You're doing better\nthan you think.","Not every flower\nblooms in the same season.","A small act of courage\ncan create great change.","Today's worry\ncan become tomorrow's answer.","Try trusting\nthe direction your heart is pointing.","One step forward matters more\nthan perfect preparation.","Don't doubt\nyour own pace.","A detour\nis still a path.","Today calls for trust,\nnot urgency.","No one walks through life\nwithout stumbling.","Be a little kinder\nto yourself today.","Anxiety often shows up\nat the start of something new.","Your efforts are building up,\neven when you can't see it.","Some answers\ntake their time to arrive.","Your worries today\nare proof that you care deeply.","Tomorrow's you\nwill be proud of today's choice.","Don't let\nthe small joys pass you by.","This moment\nis already full of meaning.","Every meeting\nhappens for a reason.","What you wish for\nis closer than you think.","Even when you feel lost,\nyou're still on a path.","Today's silence\nis also time well spent.","Don't be\ntoo hard on yourself.","You've already\naccomplished so much.","The moment you think it's too late\nmight be the beginning.","It's okay\nto walk slowly today.","Try listening to\nthe voice inside you.","Resting doesn't mean\nfalling behind.","Small choices\nshape big directions.","You\nare not alone.","Even this moment\nwill become a memory.","You don't need to find\nall the answers today.","Waiting\nis also part of the journey.","You are\nmore than enough.","Today's mistake\nis tomorrow's wisdom.","It's okay\nnot to be perfect.","Experience can be\na greater gift than expectation.","This may be\na time for planting seeds.","Even a quiet day\nholds meaning.","The mark you leave\nis deeper than you know.","Not giving up\nis already something great.","Your smile today\nmay comfort someone else.","Even a path without answers\nholds meaning.","Small changes\nare already beginning.","Don't forget\nwhat you're wishing for.","Your heart\nmay already know the answer.","You don't have to\nlook too far ahead.","What you need right now\nmight be trust.","A new path\nis always unfamiliar at first.","Courage\nisn't the absence of fear.","You\nare growing.","Today\ncan be better than yesterday.","Look toward what's coming,\nnot what's passed.","Leave a little space\nin your heart.","Every season\ncomes to an end.","Your sincerity\nreaches others.","Try\nbelieving in yourself.","Small kindness\ncreates great miracles.","Today's choice\nbecomes tomorrow's direction.","Sometimes stopping\nis the fastest way forward.","You are\nstronger than you think.","Even today's worries\nwill one day be memories.","A path doesn't disappear\njust because the wind blows.","Your story\nisn't over yet.","New possibilities\nalways exist.","Today, try\nletting go of expectations.","Choose the direction\nthat feels right to your heart.","Everything\ncomes at its own time.","Hold on to\nthat small hope.","Treasure\nthis moment.","You are\nmore than okay.","Sometimes the long way around\nis the better path.","Today's question\nbecomes tomorrow's wisdom.","Practice\nbelieving in yourself.","Happiness\nis closer than you think.","Your path\nbelongs only to you.","Try smiling\na little today.","New beginnings\nare always a little scary.","You're handling things well,\neven now.","Cheer\nfor yourself.","The view after a long wait\nis beautiful too.","Don't limit\nwhat you're capable of.","Celebrate\neven the small wins.","Every path leaves\nsomething meaningful behind.","Give your heart\na rest today.","Good things arrive\nin unexpected moments.","What you're wishing for\nis already in motion.","Choose hope\nover worry.","Today is already\na day worth living.","You're growing\nexactly as much as you need to.","Everything\npasses in time.","This moment\nis a gift.","Don't forget\nthe light within you.","You've come\nfurther than you think.","Today's single step\nshapes the future.","May your wishes\nbloom warmly.","Today's rest\nbecomes tomorrow's strength.","Even on a slow path,\nthere are sights to see.","On heavy-hearted days,\ntry looking up at the sky.","The effort you put in now\nwill make you smile someday.","Don't be afraid\nof small beginnings.","Today's failure\ndoesn't define who you are.","Quietly keeping going\nis beautiful in its own way.","You already have\nmuch of what you need.","New opportunities sometimes arrive\nin unfamiliar forms.","Simply getting through today\nis more than enough.","Sometimes it's okay\nto rest for no reason at all.","When you look back,\nyou've come further than you thought.","Answers don't come faster\njust because you rush.","When your heart points somewhere,\nthere's a reason.","Your tomorrow\nhasn't been written yet.","Today's courage\nmight be something very small.","Letting go of something\ntakes courage too.","Good days\nwill always come back around.","Don't be too afraid\nof today's choices.","You're a source of strength\nfor more people than you realize.","Happiness hides\nin the moments you least expect.","The uncertainty you feel now\nis part of growing.","You don't have\nto be perfect.","Give yourself\nsome credit today.","Small joys collected over time\nbecome great happiness.","Your sincerity\nwill reach the people it needs to.","Everything finds its place,\nlittle by little.","Today might be\na day to catch your breath.","Try setting down your worries\nfor just a moment.","You are beautiful\njust as you are right now.","Steadiness\nlasts longer than urgency.","The step you take today\nis never a small one.","You've already overcome\nso many hard things.","More things resolve on their own\nthan you'd expect.","What you need right now\nmight be direction, not an answer.","Today's wind\nmight be opening a new path for you.","Every beginning\nis clumsy at first.","A pause in your heart\nis part of life too.","This might be a time\nfor growing roots, not flowers.","Your story\nstill has more chapters to come.","Try practicing\ntrust in yourself today.","Slow change\nis still real change.","Happiness doesn't require\ngoing far.","Your time flows\nat your own pace.","Today's worries\nwill eventually pass.","Every path\ncarries its own meaning.","A day lived with your whole heart\nis never wasted.","This very moment\nwill become a precious memory someday.","You are more resilient\nthan you think.","Today, try thinking of gratitude\nbefore expectation.","Take out that forgotten dream\nand look at it again.","Today's small challenge\nmight change your future.","Good things\nsometimes come quietly.","Today is enough,\ndone in your own way.","Your mind needs rest too\nfor your thoughts to settle.","You're already on\nthe path of growth.","A single small act of kindness\ncan change the world.","It's okay to worry\na little less today.","Life might be more on your side\nthan you think.","Your wish\nis still alive.","Try opening the door\nto your heart a little today.","You might find your answer\nsomewhere unexpected.","As long as you don't stop,\nthe path continues.","The anxiety you feel now\nis just a passing wind.","Today, choose to take\na small act of courage.","The words you say to yourself\ncan change your whole day.","It's not\ntoo late.","The road you've walked\nhas not been wasted.","On tired days,\ndraw something warm close to you.","The quiet ordinary of today\nis also a precious gift.","Good directions\nalways arrive quietly.","Your choices are shaping who you are,\nlittle by little.","Don't try to solve\neverything all at once.","Today, doing just enough\nis perfectly fine.","Your heart needs\na place to rest too.","Follow that small light\nin front of you right now.","Every relationship\nhas its own season.","Your day\ncould mean something to someone.","Today, may you be free\nfrom blaming yourself.","Walk toward\nwhatever makes your heart feel lighter.","A new beginning can start\nwith a small act of clearing out.","You are moving\nin a better direction.","Today's tears\nmight become tomorrow's strength.","Quiet effort\ndoesn't disappear easily.","Time spent living with your whole heart\nstays with you.","Your wish grows\nas it meets time.","Even if you pause,\nyour season continues.","Today, make a choice\njust for yourself.","If you can smile even a little,\nthat's a good enough start.","Not every feeling needs\nto be sorted out right away.","There are still so many possibilities\nleft in your life.","Your imperfections today\nare part of you too.","Some things\ndon't need to be rushed.","When your heart wavers,\ntry returning to the basics.","You're already\ntrying hard enough.","Try speaking\na little more gently today.","Every ending holds within it\na new beginning.","Your small choices\ncan be a light for someone else.","Trust yourself,\nright here on this path.","May today's wish\nstay quietly by your side.","Don't miss\nthe small joys of today.","Your heart knows\nmore answers than you think.","Trees that grow slowly\nlast longer.","Today is\nmeaningful enough as it is.","You're already\nholding on well.","May today be\na day you trust yourself.","Every change starts\nwith a small movement.","The path you walk\nis someone's hope too.","Follow\nwhere your heart is pointing.","This might be\na time of quiet preparation.","Not every worry\ncomes true.","You have more possibilities\nthan you think.","Try relaxing\nyour shoulders a little today.","Sometimes the courage\nto rest is needed too.","Your sincerity\nwill eventually come to light.","The effort you put in now\ndoesn't disappear.","Look for\na small happiness today.","Every beginning starts\nwith a small decision.","You are\na precious enough person.","You made it\nthrough today too.","Look toward the hope ahead,\nnot the regrets behind.","Your wish\nis already finding its way.","Make the choice\nthat feels most at peace.","Good connections\nare closer than you think.","You've already\naccomplished so much.","Give yourself\na smile today.","Every flower\nhas its time to bloom.","The waiting you're doing now\nalso has meaning.","Your story\nis still in progress.","May you feel\na little lighter today.","I'm cheering\non your day.","Don't let go\nof the hope in your heart.","Today's choice\nbecomes tomorrow's seed.","Every path\nconnects somewhere eventually.","You're stronger\nthan you think.","You're doing well\nenough right now.","Give yourself\nsome praise today.","New opportunities\nalways exist.","Your efforts\nare not in vain.","Walk at your own pace\ntoday too.","Small courage\ncreates big change.","You're already growing\nas much as you need to.","Take a moment to look up\nat the sky today.","Try choosing\npeace of mind first.","Your sincerity\nwill reach where it needs to.","Every season\nhas its reason.","Today's ease\nbecomes tomorrow's strength.","Your potential\nhasn't run out yet.","Today's worries will find\ntheir meaning someday.","Today is\nworth enough too.","You are\nnot alone.","Small kindness\ncreates big change.","Believe in\nyourself today.","Good things arrive\nin unexpected moments.","Your path\nis yours alone.","It's okay to go\na little slower today.","You've come\nfurther than you think.","Every answer becomes clear\nwhen the time is right.","New possibilities\nare open today too.","Try listening to\nthe voice inside you.","You are already\nbeautiful enough.","Today, choose hope\nover worry.","Every experience\nbecomes a part of you.","Your tomorrow\nis still wide open.","Today's one step\ncreates great change.","You're\ndoing well.","Give your heart\na little rest today.","Don't forget\nyour dreams.","Every path\nholds a lesson.","Cheer yourself on\ntoday too.","You're tougher\nthan you think.","Today's choice\nalso has enough meaning.","Find one thing\nto be grateful for today.","Your wish\nis slowly growing.","Good days will\ndefinitely come again.","You're growing\ntoday too.","Your efforts\nwill surely bear fruit.","Every moment\npasses in time.","Take care of\nyourself today.","You are\nalready enough.","Today's challenge\nbecomes tomorrow's asset.","Follow wherever\nyour heart leads today.","Believe in\nyour own potential.","Every encounter\nleaves its meaning.","Try smiling\na little more today.","Your story\nis special.","This very moment\nis precious time.","Today's worries\nbecome tomorrow's wisdom.","You've already\ndone so much.","Allow yourself\na small rest today.","Your path\ndoesn't disappear.","Every change\ncomes with time.","It's okay to believe\nin yourself today.","Your wish is\ncloser than you think.","You're doing well\nenough right now.","Find the courage\nto try once more today.","You deserve\nto be loved.","Every season\neventually passes.","Hold on to hope\ntoday too.","I'm cheering on\nyour tomorrow."],
+  ja:['ゆっくりでも、大丈夫です。\nあなたの道は消えません。','答えを探すより、\n問いと一緒に歩いてみてください。','今日の迷いも、\nあなたを守ろうとする心かもしれません。','今必要なのは、\n速さではなく、少し立ち止まることかもしれません。','あなたは思っているより、\nうまくやっています。','すべての花が\n同じ季節に咲くわけではありません。','小さな勇気が\n大きな変化を生みます。','今日の心配が、\n明日の答えになることもあります。','心が向く方向を、\n一度信じてみてください。','完璧な準備より、\n一歩踏み出すことが大切です。','自分のペースを\n疑わないでください。','寄り道も、\n道のひとつです。','焦りより、\n信頼が必要な日です。','揺れない人など\nいません。','今日は、自分に\nもう少し優しくしてください。','不安は、新しい始まりの前に\nよく訪れます。','あなたの努力は、見えなくても\n積み重なっています。','答えが遅く来る\n日もあります。','今の悩みは、\n真剣さの証です。','明日のあなたも、\n今日の選択を応援しています。','小さな幸せを\n見逃さないでください。','今この瞬間も、\n十分に意味があります。','すべての出会いには\n理由があります。','あなたの願いは、\n思ったより近くにあります。','道に迷ったと感じても、\nあなたは道の上にいます。','今日の沈黙も、\n必要な時間です。','自分を\n追い詰めすぎないでください。','あなたはすでに、\n多くのことをやり遂げています。','遅すぎると思った瞬間が、\n始まりかもしれません。','今日はゆっくり歩いても\n大丈夫です。','心の声を、\n少し聞いてみてください。','休むことは、\n遅れることではありません。','小さな選択が、\n大きな方向を作ります。','あなたは\n一人ではありません。','今の時間も、\nいつか思い出になります。','今日すべての答えを\n見つけなくてもいいです。','待つことも、\nひとつのプロセスです。','あなたは十分に\n大切な存在です。','今日の失敗も、\n明日の財産になります。','完璧でなくても\n大丈夫です。'],
+  zh:['慢一点也没关系。\n你的路不会消失。','与其寻找答案，\n不如带着问题一起前行。','今天的犹豫，\n也许是你内心在保护自己。','此刻需要的，\n也许不是更快的脚步，而是片刻的停留。','你比自己想象的，\n做得更好。','不是所有的花\n都在同一个季节盛开。','小小的勇气，\n可以带来巨大的改变。','今天的担忧，\n有时会成为明天的答案。','试着相信\n心中指向的方向。','一步踏出，\n胜过万全的准备。','不要怀疑\n自己的节奏。','绕路而行，\n也是一条路。','今天需要的是信任，\n而不是焦急。','没有人能\n一直不动摇。','今天，\n对自己多一点温柔。','焦虑常常出现\n在新开始之前。','你的努力在积累，\n即使暂时看不见。','有些答案，\n来得慢一些。','今天的烦恼，\n是你认真在乎的证明。','明天的你，\n也会为今天的选择加油。','不要错过\n身边小小的幸福。','此刻，\n本身就充满意义。','每一次相遇，\n都有它的理由。','你所期待的，\n比你想的更近。','即使感到迷路，\n你仍在路上。','今天的沉默，\n也是必要的时间。','不要\n对自己太苛刻。','你已经\n完成了很多事情。','觉得太晚的那一刻，\n也许正是开始。','今天慢慢走\n也没关系。','试着听一听\n内心的声音。','休息，\n不代表落后。','小小的选择，\n造就大大的方向。','你\n并不孤单。','此刻的时光，\n终将成为回忆。','今天不必\n找到所有的答案。','等待，\n也是旅途的一部分。','你是\n足够珍贵的人。','今天的错误，\n是明天的积累。','不完美\n也没关系。']
+};
+let _wtLastIdx=-1;
+let currentLang=localStorage.getItem('saegim_lang')||'ko';
+const app=document.getElementById('app');
+
+function wtRandomSentence(){
+  const list=WT_SENTENCES[currentLang]||WT_SENTENCES.ko;
+  let idx;
+  do{idx=Math.floor(Math.random()*list.length);}while(list.length>1&&idx===_wtLastIdx);
+  _wtLastIdx=idx;return list[idx];
+}
+function setLang(lang){currentLang=lang;localStorage.setItem('saegim_lang',lang);renderWishTag();}
+function langBar(){return`<div class="lang-bar">${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}</div>`;}
+function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+
+function renderWishTag(){
+  const sentence=wtRandomSentence();
+  const wtLabels={ko:['오늘의 바램','마음속 질문을 떠올려 보세요','다시 받기'],en:["Today's Wish",'Take a moment to think of a question','Try Again'],ja:['今日の願い','心の中の問いを思い浮かべてください','もう一度'],zh:['今日心愿','请在心中想一个问题','再来一次']};
+  const lbl=wtLabels[currentLang]||wtLabels.ko;
+  app.innerHTML=`
+    ${brand()}
+    ${langBar()}
+    <div class="wt-wrap">
+      <div class="wt-label">${lbl[0]}</div>
+      <div class="wt-sub">${lbl[1]}</div>
+      <div class="wt-card"><div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div></div>
+      <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
+    </div>
+    <div class="footer">SAEGIM WT</div>`;
+}
+function wtAgain(){
+  const el=document.getElementById('wtSentence');
+  if(!el)return;
+  el.style.opacity='0';el.style.transform='translateY(6px)';el.style.transition='opacity .3s,transform .3s';
+  setTimeout(()=>{
+    el.innerHTML=esc(wtRandomSentence()).replace(/\n/g,'<br>');
+    el.style.opacity='';el.style.transform='';
+  },330);
+}
+
+// WT는 QR 상태 체크 없이 바로 동작
+renderWishTag();
+</script>
+</body>
+</html>

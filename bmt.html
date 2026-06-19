@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>새김 메모리태그</title>
+<style>
+:root{--bg:#111;--card:#171717;--line:#7a6040;--gold:#e6c88f;--gold2:#c7a05d;--text:#f6ead4;--muted:#b7a88f}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 100%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:28px 18px}
+.card{border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,#181818,#101010);padding:26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.brand{text-align:center;margin-bottom:24px}.logo{font-family:serif;font-size:34px;letter-spacing:.18em;color:var(--gold)}.slogan{margin-top:8px;color:var(--muted);font-size:14px}
+.main-title{text-align:center;font-size:24px;font-weight:800;line-height:1.35;margin:8px 0}.sub{text-align:center;color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:22px}
+.btn,.call-btn{display:block;width:100%;margin-top:12px;padding:18px;border-radius:18px;text-decoration:none;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+.call-btn.secondary,.btn.sub{color:var(--gold);background:#111;border:1px solid var(--gold2)}
+.btn.danger{color:#fff;background:linear-gradient(135deg,#c0392b,#922b21)}
+.section-title{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold);margin:26px 0 14px;font-weight:800}
+.section-title:before,.section-title:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line))}
+.section-title:after{background:linear-gradient(90deg,var(--line),transparent)}
+.info{border:1px solid rgba(230,200,143,.35);border-radius:18px;overflow:hidden;background:rgba(255,255,255,.03)}
+.row{display:grid;grid-template-columns:115px 1fr;gap:12px;padding:15px;border-bottom:1px solid rgba(230,200,143,.18)}
+.row:last-child{border-bottom:0}.label{color:var(--gold);font-weight:700}.value{color:var(--text);line-height:1.55;white-space:pre-line}
+.thanks{margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:18px;text-align:center;color:var(--gold);font-size:18px;font-weight:800}.small{margin-top:8px;color:var(--muted);font-size:13px;font-weight:400}
+.footer{text-align:center;margin-top:20px;color:var(--muted);font-size:12px;letter-spacing:.18em}.loading,.error{text-align:center;color:var(--muted);padding:70px 20px}
+input,textarea,select{width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px}
+textarea{min-height:86px;resize:vertical}label{display:block;color:var(--gold);font-size:13px;margin-top:6px}.edit-group{border:1px solid rgba(230,200,143,.25);border-radius:16px;padding:14px;margin-top:12px}
+.hidden{display:none}
+.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+/* BMT */
+.bmt-photo{width:100%;height:220px;border-radius:18px;border:1px solid rgba(230,200,143,.35);object-fit:cover;object-position:center;background:#0d0d0d}
+.bmt-memory{margin-top:16px;border:1px solid rgba(230,200,143,.35);border-radius:20px;padding:18px;background:rgba(255,255,255,.03)}
+.bmt-memory-title{color:var(--gold);font-weight:800;margin-bottom:8px}
+.bmt-memory-text{line-height:1.7;white-space:pre-line;color:var(--text)}
+.bmt-actions{margin-top:20px}
+.bmt-photo-single{margin:18px 0;position:relative}
+.bmt-photo-click{cursor:pointer;display:block}
+.bmt-photo-hint{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
+.bmt-slider{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:18px -6px;padding:0 6px 12px}
+.bmt-slide{min-width:86%;scroll-snap-align:center}
+.bmt-slide .bmt-photo{height:220px}
+.bmt-dots{display:flex;justify-content:center;gap:7px;margin:-2px 0 18px}
+.bmt-dot{width:8px;height:8px;border-radius:50%;background:rgba(122,96,64,.35)}
+.bmt-dot:first-child{background:var(--gold2)}
+.bmt-audio{margin-top:20px;border:1px solid rgba(230,200,143,.35);border-radius:18px;padding:14px;background:rgba(255,255,255,.03)}
+.bmt-audio-title{color:var(--gold);font-weight:800;margin-bottom:10px;font-size:14px}
+.bmt-audio audio{width:100%}
+/* Gallery */
+.gallery-modal{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;display:none;align-items:center;justify-content:center;padding:18px}
+.gallery-modal.on{display:flex}
+.gallery-box{width:100%;max-width:560px;border:1px solid var(--line);border-radius:24px;background:#111;padding:16px;position:relative}
+.gallery-close{position:absolute;right:14px;top:10px;background:transparent;border:0;color:var(--gold);font-size:28px;cursor:pointer}
+.gallery-img{width:100%;height:62vh;max-height:520px;object-fit:contain;border-radius:18px;background:#000}
+.gallery-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+.gallery-nav button{flex:1;padding:13px;border-radius:14px;border:1px solid var(--gold2);background:#111;color:var(--gold);font-weight:800;cursor:pointer}
+.gallery-count{color:var(--muted);font-size:13px;text-align:center;min-width:70px}
+/* Lost box */
+.lost-box{border:2px solid #d9534f;border-radius:18px;padding:16px;margin-bottom:18px;background:#2b1010}
+.lost-title{color:#ff8c8c;font-weight:800;margin-bottom:8px;text-align:center}
+.lost-text{text-align:center;line-height:1.6}
+/* Upload */
+.upload-box{border:1px dashed rgba(230,200,143,.4);border-radius:14px;padding:14px;margin:7px 0 13px;background:#0a0a0a}
+.upload-label{color:var(--muted);font-size:12px;margin-bottom:8px;display:block}
+.upload-progress{height:6px;background:rgba(230,200,143,.15);border-radius:3px;margin:8px 0 4px;overflow:hidden;display:none}
+.upload-progress.on{display:block}
+.upload-bar{height:100%;background:var(--gold2);border-radius:3px;width:0%;transition:width .3s}
+.upload-status{font-size:12px;color:var(--muted);min-height:16px}
+input[type=file]{padding:10px;cursor:pointer}
+/* Chat */
+.chat-messages{max-height:340px;overflow-y:auto;padding:8px 0;margin-bottom:12px}
+.chat-msg{margin-bottom:10px;display:flex;flex-direction:column}
+.chat-msg.guest{align-items:flex-start}.chat-msg.owner{align-items:flex-end}
+.chat-name{font-size:11px;color:var(--muted);margin-bottom:3px}
+.chat-bubble{max-width:82%;padding:10px 14px;border-radius:14px;line-height:1.5;font-size:14px;word-break:break-word}
+.chat-msg.guest .chat-bubble{background:#1e1e1e;border:1px solid rgba(230,200,143,.25);border-radius:14px 14px 14px 2px}
+.chat-msg.owner .chat-bubble{background:linear-gradient(135deg,#3a2a0d,#2a1d08);border:1px solid var(--gold2);border-radius:14px 14px 2px 14px;color:var(--gold)}
+.chat-time{font-size:10px;color:var(--muted);margin-top:3px}
+.chat-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.chat-input-row input{margin:0;flex:1}
+.btn.chat-send{width:auto;padding:14px 20px;margin:0;flex-shrink:0;font-size:14px}
+.chat-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
+.chat-box{border:1px solid rgba(230,200,143,.25);border-radius:18px;padding:14px;margin-top:16px;background:rgba(255,255,255,.02)}
+.msg-badge{display:inline-block;background:#c0392b;color:#fff;border-radius:10px;font-size:11px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중입니다...</div></div></div>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbyhOt-UJ_lZ8Upyw9ZvGKCNT0B2BEM3asnwOuI9_q7GsHHCYglWkPYmgPoz7FvNcNua/exec';
+const params=new URLSearchParams(location.search);
+const CODE=params.get('code')||'BMT-0001';
+const MODE=params.get('mode')||'view';
+let QR_DATA=null;
+let currentLang=localStorage.getItem('saegim_lang')||'ko';
+let CHAT_UNSUBSCRIBE=null;
+let OWNER_CHAT_UNSUBSCRIBE=null;
+let CHAT_NICKNAME=localStorage.getItem('bmt_chat_nick')||'';
+let GALLERY_PHOTOS=[];
+let GALLERY_INDEX=0;
+const app=document.getElementById('app');
+
+// ── API ────────────────────────────────────────────────────
+async function apiGet(action,extra={}){
+  const url=API_URL+'?action='+action+'&code='+encodeURIComponent(CODE)+Object.entries(extra).map(([k,v])=>'&'+k+'='+encodeURIComponent(v)).join('');
+  const r=await fetch(url);return r.json();
+}
+async function apiPost(payload){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  return r.json();
+}
+
+// ── 데이터 로드 ────────────────────────────────────────────
+async function loadData(){
+  try{
+    const data=await apiGet('getQrData');
+    QR_DATA=data;
+    if(MODE==='edit'){renderPassword();return;}
+    renderView(data);
+  }catch(e){renderError('데이터를 불러오지 못했습니다.');}
+}
+
+// ── 공통 UI ───────────────────────────────────────────────
+function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}
+function editBtn(){return`<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=edit">${(I18N[currentLang]||I18N.ko).edit}</a>`;}
+function langBar(){
+  return`<div class="lang-bar">${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}</div>`;
+}
+function renderLinkButtons(links){
+  if(!links||!links.length)return'';
+  return links.map(l=>{
+    if(!l||!l.url)return'';
+    let href=l.url;
+    if(l.type==='전화'&&!href.startsWith('tel:'))href='tel:'+href.replace(/[^0-9+]/g,'');
+    return`<a class="call-btn" href="${esc(href)}">${esc(l.label||l.type||'연락하기')}</a>`;
+  }).join('');
+}
+
+// ── 라우팅 ─────────────────────────────────────────────────
+function renderView(data){
+  if(data.status==='미등록'){renderInactive();return;}
+  if(data.status==='판매완료'){renderRegister(data);return;}
+  if(data.status==='중지'){renderStopped();return;}
+  renderBmt(data);
+}
+function setLang(lang){
+  currentLang=lang;localStorage.setItem('saegim_lang',lang);
+  if(!QR_DATA)return;
+  MODE==='edit'?renderPassword():renderView(QR_DATA);
+}
+
+// ── BMT 공개 화면 ──────────────────────────────────────────
+function renderBmt(data){
+  const t=I18N[currentLang]||I18N.ko;
+  const contactButton=data.lost_contact_url
+    ?`<a class="btn danger" href="${esc(normalizeLostUrl_(data.lost_contact_type,data.lost_contact_url))}">${esc(data.lost_contact_label||t.contact)}</a>`:'';
+  app.innerHTML=`
+    ${brand()}
+    ${langBar()}
+    <div class="lost-box"><div class="lost-title">${t.notice_title}</div><div class="lost-text">${t.notice_text}</div></div>
+    <div class="main-title">${esc(data.owner||t.bmt_title)}</div>
+    <div class="sub">${t.public_sub}</div>
+    <div class="bmt-actions">
+      ${contactButton}
+      <button class="btn" onclick="showChat()">💬 ${t.send_message}</button>
+      <button class="btn sub" onclick="showMemoryPassword()">🗂 ${t.memory_view}</button>
+      ${editBtn()}
+    </div>
+    <div class="footer">SAEGIM · MEMORY QR</div>`;
+}
+
+// ── BMT 비공개 메모리 ──────────────────────────────────────
+function renderBmtPrivate(data){
+  const t=I18N[currentLang]||I18N.ko;
+  const photos=[data.bmt_photo1,data.bmt_photo2,data.bmt_photo3,data.bmt_photo4,data.bmt_photo5].filter(Boolean);
+  let photoMode=data.bmt_photo_fit||'single';
+  if(photoMode!=='single'&&photoMode!=='slider')photoMode='single';
+  const pos=data.bmt_photo_position||'center';
+  let photoHtml='';
+  if(photos.length){
+    if(photoMode==='slider'){
+      photoHtml=`<div class="bmt-slider">${photos.map(src=>`<div class="bmt-slide"><img class="bmt-photo" src="${esc(src)}" style="object-position:${esc(pos)}"></div>`).join('')}</div>
+        <div class="bmt-dots">${photos.map(()=>`<span class="bmt-dot"></span>`).join('')}</div>`;
+    }else{
+      photoHtml=`<div class="bmt-photo-single">
+        <img class="bmt-photo bmt-photo-click" src="${esc(photos[0])}" style="object-position:${esc(pos)}" onclick="openGallery(0)">
+        ${photos.length>1?`<div class="bmt-photo-hint">${t.photo_hint.replace('{n}',photos.length)}</div>`:''}
+      </div>`;
+    }
+  }
+  app.innerHTML=`
+    ${brand()}
+    ${langBar()}
+    <div class="main-title">${esc(data.owner||'부산 메모리 태그')}</div>
+    <div class="sub">${t.sub}</div>
+    ${photoHtml}
+    <div class="section-title">${t.section}</div>
+    ${data.bmt_travel_memo?`<div class="bmt-memory"><div class="bmt-memory-title">${t.memo}</div><div class="bmt-memory-text">${esc(data.bmt_travel_memo)}</div></div>`:''}
+    ${data.bmt_places?`<div class="bmt-memory"><div class="bmt-memory-title">${t.places}</div><div class="bmt-memory-text">${esc(data.bmt_places)}</div></div>`:''}
+    ${data.bmt_voice?`<div class="bmt-audio"><div class="bmt-audio-title">${t.voice}</div><audio controls src="${esc(data.bmt_voice)}"></audio></div>`:''}
+    <div class="bmt-actions">${renderLinkButtons(data.links||[])}</div>
+    <div class="section-title" id="inboxTitle">📩 ${t.inbox_title}</div>
+    <div class="chat-box">
+      <div id="ownerChatMessages" class="chat-messages"><div class="chat-empty">${t.inbox_empty}</div></div>
+      <div class="chat-input-row">
+        <input id="owner_reply" placeholder="${t.reply_placeholder}" maxlength="300" onkeydown="if(event.key==='Enter')sendOwnerReply()">
+        <button class="btn chat-send" onclick="sendOwnerReply()">${t.send}</button>
+      </div>
+    </div>
+    <button id="pushBtn" class="btn sub" onclick="enablePushNotification()">${t.push_enable}</button>
+    ${editBtn()}
+    <div class="footer">SAEGIM · MEMORY QR</div>
+    ${galleryModalHtml(photos,pos)}`;
+  startOwnerChatListener(t);
+}
+
+// ── 갤러리 ─────────────────────────────────────────────────
+function galleryModalHtml(photos,pos){
+  GALLERY_PHOTOS=photos||[];GALLERY_INDEX=0;
+  if(!GALLERY_PHOTOS.length)return'';
+  const t=I18N[currentLang]||I18N.ko;
+  return`<div id="galleryModal" class="gallery-modal" onclick="closeGallery(event)">
+    <div class="gallery-box" onclick="event.stopPropagation()">
+      <button class="gallery-close" onclick="closeGallery()">×</button>
+      <img id="galleryImg" class="gallery-img" src="${esc(GALLERY_PHOTOS[0])}" style="object-position:${esc(pos||'center')}">
+      <div class="gallery-nav">
+        <button onclick="moveGallery(-1)">${t.prev}</button>
+        <div id="galleryCount" class="gallery-count">1 / ${GALLERY_PHOTOS.length}</div>
+        <button onclick="moveGallery(1)">${t.next}</button>
+      </div>
+    </div>
+  </div>`;
+}
+function openGallery(index){if(!GALLERY_PHOTOS.length)return;GALLERY_INDEX=index||0;updateGallery();const m=document.getElementById('galleryModal');if(m)m.classList.add('on');}
+function closeGallery(e){const m=document.getElementById('galleryModal');if(m)m.classList.remove('on');}
+function moveGallery(step){if(!GALLERY_PHOTOS.length)return;GALLERY_INDEX=(GALLERY_INDEX+step+GALLERY_PHOTOS.length)%GALLERY_PHOTOS.length;updateGallery();}
+function updateGallery(){const img=document.getElementById('galleryImg');const c=document.getElementById('galleryCount');if(img)img.src=GALLERY_PHOTOS[GALLERY_INDEX];if(c)c.textContent=(GALLERY_INDEX+1)+' / '+GALLERY_PHOTOS.length;}
+
+// ── 메모리 비밀번호 ────────────────────────────────────────
+function showMemoryPassword(){
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`${brand()}${langBar()}
+    <div class="main-title">${t.memory_view}</div>
+    <div class="sub">${t.memory_password_text}</div>
+    <input id="memory_pw" type="password" placeholder="${t.password_placeholder}">
+    <button class="btn" onclick="checkMemoryPassword()">${t.confirm}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+}
+async function checkMemoryPassword(){
+  const pw=val('memory_pw');
+  if(!pw){alert('비밀번호를 입력해주세요.');return;}
+  const r=await apiGet('verifyPassword',{code:CODE,password:pw});
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
+  renderBmtPrivate(QR_DATA);
+}
+
+// ── 채팅 ───────────────────────────────────────────────────
+function showChat(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(CHAT_UNSUBSCRIBE){CHAT_UNSUBSCRIBE();CHAT_UNSUBSCRIBE=null;}
+  app.innerHTML=`${brand()}${langBar()}
+    <div class="main-title">💬 ${t.chat_title}</div>
+    <div class="sub">${t.chat_sub}</div>
+    ${!CHAT_NICKNAME?`
+      <div id="nicknameBox">
+        <label>${t.nickname_label}</label>
+        <input id="chat_nickname" placeholder="${t.nickname_placeholder}" maxlength="20">
+        <button class="btn" onclick="setChatNickname()">${t.confirm}</button>
+      </div>`:`
+      <div class="chat-box">
+        <div id="chatMessages" class="chat-messages"><div class="chat-empty">${t.chat_loading}</div></div>
+        <div class="chat-input-row">
+          <input id="chat_msg" placeholder="${t.message_placeholder}" maxlength="300" onkeydown="if(event.key==='Enter')sendChatMessage()">
+          <button class="btn chat-send" onclick="sendChatMessage()">${t.send}</button>
+        </div>
+      </div>`}
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+  if(CHAT_NICKNAME)startGuestChatListener(t);
+}
+function setChatNickname(){
+  const t=I18N[currentLang]||I18N.ko;
+  const nick=val('chat_nickname');
+  if(!nick){alert(t.nickname_required);return;}
+  CHAT_NICKNAME=nick;localStorage.setItem('bmt_chat_nick',nick);showChat();
+}
+function startGuestChatListener(t){
+  if(!window.firestoreDb)return;
+  const {collection,query,orderBy,onSnapshot}=window.firestoreApi;
+  const q=query(collection(window.firestoreDb,'chats',CODE,'messages'),orderBy('createdAt','asc'));
+  CHAT_UNSUBSCRIBE=onSnapshot(q,snapshot=>{
+    const box=document.getElementById('chatMessages');
+    if(!box){if(CHAT_UNSUBSCRIBE)CHAT_UNSUBSCRIBE();return;}
+    if(snapshot.empty){box.innerHTML=`<div class="chat-empty">${t.chat_empty}</div>`;return;}
+    box.innerHTML=snapshot.docs.map(doc=>{
+      const d=doc.data();const isOwner=d.user==='owner';
+      return`<div class="chat-msg ${isOwner?'owner':'guest'}">
+        <div class="chat-name">${esc(isOwner?(t.owner_label||'주인'):(d.nickname||'발견자'))}</div>
+        <div class="chat-bubble">${esc(d.message)}</div>
+        <div class="chat-time">${d.createdAt?d.createdAt.slice(11,16):''}</div>
+      </div>`;
+    }).join('');
+    box.scrollTop=box.scrollHeight;
+  });
+}
+async function sendChatMessage(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
+  const msg=val('chat_msg');if(!msg)return;
+  const {collection,addDoc}=window.firestoreApi;
+  const input=document.getElementById('chat_msg');input.disabled=true;
+  try{
+    await addDoc(collection(window.firestoreDb,'chats',CODE,'messages'),{user:'guest',nickname:CHAT_NICKNAME,message:msg,createdAt:new Date().toISOString(),lang:currentLang});
+    apiPost({action:'sendOwnerEmailAlert',code:CODE,nickname:CHAT_NICKNAME,message:msg}).catch(()=>{});
+    apiPost({action:'sendOwnerPushAlert',code:CODE,nickname:CHAT_NICKNAME,message:msg}).catch(()=>{});
+    input.value='';
+  }catch(e){alert(t.send_fail+': '+e.message);}
+  finally{input.disabled=false;input.focus();}
+}
+function startOwnerChatListener(t){
+  if(!window.firestoreDb)return;
+  const {collection,query,orderBy,onSnapshot}=window.firestoreApi;
+  const q=query(collection(window.firestoreDb,'chats',CODE,'messages'),orderBy('createdAt','asc'));
+  if(OWNER_CHAT_UNSUBSCRIBE){OWNER_CHAT_UNSUBSCRIBE();OWNER_CHAT_UNSUBSCRIBE=null;}
+  OWNER_CHAT_UNSUBSCRIBE=onSnapshot(q,snapshot=>{
+    const box=document.getElementById('ownerChatMessages');
+    if(!box){if(OWNER_CHAT_UNSUBSCRIBE)OWNER_CHAT_UNSUBSCRIBE();return;}
+    if(snapshot.empty){box.innerHTML=`<div class="chat-empty">${t.inbox_empty}</div>`;return;}
+    box.innerHTML=snapshot.docs.map(doc=>{
+      const d=doc.data();const isOwner=d.user==='owner';
+      return`<div class="chat-msg ${isOwner?'owner':'guest'}">
+        <div class="chat-name">${esc(isOwner?(t.owner_label||'주인'):(d.nickname||'발견자'))}</div>
+        <div class="chat-bubble">${esc(d.message)}</div>
+        <div class="chat-time">${d.createdAt?d.createdAt.slice(11,16):''}</div>
+      </div>`;
+    }).join('');
+    const guestMsgs=snapshot.docs.filter(d=>d.data().user==='guest').length;
+    const badge=document.getElementById('inboxTitle');
+    if(badge&&guestMsgs>0)badge.innerHTML=`📩 ${t.inbox_title} <span class="msg-badge">${guestMsgs}</span>`;
+    box.scrollTop=box.scrollHeight;
+  });
+}
+async function sendOwnerReply(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
+  const msg=val('owner_reply');if(!msg)return;
+  const {collection,addDoc}=window.firestoreApi;
+  const input=document.getElementById('owner_reply');input.disabled=true;
+  try{
+    await addDoc(collection(window.firestoreDb,'chats',CODE,'messages'),{user:'owner',message:msg,createdAt:new Date().toISOString()});
+    input.value='';
+  }catch(e){alert(t.send_fail+': '+e.message);}
+  finally{input.disabled=false;input.focus();}
+}
+
+// ── 푸시 알림 ─────────────────────────────────────────────
+async function enablePushNotification(){
+  const t=I18N[currentLang]||I18N.ko;
+  try{
+    let id=OneSignal?.User?.PushSubscription?.id;
+    if(!id){
+      if(Notification.permission!=='granted'){const p=await Notification.requestPermission();if(p!=='granted'){alert('알림 권한을 허용해주세요.');return;}}
+      OneSignal.User.PushSubscription.optIn();
+      for(let i=0;i<10&&!id;i++){await new Promise(r=>setTimeout(r,500));id=OneSignal?.User?.PushSubscription?.id;}
+    }
+    if(!id){alert('알림 설정 실패. 다시 시도해주세요.');return;}
+    const res=await apiPost({action:'savePushToken',code:CODE,token:id});
+    if(!res||!res.success){alert('토큰 저장 실패');return;}
+    const btn=document.getElementById('pushBtn');
+    if(btn){btn.textContent=t.push_enabled;btn.disabled=true;}
+  }catch(e){alert('알림 설정 실패: '+e.message);}
+}
+
+// ── 미등록 / 중지 ──────────────────────────────────────────
+function renderInactive(){app.innerHTML=`${brand()}<div class="main-title">아직 등록되지 않은 QR입니다</div><div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있습니다.</div><div class="footer">SAEGIM QR</div>`;}
+function renderStopped(){app.innerHTML=`${brand()}<div class="main-title">사용이 중지된 QR입니다</div><div class="sub">현재 이 QR은 비활성화 상태입니다.</div><div class="footer">SAEGIM QR</div>`;}
+
+// ── 최초 등록 ──────────────────────────────────────────────
+function renderRegister(data){
+  const d=data||{};
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">최초 등록</div>
+    <div class="sub">📦 부산 메모리 태그<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
+    <label>소유자 이름</label>
+    <input id="owner" placeholder="소유자 이름" value="${esc(d.owner||'')}">
+    <div class="section-title">여행 사진</div>
+    ${uploadBox('bmt_photo1','대표 사진',d.bmt_photo1||'')}
+    ${uploadBox('bmt_photo2','갤러리 사진 2',d.bmt_photo2||'')}
+    ${uploadBox('bmt_photo3','갤러리 사진 3',d.bmt_photo3||'')}
+    ${uploadBox('bmt_photo4','갤러리 사진 4',d.bmt_photo4||'')}
+    ${uploadBox('bmt_photo5','갤러리 사진 5',d.bmt_photo5||'')}
+    <label>여행 메모</label>
+    <textarea id="bmt_travel_memo" placeholder="여행 메모 (날짜, 장소, 추억 등)">${esc(d.bmt_travel_memo||'')}</textarea>
+    <label>방문 장소</label>
+    <textarea id="bmt_places">${esc(d.bmt_places||'')}</textarea>
+    <div class="section-title">여행 음성</div>
+    ${uploadBox('bmt_voice','음성 파일',d.bmt_voice||'','audio')}
+    <label>사진 표시 방식</label>
+    <select id="bmt_photo_fit">
+      <option value="single" selected>대표 사진 1장</option>
+      <option value="slider">슬라이드 모드</option>
+    </select>
+    <div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>
+    <hr>
+    <input id="new_password" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">
+    <button class="btn" onclick="registerFirst()">등록 완료</button>`;
+}
+
+// ── 비밀번호 & 수정 ────────────────────────────────────────
+function renderPassword(){
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`${brand()}${langBar()}
+    <div class="main-title">${t.edit}</div>
+    <div class="sub">${t.edit_password_text}</div>
+    <input id="pw" type="password" placeholder="${t.password_placeholder}">
+    <button class="btn" onclick="checkPassword()">${t.confirm}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+}
+async function checkPassword(){
+  const pw=document.getElementById('pw').value.trim();
+  if(!pw){alert('비밀번호를 입력해주세요.');return;}
+  const r=await apiGet('verifyPassword',{code:CODE,password:pw});
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
+  renderBmtEditForm(pw);
+}
+function renderBmtEditForm(password){
+  const d=QR_DATA;const t=I18N[currentLang]||I18N.ko;
+  const ctypes=['전화','카카오','이메일','왓츠앱','라인','텔레그램'];
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">${t.bmt_edit_title}</div>
+    <input id="password" type="hidden" value="${esc(password)}">
+    <div class="section-title">${t.basic_info}</div>
+    <label>${t.owner}</label><input id="owner" value="${esc(d.owner||'')}">
+    <div class="section-title">${t.travel_record}</div>
+    ${uploadBox('bmt_photo1',t.cover_photo,d.bmt_photo1||'')}
+    ${uploadBox('bmt_photo2',t.gallery_photo_2,d.bmt_photo2||'')}
+    ${uploadBox('bmt_photo3',t.gallery_photo_3,d.bmt_photo3||'')}
+    ${uploadBox('bmt_photo4',t.gallery_photo_4,d.bmt_photo4||'')}
+    ${uploadBox('bmt_photo5',t.gallery_photo_5,d.bmt_photo5||'')}
+    <label>${t.travel_memo}</label><textarea id="bmt_travel_memo">${esc(d.bmt_travel_memo||'')}</textarea>
+    <label>${t.places}</label><textarea id="bmt_places">${esc(d.bmt_places||'')}</textarea>
+    <div class="section-title">${t.travel_voice}</div>
+    ${uploadBox('bmt_voice',t.voice_file,d.bmt_voice||'','audio')}
+    <label>${t.photo_display}</label><select id="bmt_photo_fit">
+      <option value="single" ${(d.bmt_photo_fit||'single')==='single'?'selected':''}>${t.single_photo}</option>
+      <option value="slider" ${d.bmt_photo_fit==='slider'?'selected':''}>${t.slider_mode}</option>
+    </select>
+    <label>${t.photo_position}</label><select id="bmt_photo_position">
+      <option value="center" ${(d.bmt_photo_position||'center')==='center'?'selected':''}>${t.center}</option>
+      <option value="top" ${d.bmt_photo_position==='top'?'selected':''}>${t.top}</option>
+      <option value="bottom" ${d.bmt_photo_position==='bottom'?'selected':''}>${t.bottom}</option>
+    </select>
+    <div class="section-title">${t.contact_section}</div>
+    <label>${t.contact_type}</label>
+    <select id="lost_contact_type">
+      <option value="" ${!d.lost_contact_type?'selected':''}>${t.none}</option>
+      ${ctypes.map(v=>`<option value="${v}" ${d.lost_contact_type===v?'selected':''}>${v==='카카오'?'카카오톡':v==='이메일'?'이메일':v}</option>`).join('')}
+    </select>
+    <label>${t.contact_label}</label><input id="lost_contact_label" value="${esc(d.lost_contact_label||'')}" placeholder="주인에게 연락하기">
+    <label>${t.contact_url}</label><input id="lost_contact_url" value="${esc(d.lost_contact_url||'')}">
+    <label>${t.owner_email}</label><input id="owner_email" type="email" value="${esc(d.owner_email||'')}">
+    <div class="section-title">${t.link_section}</div>
+    <div id="linksEdit">${editLinks(d.links||[])}</div>
+    <button class="btn" onclick="saveEdit()">${t.save}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.cancel}</a>`;
+}
+
+// ── 업로드 ─────────────────────────────────────────────────
+function uploadBox(key,label,currentUrl,type='image'){
+  const t=I18N[currentLang]||I18N.ko;
+  const accept=type==='audio'?'audio/*':'image/*';
+  const onchange=type==='audio'?`previewAudio(this,'prev_${key}')`:`previewPhoto(this,'prev_${key}')`;
+  const hasUrl=!!currentUrl;
+  const preview=type==='audio'
+    ?`<audio id="prev_${key}" controls style="display:${hasUrl?'block':'none'};width:100%;margin-bottom:8px"${hasUrl?` src="${esc(currentUrl)}"`:''} ></audio>`
+    :`<img id="prev_${key}" style="display:${hasUrl?'block':'none'};width:100%;max-height:180px;object-fit:cover;border-radius:10px;margin-bottom:8px"${hasUrl?` src="${esc(currentUrl)}"`:''}>`;
+  return`<div class="upload-box">
+    <span class="upload-label">${label}${hasUrl?' (교체하려면 새 파일 선택)':' (파일 선택)'}</span>
+    ${preview}
+    <input type="file" id="file_${key}" accept="${accept}" onchange="${onchange}">
+    <input type="hidden" id="${key}" value="${esc(currentUrl)}">
+    <div id="prog_${key}" class="upload-progress"><div id="bar_${key}" class="upload-bar"></div></div>
+    <div id="stat_${key}" class="upload-status"></div>
+  </div>`;
+}
+function previewPhoto(input,previewId){const file=input.files[0];if(!file)return;const r=new FileReader();r.onload=e=>{const img=document.getElementById(previewId);if(img){img.src=e.target.result;img.style.display='block';}};r.readAsDataURL(file);}
+function previewAudio(input,previewId){const file=input.files[0];if(!file)return;const a=document.getElementById(previewId);if(a){a.src=URL.createObjectURL(file);a.style.display='block';}}
+function setUploadProgress(key,pct){const p=document.getElementById('prog_'+key);const b=document.getElementById('bar_'+key);if(p)p.classList.add('on');if(b)b.style.width=pct+'%';}
+function setUploadStatus(key,msg){const el=document.getElementById('stat_'+key);if(el)el.textContent=msg;}
+async function uploadBmtFiles(){
+  if(!window.uploadToFirebase){alert('Firebase가 초기화되지 않았습니다. 잠시 후 다시 시도해주세요.');return false;}
+  const slots=[
+    {key:'bmt_photo1',path:`bmt/${CODE}/cover`},{key:'bmt_photo2',path:`bmt/${CODE}/photo2`},
+    {key:'bmt_photo3',path:`bmt/${CODE}/photo3`},{key:'bmt_photo4',path:`bmt/${CODE}/photo4`},
+    {key:'bmt_photo5',path:`bmt/${CODE}/photo5`}
+  ];
+  for(const {key,path} of slots){
+    const fileEl=document.getElementById('file_'+key);
+    if(fileEl&&fileEl.files[0]){
+      const ext=fileEl.files[0].name.split('.').pop().toLowerCase();
+      setUploadStatus(key,'업로드 중...');
+      try{const url=await window.uploadToFirebase(fileEl.files[0],`${path}.${ext}`,pct=>setUploadProgress(key,pct));document.getElementById(key).value=url;setUploadStatus(key,'✓ 완료');}
+      catch(e){alert(key+' 업로드 실패: '+e.message);return false;}
+    }
+  }
+  const voiceEl=document.getElementById('file_bmt_voice');
+  if(voiceEl&&voiceEl.files[0]){
+    const ext=voiceEl.files[0].name.split('.').pop().toLowerCase();
+    setUploadStatus('bmt_voice','업로드 중...');
+    try{const url=await window.uploadToFirebase(voiceEl.files[0],`bmt/${CODE}/voice.${ext}`,pct=>setUploadProgress('bmt_voice',pct));document.getElementById('bmt_voice').value=url;setUploadStatus('bmt_voice','✓ 완료');}
+    catch(e){alert('음성 업로드 실패: '+e.message);return false;}
+  }
+  return true;
+}
+
+// ── 연결 항목 편집 ─────────────────────────────────────────
+const LINK_TYPES=['전화','카카오','인스타그램','이메일','홈페이지','지도','왓츠앱','라인','텔레그램','기타'];
+function editLinks(links){
+  let arr=(links||[]).filter(l=>l&&(l.label||l.url||l.type));
+  if(!arr.length)arr=[{type:'전화',label:'',url:''}];
+  arr=arr.slice(0,5);
+  return`${arr.map((l,i)=>linkEditBox(l,i,arr.length)).join('')}${arr.length<5?`<button class="btn sub" onclick="addLinkItem()">항목 추가</button>`:''}`;
+}
+function linkEditBox(l,i,total){
+  return`<div class="edit-group link-edit">
+    <label>종류</label><select id="link${i}_type">${LINK_TYPES.map(t=>`<option value="${esc(t)}" ${String(l.type||'전화')===t?'selected':''}>${esc(t)}</option>`).join('')}</select>
+    <label>버튼 이름</label><input id="link${i}_label" value="${esc(l.label||'')}">
+    <label>연결 주소</label><input id="link${i}_url" value="${esc(String(l.url||'').replace(/^tel:/,''))}">
+    ${total>1?`<button class="btn sub" onclick="removeLinkItem(${i})">항목 제거</button>`:''}
+  </div>`;
+}
+function collectLinksRaw(){return Array.from(document.querySelectorAll('.link-edit')).map((g,i)=>({type:val('link'+i+'_type')||'전화',label:val('link'+i+'_label'),url:val('link'+i+'_url')}));}
+function collectLinks(){return collectLinksRaw().filter(l=>l.url).map(l=>{if(l.type==='지도'&&!l.url.startsWith('http'))return{...l,label:l.label||l.url,url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.url)};return l;}).slice(0,5);}
+function addLinkItem(){const links=collectLinksRaw();if(links.length>=5){alert('최대 5개까지 가능합니다.');return;}links.push({type:'전화',label:'',url:''});document.getElementById('linksEdit').innerHTML=editLinks(links);}
+function removeLinkItem(index){const links=collectLinksRaw();links.splice(index,1);document.getElementById('linksEdit').innerHTML=editLinks(links.length?links:[{type:'전화',label:'',url:''}]);}
+
+// ── 등록 & 저장 ────────────────────────────────────────────
+async function registerFirst(){
+  const pw=val('new_password');
+  if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
+  const ok=await uploadBmtFiles();if(!ok)return;
+  const links=collectLinks();
+  const form={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify(links)};
+  ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit'].forEach(k=>form[k]=val(k));
+  const r=await apiPost(form);
+  if(!r.success){alert(r.message||'등록 실패');return;}
+  alert('등록이 완료되었습니다!');
+  location.href='?code='+encodeURIComponent(CODE);
+}
+async function saveEdit(){
+  const ok=await uploadBmtFiles();if(!ok)return;
+  const links=collectLinks();
+  const form={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(links)};
+  ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  const r=await apiPost(form);
+  if(!r.success){alert(r.message||'저장 실패');return;}
+  alert('저장되었습니다.');
+  location.href='?code='+encodeURIComponent(CODE);
+}
+
+// ── 유틸 ───────────────────────────────────────────────────
+function normalizeLostUrl_(type,url){const v=String(url||'').trim();if(!v)return'';if(type==='전화')return v.startsWith('tel:')?v:'tel:'+v.replace(/[^0-9+]/g,'');if(type==='이메일')return v.startsWith('mailto:')?v:'mailto:'+v;return v;}
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function renderError(msg){app.innerHTML=`<div class="error">${esc(msg)}</div>`;}
+
+// ── i18n (BMT 필요 항목만) ─────────────────────────────────
+const I18N={
+  ko:{bmt_title:'부산 메모리 태그',notice_title:'이 태그를 발견하셨나요?',notice_text:'아래 연락수단으로 주인에게 연락해주세요.',public_sub:'부산 여행의 추억이 담긴 태그입니다.',contact:'주인에게 연락하기',memory_view:'메모리 보기',edit:'정보 수정하기',memory_password_text:'소유자만 볼 수 있습니다.<br>비밀번호를 입력해주세요.',password_placeholder:'비밀번호',confirm:'확인',back:'돌아가기',sub:'부산 여행의 장면과 기억을 담은 태그입니다.',section:'부산 여행 기록',memo:'여행 메모',places:'방문 장소',voice:'음성 기록',bmt_edit_title:'부산 메모리 태그 수정',edit_password_text:'등록된 비밀번호를 입력해주세요.',basic_info:'기본 정보',owner:'표시 이름',travel_record:'부산 여행 기록',travel_memo:'여행 메모',travel_voice:'여행 음성',photo_display:'사진 표시 방식',photo_position:'사진 위치',contact_section:'분실 연락수단',contact_type:'연락 방식',contact_label:'버튼명',contact_url:'연결 주소',save:'저장하기',cancel:'취소',none:'선택안함',phone:'전화',kakao:'카카오',email:'이메일',link_section:'연결 항목',prev:'이전',next:'다음',photo_hint:'사진을 누르면 전체 사진 {n}장을 볼 수 있습니다.',send_message:'메시지 보내기',chat_title:'메시지 보내기',chat_sub:'태그 주인에게 메시지를 남겨주세요.',nickname_label:'닉네임',nickname_placeholder:'닉네임을 입력해주세요',nickname_required:'닉네임을 입력해주세요.',message_placeholder:'메시지를 입력하세요...',send:'전송',chat_empty:'아직 메시지가 없습니다.',chat_loading:'메시지를 불러오는 중...',owner_label:'주인',inbox_title:'습득 메시지함',inbox_empty:'아직 받은 메시지가 없습니다.',reply_placeholder:'답장을 입력하세요...',send_fail:'전송 실패',owner_email:'알림 이메일',push_enable:'🔔 실시간 알림 받기',push_enabled:'✅ 알림 활성화됨',single_photo:'대표 사진',slider_mode:'슬라이드',center:'가운데',top:'위',bottom:'아래',cover_photo:'대표 사진',gallery_photo_2:'갤러리 사진 2',gallery_photo_3:'갤러리 사진 3',gallery_photo_4:'갤러리 사진 4',gallery_photo_5:'갤러리 사진 5',voice_file:'음성 파일'},
+  en:{bmt_title:'Busan Memory Tag',notice_title:'Have you found this tag?',notice_text:'Please contact the owner using the contact button below.',public_sub:'This tag holds memories from a trip to Busan.',contact:'Contact Owner',memory_view:'View Memory',edit:'Edit Information',memory_password_text:'Only the owner can view this memory.<br>Please enter the password.',password_placeholder:'Password',confirm:'Confirm',back:'Back',sub:'A tag preserving scenes and memories of a Busan trip.',section:'Busan Travel Record',memo:'Travel Memo',places:'Places Visited',voice:'Voice Record',bmt_edit_title:'Edit Busan Memory Tag',edit_password_text:'Please enter the registered password.',basic_info:'Basic Information',owner:'Display Name',travel_record:'Busan Travel Record',travel_memo:'Travel Memo',travel_voice:'Voice Recording',photo_display:'Photo Display Mode',photo_position:'Photo Position',contact_section:'Contact Information',contact_type:'Contact Method',contact_label:'Button Label',contact_url:'Contact URL',save:'Save',cancel:'Cancel',none:'None',phone:'Phone',kakao:'KakaoTalk',email:'Email',link_section:'Links',prev:'Previous',next:'Next',photo_hint:'Tap the photo to view all {n} photos.',send_message:'Send Message',chat_title:'Send a Message',chat_sub:'Leave a message for the tag owner.',nickname_label:'Nickname',nickname_placeholder:'Enter your nickname',nickname_required:'Please enter a nickname.',message_placeholder:'Type a message...',send:'Send',chat_empty:'No messages yet.',chat_loading:'Loading messages...',owner_label:'Owner',inbox_title:'Inbox',inbox_empty:'No messages received yet.',reply_placeholder:'Type a reply...',send_fail:'Send failed',owner_email:'Notification Email',push_enable:'🔔 Enable Notifications',push_enabled:'✅ Notifications Enabled',single_photo:'Cover Photo',slider_mode:'Slider',center:'Center',top:'Top',bottom:'Bottom',cover_photo:'Cover Photo',gallery_photo_2:'Gallery Photo 2',gallery_photo_3:'Gallery Photo 3',gallery_photo_4:'Gallery Photo 4',gallery_photo_5:'Gallery Photo 5',voice_file:'Voice File'},
+  ja:{bmt_title:'釜山メモリータグ',notice_title:'このタグを見つけましたか？',notice_text:'下の連絡ボタンから持ち主へご連絡ください。',public_sub:'釜山旅行の思い出が込められたタグです。',contact:'持ち主に連絡する',memory_view:'メモリーを見る',edit:'情報を修正する',memory_password_text:'持ち主のみ閲覧できます。<br>パスワードを入力してください。',password_placeholder:'パスワード',confirm:'確認',back:'戻る',sub:'釜山旅行の場面と思い出を刻んだタグです。',section:'釜山旅行記録',memo:'旅行メモ',places:'訪れた場所',voice:'音声記録',bmt_edit_title:'釜山メモリータグを修正',edit_password_text:'登録されたパスワードを入力してください。',basic_info:'基本情報',owner:'表示名',travel_record:'釜山旅行記録',travel_memo:'旅行メモ',travel_voice:'音声記録',photo_display:'写真表示方式',photo_position:'写真位置',contact_section:'連絡先',contact_type:'連絡方法',contact_label:'ボタン名',contact_url:'連絡先URL',save:'保存',cancel:'キャンセル',none:'なし',phone:'電話',kakao:'カカオ',email:'メール',link_section:'リンク',prev:'前',next:'次',photo_hint:'写真をタップして全{n}枚を見る。',send_message:'メッセージを送る',chat_title:'メッセージを送る',chat_sub:'タグのオーナーにメッセージを残してください。',nickname_label:'ニックネーム',nickname_placeholder:'ニックネームを入力してください',nickname_required:'ニックネームを入力してください。',message_placeholder:'メッセージを入力...',send:'送信',chat_empty:'メッセージはまだありません。',chat_loading:'メッセージを読み込み中...',owner_label:'オーナー',inbox_title:'受信メッセージ',inbox_empty:'まだメッセージがありません。',reply_placeholder:'返信を入力...',send_fail:'送信失敗',owner_email:'通知メール',push_enable:'🔔 通知を受け取る',push_enabled:'✅ 通知有効',single_photo:'代表写真',slider_mode:'スライダー',center:'中央',top:'上',bottom:'下',cover_photo:'代表写真',gallery_photo_2:'ギャラリー写真2',gallery_photo_3:'ギャラリー写真3',gallery_photo_4:'ギャラリー写真4',gallery_photo_5:'ギャラリー写真5',voice_file:'音声ファイル'},
+  zh:{bmt_title:'釜山记忆标签',notice_title:'您找到这个标签了吗？',notice_text:'请使用下面的联系方式联系主人。',public_sub:'这是一个记录釜山旅行回忆的标签。',contact:'联系主人',memory_view:'查看记忆',edit:'修改信息',memory_password_text:'仅所有者可查看。<br>请输入密码。',password_placeholder:'密码',confirm:'确认',back:'返回',sub:'记录釜山旅行场景和记忆的标签。',section:'釜山旅行记录',memo:'旅行备忘录',places:'访问地点',voice:'语音记录',bmt_edit_title:'修改釜山记忆标签',edit_password_text:'请输入注册密码。',basic_info:'基本信息',owner:'显示名称',travel_record:'釜山旅行记录',travel_memo:'旅行备忘录',travel_voice:'旅行录音',photo_display:'照片显示方式',photo_position:'照片位置',contact_section:'联系信息',contact_type:'联系方式',contact_label:'按钮名称',contact_url:'联系地址',save:'保存',cancel:'取消',none:'不选择',phone:'电话',kakao:'Kakao',email:'邮件',link_section:'链接',prev:'上一张',next:'下一张',photo_hint:'点击照片查看全部{n}张。',send_message:'发送消息',chat_title:'发送消息',chat_sub:'请给标签主人留言。',nickname_label:'昵称',nickname_placeholder:'请输入昵称',nickname_required:'请输入昵称。',message_placeholder:'输入消息...',send:'发送',chat_empty:'暂无消息。',chat_loading:'正在加载消息...',owner_label:'主人',inbox_title:'收到的消息',inbox_empty:'暂无收到的消息。',reply_placeholder:'输入回复...',send_fail:'发送失败',owner_email:'通知邮件',push_enable:'🔔 接收实时通知',push_enabled:'✅ 通知已启用',single_photo:'代表照片',slider_mode:'幻灯片',center:'居中',top:'顶部',bottom:'底部',cover_photo:'代表照片',gallery_photo_2:'图库照片2',gallery_photo_3:'图库照片3',gallery_photo_4:'图库照片4',gallery_photo_5:'图库照片5',voice_file:'音频文件'}
+};
+
+loadData();
+</script>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",authDomain:"saegim-memory.firebaseapp.com",projectId:"saegim-memory",storageBucket:"saegim-memory.firebasestorage.app",messagingSenderId:"888229102391",appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"});
+const storage=getStorage(fbApp);
+const db=getFirestore(fbApp);
+window.firestoreDb=db;
+window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+window.uploadToFirebase=function(file,path,onProgress){
+  return new Promise((resolve,reject)=>{
+    const storageRef=ref(storage,path);
+    const task=uploadBytesResumable(storageRef,file);
+    task.on('state_changed',snap=>{if(onProgress)onProgress(Math.round(snap.bytesTransferred/snap.totalBytes*100));},err=>reject(err),async()=>{resolve(await getDownloadURL(task.snapshot.ref));});
+  });
+};
+</script>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+window.OneSignalDeferred=window.OneSignalDeferred||[];
+OneSignalDeferred.push(async function(OneSignal){
+  await OneSignal.init({appId:'4454afde-61d3-4c7a-9f09-84de382a029d',welcomeNotification:{disable:true},notifyButton:{enable:false},promptOptions:{slidedown:{prompts:[]}}});
+});
+</script>
+</body>
+</html>

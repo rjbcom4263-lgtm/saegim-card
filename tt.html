@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>새김 길동무태그</title>
+<style>
+:root{--bg:#111;--card:#171717;--line:#7a6040;--gold:#e6c88f;--gold2:#c7a05d;--text:#f6ead4;--muted:#b7a88f}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 100%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
+.wrap{max-width:520px;margin:0 auto;padding:28px 18px}
+.card{border:1px solid var(--line);border-radius:28px;background:linear-gradient(180deg,#181818,#101010);padding:26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.brand{text-align:center;margin-bottom:24px}.logo{font-family:serif;font-size:34px;letter-spacing:.18em;color:var(--gold)}.slogan{margin-top:8px;color:var(--muted);font-size:14px}
+.main-title{text-align:center;font-size:24px;font-weight:800;line-height:1.35;margin:8px 0}.sub{text-align:center;color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:22px}
+.btn,.call-btn{display:block;width:100%;margin-top:12px;padding:18px;border-radius:18px;text-decoration:none;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+.call-btn.secondary,.btn.sub{color:var(--gold);background:#111;border:1px solid var(--gold2)}
+.btn.danger{color:#fff;background:linear-gradient(135deg,#c0392b,#922b21)}
+.section-title{display:flex;align-items:center;justify-content:center;gap:12px;color:var(--gold);margin:26px 0 14px;font-weight:800}
+.section-title:before,.section-title:after{content:"";height:1px;flex:1;background:linear-gradient(90deg,transparent,var(--line))}
+.section-title:after{background:linear-gradient(90deg,var(--line),transparent)}
+.footer{text-align:center;margin-top:20px;color:var(--muted);font-size:12px;letter-spacing:.18em}.loading,.error{text-align:center;color:var(--muted);padding:70px 20px}
+input,textarea,select{width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px}
+textarea{min-height:86px;resize:vertical}label{display:block;color:var(--gold);font-size:13px;margin-top:6px}.edit-group{border:1px solid rgba(230,200,143,.25);border-radius:16px;padding:14px;margin-top:12px}
+.hidden{display:none}
+.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+/* TT */
+.tt-header{text-align:center;margin-bottom:20px}
+.tt-tagline{color:var(--gold);font-size:13px;letter-spacing:.12em;margin-bottom:6px}
+.tt-question{font-size:20px;font-weight:800;line-height:1.35}
+.tt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 6px}
+.tt-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:20px 10px;border-radius:18px;border:1px solid rgba(230,200,143,.3);background:rgba(255,255,255,.04);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;width:100%}
+.tt-btn:active{background:rgba(230,200,143,.12);border-color:var(--gold)}
+.tt-btn-icon{font-size:26px}
+.tt-divider{border:0;border-top:1px solid rgba(122,96,64,.3);margin:22px 0}
+.tt-loc-status{text-align:center;color:var(--muted);font-size:12px;min-height:18px;margin:6px 0}
+.tt-lost-title{color:var(--gold);font-weight:800;font-size:15px;text-align:center;margin-bottom:6px}
+.tt-lost-sub{color:var(--muted);font-size:13px;text-align:center;line-height:1.6;margin-bottom:16px}
+/* Chat */
+.chat-messages{max-height:340px;overflow-y:auto;padding:8px 0;margin-bottom:12px}
+.chat-msg{margin-bottom:10px;display:flex;flex-direction:column}
+.chat-msg.guest{align-items:flex-start}.chat-msg.owner{align-items:flex-end}
+.chat-name{font-size:11px;color:var(--muted);margin-bottom:3px}
+.chat-bubble{max-width:82%;padding:10px 14px;border-radius:14px;line-height:1.5;font-size:14px;word-break:break-word}
+.chat-msg.guest .chat-bubble{background:#1e1e1e;border:1px solid rgba(230,200,143,.25);border-radius:14px 14px 14px 2px}
+.chat-msg.owner .chat-bubble{background:linear-gradient(135deg,#3a2a0d,#2a1d08);border:1px solid var(--gold2);border-radius:14px 14px 2px 14px;color:var(--gold)}
+.chat-time{font-size:10px;color:var(--muted);margin-top:3px}
+.chat-input-row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.chat-input-row input{margin:0;flex:1}
+.btn.chat-send{width:auto;padding:14px 20px;margin:0;flex-shrink:0;font-size:14px}
+.chat-empty{text-align:center;color:var(--muted);font-size:13px;padding:24px 0}
+.chat-box{border:1px solid rgba(230,200,143,.25);border-radius:18px;padding:14px;margin-top:16px;background:rgba(255,255,255,.02)}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중입니다...</div></div></div>
+<script>
+const API_URL='https://script.google.com/macros/s/AKfycbyhOt-UJ_lZ8Upyw9ZvGKCNT0B2BEM3asnwOuI9_q7GsHHCYglWkPYmgPoz7FvNcNua/exec';
+const params=new URLSearchParams(location.search);
+const CODE=params.get('code')||'TT-0001';
+const MODE=params.get('mode')||'view';
+let QR_DATA=null;
+let currentLang=localStorage.getItem('saegim_lang')||'ko';
+let CHAT_UNSUBSCRIBE=null;
+let CHAT_NICKNAME=localStorage.getItem('bmt_chat_nick')||'';
+const app=document.getElementById('app');
+
+async function apiGet(action,extra={}){
+  const url=API_URL+'?action='+action+'&code='+encodeURIComponent(CODE)+Object.entries(extra).map(([k,v])=>'&'+k+'='+encodeURIComponent(v)).join('');
+  const r=await fetch(url);return r.json();
+}
+async function apiPost(payload){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json();
+}
+async function loadData(){
+  try{const data=await apiGet('getQrData');QR_DATA=data;if(MODE==='edit'){renderPassword();return;}renderView(data);}
+  catch(e){renderError('데이터를 불러오지 못했습니다.');}
+}
+
+function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}
+function editBtn(){return`<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=edit">정보 수정하기</a>`;}
+function langBar(){return`<div class="lang-bar">${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}</div>`;}
+function setLang(lang){currentLang=lang;localStorage.setItem('saegim_lang',lang);if(!QR_DATA)return;MODE==='edit'?renderPassword():renderView(QR_DATA);}
+
+function renderView(data){
+  if(data.status==='미등록'){renderInactive();return;}
+  if(data.status==='판매완료'){renderRegister(data);return;}
+  if(data.status==='중지'){renderStopped();return;}
+  renderTT(data);
+}
+function renderInactive(){app.innerHTML=`${brand()}<div class="main-title">아직 등록되지 않은 QR입니다</div><div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있습니다.</div><div class="footer">SAEGIM QR</div>`;}
+function renderStopped(){app.innerHTML=`${brand()}<div class="main-title">사용이 중지된 QR입니다</div><div class="sub">현재 이 QR은 비활성화 상태입니다.</div><div class="footer">SAEGIM QR</div>`;}
+
+function renderTT(data){
+  const t=(I18N[currentLang]||I18N.ko).tt;
+  const facilities=[{icon:'🚻',key:'restroom'},{icon:'☕',key:'cafe'},{icon:'🏪',key:'convenience'},{icon:'🚌',key:'bus'},{icon:'🚇',key:'subway'},{icon:'🏥',key:'hospital'},{icon:'🏧',key:'atm'},{icon:'📍',key:'tourist'}];
+  const contactBtn=data.lost_contact_url?`<a class="btn danger" href="${esc(normalizeLostUrl_(data.lost_contact_type,data.lost_contact_url))}">${esc(data.lost_contact_label||t.call)}</a>`:'';
+  app.innerHTML=`
+    ${brand()}
+    ${langBar()}
+    <div class="tt-header">
+      <div class="tt-tagline">🧳 길동무 태그</div>
+      <div class="tt-question">${esc(t.find_question)}</div>
+    </div>
+    <div class="tt-grid">${facilities.map(f=>`<button class="tt-btn" onclick="findNearby('${f.key}')"><span class="tt-btn-icon">${f.icon}</span><span>${esc(t.facilities[f.key])}</span></button>`).join('')}</div>
+    <div id="ttLocStatus" class="tt-loc-status"></div>
+    <hr class="tt-divider">
+    <div class="tt-lost-title">${esc(t.lost_title)}</div>
+    <div class="tt-lost-sub">${esc(t.lost_sub)}</div>
+    <button class="btn" onclick="showChat()">💬 ${esc(t.chat)}</button>
+    ${contactBtn}
+    ${editBtn()}
+    <div class="footer">SAEGIM · 길동무 태그</div>`;
+}
+function findNearby(key){
+  const t=(I18N[currentLang]||I18N.ko).tt;
+  const q=t.facilities[key];
+  const statusEl=document.getElementById('ttLocStatus');
+  const baseUrl='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q);
+  if(statusEl)statusEl.textContent=t.locating;
+  if(!navigator.geolocation){window.open(baseUrl,'_blank');if(statusEl)statusEl.textContent='';return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{if(statusEl)statusEl.textContent='';window.open(baseUrl+'&location='+pos.coords.latitude+','+pos.coords.longitude,'_blank');},
+    ()=>{if(statusEl){statusEl.textContent=t.loc_fail;setTimeout(()=>{statusEl.textContent='';},3000);}window.open(baseUrl,'_blank');},
+    {timeout:8000,enableHighAccuracy:false}
+  );
+}
+
+function showChat(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(CHAT_UNSUBSCRIBE){CHAT_UNSUBSCRIBE();CHAT_UNSUBSCRIBE=null;}
+  app.innerHTML=`${brand()}${langBar()}
+    <div class="main-title">💬 ${t.tt.chat}</div>
+    <div class="sub">${t.chat_sub||'태그 주인에게 메시지를 남겨주세요.'}</div>
+    ${!CHAT_NICKNAME?`<div id="nicknameBox"><label>${t.nickname_label}</label><input id="chat_nickname" placeholder="${t.nickname_placeholder}" maxlength="20"><button class="btn" onclick="setChatNickname()">${t.confirm}</button></div>`:`
+    <div class="chat-box">
+      <div id="chatMessages" class="chat-messages"><div class="chat-empty">${t.chat_loading}</div></div>
+      <div class="chat-input-row">
+        <input id="chat_msg" placeholder="${t.message_placeholder}" maxlength="300" onkeydown="if(event.key==='Enter')sendChatMessage()">
+        <button class="btn chat-send" onclick="sendChatMessage()">${t.send}</button>
+      </div>
+    </div>`}
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back}</a>`;
+  if(CHAT_NICKNAME)startGuestChatListener(t);
+}
+function setChatNickname(){
+  const t=I18N[currentLang]||I18N.ko;
+  const nick=val('chat_nickname');if(!nick){alert(t.nickname_required);return;}
+  CHAT_NICKNAME=nick;localStorage.setItem('bmt_chat_nick',nick);showChat();
+}
+function startGuestChatListener(t){
+  if(!window.firestoreDb)return;
+  const {collection,query,orderBy,onSnapshot}=window.firestoreApi;
+  const q=query(collection(window.firestoreDb,'chats',CODE,'messages'),orderBy('createdAt','asc'));
+  CHAT_UNSUBSCRIBE=onSnapshot(q,snapshot=>{
+    const box=document.getElementById('chatMessages');if(!box){if(CHAT_UNSUBSCRIBE)CHAT_UNSUBSCRIBE();return;}
+    if(snapshot.empty){box.innerHTML=`<div class="chat-empty">${t.chat_empty}</div>`;return;}
+    box.innerHTML=snapshot.docs.map(doc=>{const d=doc.data();const isOwner=d.user==='owner';return`<div class="chat-msg ${isOwner?'owner':'guest'}"><div class="chat-name">${esc(isOwner?(t.owner_label||'주인'):(d.nickname||'발견자'))}</div><div class="chat-bubble">${esc(d.message)}</div><div class="chat-time">${d.createdAt?d.createdAt.slice(11,16):''}</div></div>`;}).join('');
+    box.scrollTop=box.scrollHeight;
+  });
+}
+async function sendChatMessage(){
+  const t=I18N[currentLang]||I18N.ko;
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
+  const msg=val('chat_msg');if(!msg)return;
+  const {collection,addDoc}=window.firestoreApi;
+  const input=document.getElementById('chat_msg');input.disabled=true;
+  try{
+    await addDoc(collection(window.firestoreDb,'chats',CODE,'messages'),{user:'guest',nickname:CHAT_NICKNAME,message:msg,createdAt:new Date().toISOString(),lang:currentLang});
+    apiPost({action:'sendOwnerEmailAlert',code:CODE,nickname:CHAT_NICKNAME,message:msg}).catch(()=>{});
+    input.value='';
+  }catch(e){alert((t.send_fail||'전송 실패')+': '+e.message);}
+  finally{input.disabled=false;input.focus();}
+}
+
+function renderRegister(data){
+  const d=data||{};
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">최초 등록</div>
+    <div class="sub">🧳 길동무 태그<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
+    <label>표시 이름 (소유자 이름)</label>
+    <input id="owner" placeholder="예) 홍길동" value="${esc(d.owner||'')}">
+    <div class="section-title">분실 연락수단</div>
+    <label>연락 방식</label>
+    <select id="lost_contact_type">
+      <option value="">선택안함</option>
+      ${['전화','카카오','이메일','왓츠앱','라인','텔레그램'].map(v=>`<option value="${v}">${v==='카카오'?'카카오톡':v}</option>`).join('')}
+    </select>
+    <label>버튼 이름</label>
+    <input id="lost_contact_label" placeholder="주인에게 연락하기">
+    <label>연락처 (전화번호 또는 URL)</label>
+    <input id="lost_contact_url" placeholder="010-1234-5678 또는 링크">
+    <label>알림 이메일 (선택)</label>
+    <input id="owner_email" type="email" placeholder="example@email.com">
+    <hr>
+    <input id="new_password" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">
+    <button class="btn" onclick="registerFirst()">등록 완료</button>`;
+}
+function renderPassword(){
+  const t=I18N[currentLang]||I18N.ko;
+  app.innerHTML=`${brand()}${langBar()}
+    <div class="main-title">정보 수정하기</div>
+    <div class="sub">${t.edit_password_text||'등록된 비밀번호를 입력해주세요.'}</div>
+    <input id="pw" type="password" placeholder="${t.password_placeholder||'비밀번호'}">
+    <button class="btn" onclick="checkPassword()">${t.confirm||'확인'}</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">${t.back||'돌아가기'}</a>`;
+}
+async function checkPassword(){
+  const pw=document.getElementById('pw').value.trim();
+  if(!pw){alert('비밀번호를 입력해주세요.');return;}
+  const r=await apiGet('verifyPassword',{code:CODE,password:pw});
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
+  renderTTEditForm(pw);
+}
+function renderTTEditForm(password){
+  const d=QR_DATA;
+  app.innerHTML=`
+    ${brand()}
+    <div class="main-title">🧳 길동무 태그 수정</div>
+    <input id="password" type="hidden" value="${esc(password)}">
+    <div class="section-title">소유자 정보</div>
+    <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
+    <div class="section-title">분실 연락수단</div>
+    <label>연락 방식</label>
+    <select id="lost_contact_type">
+      <option value="" ${!d.lost_contact_type?'selected':''}>선택안함</option>
+      ${['전화','카카오','이메일','왓츠앱','라인','텔레그램'].map(v=>`<option value="${v}" ${d.lost_contact_type===v?'selected':''}>${v==='카카오'?'카카오톡':v}</option>`).join('')}
+    </select>
+    <label>버튼 이름</label><input id="lost_contact_label" value="${esc(d.lost_contact_label||'')}" placeholder="주인에게 연락하기">
+    <label>연락처</label><input id="lost_contact_url" value="${esc(d.lost_contact_url||'')}">
+    <label>알림 이메일</label><input id="owner_email" type="email" value="${esc(d.owner_email||'')}">
+    <button class="btn" onclick="saveEdit()">저장하기</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
+}
+async function registerFirst(){
+  const pw=val('new_password');if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
+  const form={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify([])};
+  ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  const r=await apiPost(form);if(!r.success){alert(r.message||'등록 실패');return;}
+  alert('등록이 완료되었습니다!');location.href='?code='+encodeURIComponent(CODE);
+}
+async function saveEdit(){
+  const form={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify([])};
+  ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  const r=await apiPost(form);if(!r.success){alert(r.message||'저장 실패');return;}
+  alert('저장되었습니다.');location.href='?code='+encodeURIComponent(CODE);
+}
+
+function normalizeLostUrl_(type,url){const v=String(url||'').trim();if(!v)return'';if(type==='전화')return v.startsWith('tel:')?v:'tel:'+v.replace(/[^0-9+]/g,'');if(type==='이메일')return v.startsWith('mailto:')?v:'mailto:'+v;return v;}
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function renderError(msg){app.innerHTML=`<div class="error">${esc(msg)}</div>`;}
+
+const I18N={
+  ko:{confirm:'확인',back:'돌아가기',edit_password_text:'등록된 비밀번호를 입력해주세요.',password_placeholder:'비밀번호',nickname_label:'닉네임',nickname_placeholder:'닉네임을 입력해주세요',nickname_required:'닉네임을 입력해주세요.',message_placeholder:'메시지를 입력하세요...',send:'전송',chat_empty:'아직 메시지가 없습니다.',chat_loading:'메시지를 불러오는 중...',chat_sub:'태그 주인에게 메시지를 남겨주세요.',owner_label:'주인',send_fail:'전송 실패',
+    tt:{find_question:'무엇을 찾고 계신가요?',facilities:{restroom:'화장실',cafe:'카페',convenience:'편의점',bus:'버스정류장',subway:'지하철역',hospital:'병원',atm:'ATM',tourist:'관광안내소'},lost_title:'이 태그를 발견하셨나요?',lost_sub:'주인에게 연락해 주세요.',chat:'주인에게 메시지',call:'전화하기',email_contact:'이메일 보내기',locating:'현재 위치 확인 중...',loc_fail:'위치 확인 실패. 일반 검색을 사용합니다.'}},
+  en:{confirm:'Confirm',back:'Back',edit_password_text:'Please enter the registered password.',password_placeholder:'Password',nickname_label:'Nickname',nickname_placeholder:'Enter your nickname',nickname_required:'Please enter a nickname.',message_placeholder:'Type a message...',send:'Send',chat_empty:'No messages yet.',chat_loading:'Loading messages...',chat_sub:'Leave a message for the tag owner.',owner_label:'Owner',send_fail:'Send failed',
+    tt:{find_question:'What are you looking for?',facilities:{restroom:'Restroom',cafe:'Café',convenience:'Convenience Store',bus:'Bus Stop',subway:'Subway Station',hospital:'Hospital',atm:'ATM',tourist:'Tourist Info'},lost_title:'Found this tag?',lost_sub:'Please contact the owner.',chat:'Message Owner',call:'Call',email_contact:'Send Email',locating:'Locating...',loc_fail:'Location unavailable. Using general search.'}},
+  ja:{confirm:'確認',back:'戻る',edit_password_text:'登録されたパスワードを入力してください。',password_placeholder:'パスワード',nickname_label:'ニックネーム',nickname_placeholder:'ニックネームを入力してください',nickname_required:'ニックネームを入力してください。',message_placeholder:'メッセージを入力...',send:'送信',chat_empty:'メッセージはまだありません。',chat_loading:'メッセージを読み込み中...',chat_sub:'タグのオーナーにメッセージを残してください。',owner_label:'オーナー',send_fail:'送信失敗',
+    tt:{find_question:'何をお探しですか？',facilities:{restroom:'トイレ',cafe:'カフェ',convenience:'コンビニ',bus:'バス停',subway:'地下鉄駅',hospital:'病院',atm:'ATM',tourist:'観光案内所'},lost_title:'このタグを見つけましたか？',lost_sub:'持ち主に連絡してください。',chat:'オーナーへメッセージ',call:'電話する',email_contact:'メールを送る',locating:'位置確認中...',loc_fail:'位置確認失敗。通常検索を使用します。'}},
+  zh:{confirm:'确认',back:'返回',edit_password_text:'请输入注册密码。',password_placeholder:'密码',nickname_label:'昵称',nickname_placeholder:'请输入昵称',nickname_required:'请输入昵称。',message_placeholder:'输入消息...',send:'发送',chat_empty:'暂无消息。',chat_loading:'正在加载消息...',chat_sub:'请给标签主人留言。',owner_label:'主人',send_fail:'发送失败',
+    tt:{find_question:'您在寻找什么？',facilities:{restroom:'洗手间',cafe:'咖啡厅',convenience:'便利店',bus:'公交站',subway:'地铁站',hospital:'医院',atm:'ATM',tourist:'旅游咨询处'},lost_title:'您找到这个标签了吗？',lost_sub:'请联系主人。',chat:'给主人发消息',call:'打电话',email_contact:'发送邮件',locating:'正在定位...',loc_fail:'位置确认失败。使用普通搜索。'}}
+};
+
+loadData();
+</script>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",authDomain:"saegim-memory.firebaseapp.com",projectId:"saegim-memory",storageBucket:"saegim-memory.firebasestorage.app",messagingSenderId:"888229102391",appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"});
+const db=getFirestore(fbApp);
+window.firestoreDb=db;
+window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+</script>
+</body>
+</html>
