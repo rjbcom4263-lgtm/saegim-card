@@ -507,3 +507,189 @@ function nowText_() {
     'yyyy-MM-dd HH:mm:ss'
   );
 }
+
+// ─────────────────────────────────────────────────────────
+// 보관 제품 관리 (비활성 제품 아카이브)
+// ─────────────────────────────────────────────────────────
+
+function getArchivedProducts() {
+  const sheet = getProductsSheet_();
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return [];
+
+  const headers = values[0].map(h => String(h).trim());
+  const typeCol = headers.indexOf('product_type');
+  const nameCol = headers.indexOf('product_name');
+  const activeCol = headers.indexOf('is_active');
+  const featuresCol = headers.indexOf('features');
+
+  return values.slice(1)
+    .filter(row => {
+      const type = String(row[typeCol] || '').trim();
+      const active = String(row[activeCol] || '').trim().toUpperCase();
+      return type && active !== 'TRUE';
+    })
+    .map(row => ({
+      product_type: String(row[typeCol] || '').trim().toUpperCase(),
+      product_name: String(row[nameCol] || '').trim(),
+      is_active: false,
+      features: String(row[featuresCol] || '').trim()
+    }));
+}
+
+function archiveOldProductSheetsFromUi() {
+  const products = getProducts(true);
+  const inactive = products.filter(p => !p.is_active);
+  if (inactive.length === 0) return { success: true, message: '보관할 비활성 제품이 없습니다.' };
+
+  const archived = [];
+  inactive.forEach(function(p) {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(p.product_type);
+    if (!sheet) return;
+    // 시트 이름에 _ARCHIVED 접미사 추가
+    const newName = p.product_type + '_ARCHIVED';
+    const existing = ss.getSheetByName(newName);
+    if (!existing) {
+      sheet.setName(newName);
+      archived.push(p.product_type);
+    }
+  });
+
+  return {
+    success: true,
+    message: archived.length > 0
+      ? archived.join(', ') + ' 시트 보관 완료'
+      : '이미 보관 처리된 제품입니다.',
+    archived: archived
+  };
+}
+
+function restoreArchivedProductFromUi(productType) {
+  productType = String(productType || '').trim().toUpperCase();
+  if (!productType) throw new Error('제품 코드가 없습니다.');
+
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const archivedName = productType + '_ARCHIVED';
+  const sheet = ss.getSheetByName(archivedName);
+
+  if (!sheet) throw new Error(archivedName + ' 시트를 찾을 수 없습니다.');
+
+  sheet.setName(productType);
+
+  // PRODUCTS 시트에서 is_active를 TRUE로 복원
+  const prodSheet = getProductsSheet_();
+  const values = prodSheet.getDataRange().getValues();
+  const headers = values[0].map(h => String(h).trim());
+  const typeCol = headers.indexOf('product_type');
+  const activeCol = headers.indexOf('is_active');
+
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][typeCol] || '').trim().toUpperCase() === productType) {
+      prodSheet.getRange(i + 1, activeCol + 1).setValue('TRUE');
+      break;
+    }
+  }
+
+  return { success: true, message: productType + ' 복원 완료' };
+}
+
+// ─────────────────────────────────────────────────────────
+// Firebase Admin API Router
+// Firebase /admin 화면에서 fetch()로 호출
+// Content-Type: text/plain 사용
+// ─────────────────────────────────────────────────────────
+
+function doPost(e) {
+  try {
+    const payload = parsePostPayload_(e);
+    const action = String(payload.action || '').trim();
+
+    if (!action) throw new Error('action 값이 없습니다.');
+
+    // verifyAdminKey 외 모든 액션은 키 검증 필수
+    assertAdminAccess_(payload.admin_key);
+
+    let result;
+
+    if (action === 'verifyAdminKey') {
+      result = { success: true, message: '관리자 인증 성공' };
+
+    } else if (action === 'getProducts') {
+      result = { success: true, data: getProducts(true) };
+
+    } else if (action === 'getDashboardData') {
+      result = { success: true, data: getDashboardData() };
+
+    } else if (action === 'getInventoryItems') {
+      result = { success: true, data: getInventoryItems() };
+
+    } else if (action === 'getSettingsData') {
+      result = { success: true, data: getSettingsData() };
+
+    } else if (action === 'createQrInventory') {
+      result = createQrInventory(payload.form || {});
+
+    } else if (action === 'updateQrStatus') {
+      result = updateQrStatus(payload.code, payload.status);
+
+    } else if (action === 'saveProduct') {
+      result = saveProduct(payload.form || {});
+
+    } else if (action === 'deactivateProduct') {
+      result = deactivateProduct(payload.product_type);
+
+    } else if (action === 'getArchivedProducts') {
+      result = { success: true, data: getArchivedProducts() };
+
+    } else if (action === 'archiveOldProductSheets') {
+      result = archiveOldProductSheetsFromUi();
+
+    } else if (action === 'restoreArchivedProduct') {
+      result = restoreArchivedProductFromUi(payload.product_type);
+
+    } else {
+      throw new Error('알 수 없는 action입니다: ' + action);
+    }
+
+    return jsonResponse_(result);
+
+  } catch (err) {
+    return jsonResponse_({
+      success: false,
+      message: err && err.message ? err.message : String(err)
+    });
+  }
+}
+
+function parsePostPayload_(e) {
+  if (!e || !e.postData || !e.postData.contents) return {};
+  const text = String(e.postData.contents || '').trim();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new Error('요청 JSON 파싱 실패: ' + err.message);
+  }
+}
+
+function assertAdminAccess_(adminKey) {
+  const props = PropertiesService.getScriptProperties();
+  const savedKey = props.getProperty('ADMIN_ACCESS_KEY');
+  if (!savedKey) throw new Error('Script Properties에 ADMIN_ACCESS_KEY가 없습니다.');
+  if (String(adminKey || '') !== String(savedKey)) throw new Error('관리자 인증 실패');
+}
+
+function jsonResponse_(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Script Properties 설정 확인용 (Apps Script에서 직접 실행)
+function checkAdminAccessKeySetting() {
+  const props = PropertiesService.getScriptProperties();
+  const savedKey = props.getProperty('ADMIN_ACCESS_KEY');
+  if (!savedKey) throw new Error('ADMIN_ACCESS_KEY가 설정되어 있지 않습니다.');
+  Logger.log('ADMIN_ACCESS_KEY 설정 확인 완료');
+}

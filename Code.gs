@@ -381,6 +381,21 @@ function nowText_() {
   );
 }
 
+function getOneSignalConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  const appId = String(props.getProperty('ONESIGNAL_APP_ID') || '').trim();
+  const restApiKey = String(props.getProperty('ONESIGNAL_REST_API_KEY') || '').trim();
+  if (!appId) throw new Error('Script Properties에 ONESIGNAL_APP_ID가 없습니다.');
+  if (!restApiKey) throw new Error('Script Properties에 ONESIGNAL_REST_API_KEY가 없습니다.');
+  return { app_id: appId, rest_api_key: restApiKey };
+}
+
+function checkOneSignalSettings() {
+  const config = getOneSignalConfig_();
+  Logger.log('ONESIGNAL_APP_ID 설정 확인: ' + config.app_id);
+  Logger.log('ONESIGNAL_REST_API_KEY 설정 확인 완료');
+}
+
 function sendOwnerEmailAlert(params) {
   try {
     const code = String(params.code || '').trim();
@@ -448,24 +463,30 @@ function sendOwnerPushAlert(params) {
     const data = getRowObject_(row);
     const playerId = String(data.push_token || '').trim();
     if (!playerId) return { success: false, message: '푸시 토큰이 없습니다.' };
+
+    const oneSignal = getOneSignalConfig_();
     const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
     const payload = JSON.stringify({
-      app_id: '4454afde-61d3-4c7a-9f09-84de382a029d',
+      app_id: oneSignal.app_id,
       include_subscription_ids: [playerId],
-      headings: { en: '[새김] ' + code + ' 새 메시지', ko: '[새김] ' + code + ' 새 메시지' },
+      headings: { en: '[SAEGIM] ' + code + ' New message', ko: '[새김] ' + code + ' 새 메시지' },
       contents: { en: nickname + ': ' + message, ko: nickname + ': ' + message },
       url: pageUrl
     });
     const response = UrlFetchApp.fetch('https://api.onesignal.com/notifications', {
       method: 'post',
       contentType: 'application/json',
-      headers: { Authorization: 'Key os_v2_app_irkk7xtb2nghvhyjqtpdqkqctul2cyqw76buolfthjqff6znmsqemlbos3nmy7pob6ma2bk7zptx76cm655dyaccxtyvxuoyl5sglia' },
+      headers: { Authorization: 'Key ' + oneSignal.rest_api_key },
       payload: payload,
       muteHttpExceptions: true
     });
-    const result = JSON.parse(response.getContentText());
+    const text = response.getContentText();
+    const result = text ? JSON.parse(text) : {};
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+      return { success: false, message: 'OneSignal 전송 실패: ' + text };
+    }
     if (result.errors) return { success: false, message: JSON.stringify(result.errors) };
-    return { success: true };
+    return { success: true, message: '푸시 알림 전송 완료' };
   } catch (err) {
     return { success: false, message: String(err) };
   }
