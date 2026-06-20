@@ -244,6 +244,10 @@ function ensureMasterSheet_() {
   return ensureSheetHeaders_(sheet);   // ✅ 공통 함수 사용
 }
 
+function getMasterSheet_() {
+  return ensureMasterSheet_();
+}
+
 // ─────────────────────────────────────────────
 // QR Inventory
 // ─────────────────────────────────────────────
@@ -313,6 +317,9 @@ function createQrInventory(form) {
   masterSheet
     .getRange(masterSheet.getLastRow() + 1, 1, rows.length, QR_HEADERS.length)
     .setValues(rows);
+
+  // ✅ 시트 저장 완료 후 Firestore 백업
+  createdCodes.forEach(function(c) { tryBackupToFirestore_(c); });
 
   return {
     success:    true,
@@ -387,6 +394,9 @@ function updateQrStatus(code, status) {
   const okProduct = updateStatusInSheet_(productSheet, code, status);
   const masterSheet = ss.getSheetByName(MASTER_SHEET_NAME);
   const okMaster    = masterSheet ? updateStatusInSheet_(masterSheet, code, status) : false;
+
+  // ✅ 시트 저장 완료 후 Firestore 백업 (QR_DB까지 성공한 경우에만)
+  if (okProduct && okMaster) tryBackupToFirestore_(code);
 
   return {
     success:       okProduct,
@@ -506,6 +516,149 @@ function nowText_() {
     Session.getScriptTimeZone(),
     'yyyy-MM-dd HH:mm:ss'
   );
+}
+
+// ─────────────────────────────────────────────
+// Firestore 백업
+// ─────────────────────────────────────────────
+
+const FIRESTORE_PROJECT_ID  = 'saegim-memory';
+const FIRESTORE_COLLECTION  = 'qr_cards';
+
+// 백업 대상 필드 (password / admin_password 제외)
+const FIRESTORE_BACKUP_FIELDS = [
+  'code', 'product', 'product_type', 'owner', 'status', 'qr_file',
+  'scan_count', 'sold_at', 'registered_at', 'updated_at', 'memo',
+  'owner_email', 'lost_mode', 'lost_contact_type', 'lost_contact_label',
+  'lost_contact_url', 'firestore_backup_at'
+];
+
+// 서비스 계정 JWT → access_token
+function getFirestoreToken_() {
+  const props         = PropertiesService.getScriptProperties();
+  const clientEmail   = props.getProperty('FIREBASE_CLIENT_EMAIL');
+  const rawPrivateKey = props.getProperty('FIREBASE_PRIVATE_KEY');
+
+  if (!clientEmail || !rawPrivateKey) {
+    throw new Error('Script Properties에 FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY가 없습니다.');
+  }
+
+  const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
+  const now        = Math.floor(Date.now() / 1000);
+  const toB64      = s => Utilities.base64EncodeWebSafe(s).replace(/=+$/, '');
+  const header     = toB64(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload    = toB64(JSON.stringify({
+    iss:   clientEmail,
+    scope: 'https://www.googleapis.com/auth/datastore',
+    aud:   'https://oauth2.googleapis.com/token',
+    iat:   now,
+    exp:   now + 3600
+  }));
+
+  const sigInput  = header + '.' + payload;
+  const signature = Utilities.base64EncodeWebSafe(
+    Utilities.computeRsaSha256Signature(sigInput, privateKey)
+  ).replace(/=+$/, '');
+
+  const assertion = sigInput + '.' + signature;
+  const res = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+    method:      'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload:     'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + encodeURIComponent(assertion),
+    muteHttpExceptions: true
+  });
+
+  const json = JSON.parse(res.getContentText());
+  if (!json.access_token) throw new Error('토큰 발급 실패: ' + res.getContentText());
+  return json.access_token;
+}
+
+// rowData: 헤더-값 매핑 객체  ex) { code: 'CD-0023', status: '판매완료', ... }
+// 반환: firestore_backup_at 값 (성공 시)
+function backupQrToFirestore_(rowData) {
+  const code = String(rowData['code'] || '').trim();
+  if (!code) throw new Error('code 값이 없습니다.');
+
+  const backupAt = nowText_();
+  rowData['firestore_backup_at'] = backupAt;
+
+  // Firestore REST API fields 형식으로 변환
+  const fields = {};
+  FIRESTORE_BACKUP_FIELDS.forEach(function(key) {
+    const val = rowData[key];
+    if (val === undefined || val === null || val === '') {
+      fields[key] = { nullValue: null };
+    } else if (key === 'scan_count') {
+      fields[key] = { integerValue: String(Number(val) || 0) };
+    } else {
+      fields[key] = { stringValue: String(val) };
+    }
+  });
+
+  const token = getFirestoreToken_();
+  const url   = 'https://firestore.googleapis.com/v1/projects/' + FIRESTORE_PROJECT_ID
+              + '/databases/(default)/documents/' + FIRESTORE_COLLECTION
+              + '/' + encodeURIComponent(code);
+
+  const res = UrlFetchApp.fetch(url, {
+    method:      'patch',
+    contentType: 'application/json',
+    headers:     { Authorization: 'Bearer ' + token },
+    payload:     JSON.stringify({ fields: fields }),
+    muteHttpExceptions: true
+  });
+
+  if (res.getResponseCode() !== 200) {
+    throw new Error('Firestore 저장 실패 (' + res.getResponseCode() + '): ' + res.getContentText());
+  }
+  return backupAt;
+}
+
+// 시트에서 해당 code 행의 firestore_backup_at 컬럼 업데이트
+function updateFirestoreBackupAt_(code, backupAt) {
+  const sheet   = getMasterSheet_();
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h).trim());
+  const codeCol    = headers.indexOf('code');
+  const backupCol  = headers.indexOf('firestore_backup_at');
+  if (codeCol < 0 || backupCol < 0) return;
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][codeCol]).trim() === code) {
+      sheet.getRange(i + 1, backupCol + 1).setValue(backupAt);
+      return;
+    }
+  }
+}
+
+// 시트에서 code로 rowData 빌드 후 Firestore 백업 + backup_at 시트 기록
+// try-catch 래핑: Firestore 실패가 시트 저장에 영향 없도록
+function tryBackupToFirestore_(code) {
+  try {
+    const sheet   = getMasterSheet_();
+    const data    = sheet.getDataRange().getValues();
+    const headers = data[0].map(h => String(h).trim());
+    const codeCol = headers.indexOf('code');
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][codeCol]).trim() !== code) continue;
+      const rowData = {};
+      headers.forEach(function(h, j) { rowData[h] = data[i][j]; });
+      const backupAt = backupQrToFirestore_(rowData);
+      updateFirestoreBackupAt_(code, backupAt);
+      return;
+    }
+  } catch (e) {
+    // Firestore 실패는 로그만 남기고 무시 (시트 저장은 이미 완료)
+    console.error('[Firestore 백업 실패] ' + code + ': ' + e.message);
+  }
+}
+
+// 테스트용 — Apps Script 에디터에서 직접 실행
+function testFirestoreBackup() {
+  const code = 'CD-0023';
+  tryBackupToFirestore_(code);
+  Logger.log('백업 완료: ' + code);
 }
 
 // ─────────────────────────────────────────────
