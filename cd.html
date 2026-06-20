@@ -47,7 +47,7 @@ async function apiGet(action,extra={}){
   const r=await fetch(url);return r.json();
 }
 async function apiPost(payload){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),redirect:'follow'});
   return r.json();
 }
 
@@ -249,21 +249,23 @@ function removeLinkItem(index){
 
 // ── 등록 & 저장 ────────────────────────────────────────────
 async function registerFirst(){
-  const pw=val('new_password');
-  if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
-  const links=collectLinks();
-  const form={
-    action:'registerSoldQr',code:CODE,password:pw,
-    owner:val('owner'),links:JSON.stringify(links),
-    child_name:val('child_name'),guardian_name:val('guardian_name'),
-    guardian_phone:val('guardian_phone'),child_note:val('child_note'),
-    child_allergy:val('child_allergy'),blood_type:val('blood_type'),
-    child_message:val('child_message')
-  };
-  const r=await apiPost(form);
-  if(!r.success){alert(r.message||'등록 실패');return;}
-  alert('등록이 완료되었습니다!');
-  location.href='?code='+encodeURIComponent(CODE);
+  try{
+    const pw=val('new_password');
+    if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
+    const links=collectLinks();
+    const form={
+      action:'registerSoldQr',code:CODE,password:pw,
+      owner:val('owner'),links:JSON.stringify(links),
+      child_name:val('child_name'),guardian_name:val('guardian_name'),
+      guardian_phone:val('guardian_phone'),child_note:val('child_note'),
+      child_allergy:val('child_allergy'),blood_type:val('blood_type'),
+      child_message:val('child_message')
+    };
+    const r=await apiPost(form);
+    if(!r.success){alert(r.message||'등록 실패');return;}
+    alert('등록이 완료되었습니다!');
+    location.href='?code='+encodeURIComponent(CODE);
+  }catch(e){alert('오류: '+e.message);}
 }
 async function saveEdit(){
   const links=collectLinks();
