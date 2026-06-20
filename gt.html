@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>?��? 가?�태�?/title>
+<title>새김 가든태그</title>
 <style>
 :root{--bg:#111;--card:#171717;--line:#7a6040;--gold:#e6c88f;--gold2:#c7a05d;--text:#f6ead4;--muted:#b7a88f}
 *{box-sizing:border-box}
@@ -78,13 +78,9 @@ label{display:block;color:var(--gold);font-size:13px;margin-top:6px}
 </style>
 </head>
 <body>
-<div class="wrap"><div id="app" class="card"><div class="loading">불러?�는 중입?�다...</div></div></div>
+<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중입니다...</div></div></div>
 <script>
-<<<<<<< Updated upstream
 const API_URL='https://script.google.com/macros/s/AKfycbyfXyoJpEJ1hHz4MCN0I46QVUp2RqO5i2pnD_1M4fvTYWPQB-yoBxpWts08RdzihxVmnw/exec';
-=======
-const API_URL='https://script.google.com/macros/s/AKfycbyfXyoJpEJ1hHz4MCN0I46QVUp2RqO5i2pnD_1M4fvTYWPQB-yoBxpWts08RdzihxVmnw/exec';
->>>>>>> Stashed changes
 const params=new URLSearchParams(location.search);
 const CODE=params.get('code')||'GT-0001';
 const MODE=params.get('mode')||'view';
@@ -103,43 +99,40 @@ async function apiPost(payload){
 }
 async function loadData(){
   try{const data=await apiGet('getQrData');QR_DATA=data;if(MODE==='admin'){renderGardenAdminPassword();return;}renderView(data);}
-  catch(e){renderError('?�이?��? 불러?��? 못했?�니??');}
+  catch(e){renderError('데이터를 불러오지 못했습니다.');}
 }
 
-function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억???�기??· 마음???�다</div></div>`;}
-function editBtn(){return`<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=admin" style="margin-top:16px">?�� ?�영??모드</a>`;}
+function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}
+function editBtn(){return`<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=admin" style="margin-top:16px">🌿 운영자 모드</a>`;}
 function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
 function infoRow(label,value){return`<div class="row"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div></div>`;}
 function renderError(msg){app.innerHTML=`<div class="error">${esc(msg)}</div>`;}
 
 function renderView(data){
-  if(!data||data.status==='미등�?){renderInactive();return;}
-  if(data.status==='?�매?�료'&&!data.owner){renderRegister(data);return;}
-  if(data.status==='중�?'){renderStopped();return;}
+  if(!data||data.status==='미등록'){renderInactive();return;}
+  if(data.status==='판매완료'&&!data.owner){renderRegister(data);return;}
+  if(data.status==='중지'){renderStopped();return;}
   renderGardenTag(data);
 }
-function renderInactive(){app.innerHTML=`${brand()}<div class="main-title">?�직 ?�록?��? ?��? QR?�니??/div><div class="sub">?�품 구매 ?�는 ?�매�??�록 ???�용?????�어??</div><div class="footer">SAEGIM GT</div>`;}
-function renderStopped(){app.innerHTML=`${brand()}<div class="main-title">?�용??중�???QR?�니??/div><div class="sub">?�재 ??QR?� 비활?�화 ?�태?�니??</div><div class="footer">SAEGIM GT</div>`;}
+function renderInactive(){app.innerHTML=`${brand()}<div class="main-title">아직 등록되지 않은 QR입니다</div><div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있어요.</div><div class="footer">SAEGIM GT</div>`;}
+function renderStopped(){app.innerHTML=`${brand()}<div class="main-title">사용이 중지된 QR입니다</div><div class="sub">현재 이 QR은 비활성화 상태입니다.</div><div class="footer">SAEGIM GT</div>`;}
 
-<<<<<<< Updated upstream
-/* ?�?� GT ?�물 ?�계 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── GT 식물 단계 ── */
 const GT_PLANT_STAGES={
-  sunflower:['?��','?��','?��','?��','?��'],
-  cosmos:   ['?��','?��','?��','?��','?��'],
-  camellia: ['?��','?��','?��','?��','?��'],
-  cactus:   ['?��','?��','?��','?��','?��'],
-  clover:   ['??','??','??','??','??'],
-  dandelion:['?��','?��','?��','?��','?��']
+  sunflower:['🌱','🌿','🌿','🌻','🌻'],
+  cosmos:   ['🌱','🌿','🌸','🌸','🌸'],
+  camellia: ['🌱','🌿','🌺','🌺','🌺'],
+  cactus:   ['🌵','🌵','🌵','🌵','🌵'],
+  clover:   ['🍀','🍀','🍀','🍀','🍀'],
+  dandelion:['🌱','🌿','🪴','🌷','🌼']
 };
 const GT_SEEDS=[
-  {type:'sunflower',name:'?�바?�기',emoji:'?��'},
-  {type:'cosmos',name:'코스모스',emoji:'?��'},
-  {type:'camellia',name:'?�백�?,emoji:'?��'},
-  {type:'cactus',name:'?�인??,emoji:'?��'},
-  {type:'clover',name:'?�끼?�',emoji:'??'}
+  {type:'sunflower',name:'해바라기',emoji:'🌻'},
+  {type:'cosmos',name:'코스모스',emoji:'🌸'},
+  {type:'camellia',name:'동백꽃',emoji:'🌺'},
+  {type:'cactus',name:'선인장',emoji:'🌵'},
+  {type:'clover',name:'토끼풀',emoji:'🍀'}
 ];
 function getPlantStages(type){return GT_PLANT_STAGES[type]||GT_PLANT_STAGES.dandelion;}
 function normalizeInventory(garden){
@@ -156,14 +149,11 @@ function getCurrentPlant(slots){
   return[...slots].reverse().find(s=>s&&s.unlocked&&!s.empty&&s.stage<5)||[...slots].reverse().find(s=>s&&s.unlocked&&!s.empty)||null;
 }
 
-<<<<<<< Updated upstream
-/* ?�?� ?�앗 모달 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 씨앗 모달 ── */
 function seedModalHtml(){
   return`<div id="gtSeedModal" class="gt-seed-modal" onclick="closeSeedModal()">
     <div class="gt-seed-box" onclick="event.stopPropagation()">
-      <div class="gt-seed-title">?�떤 ?�앗???�을까요?</div>
+      <div class="gt-seed-title">어떤 씨앗을 심을까요?</div>
       <div class="gt-seed-grid">${GT_SEEDS.map(seed=>`<button class="gt-seed-btn" onclick="plantSeed('${seed.type}')"><span>${seed.emoji}</span>${seed.name}</button>`).join('')}</div>
       <button class="btn sub" onclick="closeSeedModal()">취소</button>
     </div>
@@ -172,17 +162,14 @@ function seedModalHtml(){
 function openSeedModal(slot){GT_SELECTED_SLOT=slot;document.getElementById('gtSeedModal').classList.add('on');}
 function closeSeedModal(){const m=document.getElementById('gtSeedModal');if(m)m.classList.remove('on');}
 
-<<<<<<< Updated upstream
-/* ?�?� ?�물 ?�보 모달 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 식물 정보 모달 ── */
 function plantInfoModalHtml(){
   return`<div class="gt-plant-modal" id="gtPlantModal" onclick="closePlantInfo()">
     <div class="gt-plant-box" onclick="event.stopPropagation()">
-      <div class="gt-plant-modal-emoji" id="gtPlantModalEmoji">?��</div>
-      <div class="gt-plant-modal-title" id="gtPlantModalTitle">?�물 ?�보</div>
+      <div class="gt-plant-modal-emoji" id="gtPlantModalEmoji">🌱</div>
+      <div class="gt-plant-modal-title" id="gtPlantModalTitle">식물 정보</div>
       <div class="gt-plant-modal-info" id="gtPlantModalInfo"></div>
-      <button class="btn" onclick="closePlantInfo()">?�기</button>
+      <button class="btn" onclick="closePlantInfo()">닫기</button>
     </div>
   </div>`;
 }
@@ -195,35 +182,32 @@ function openPlantInfo(slotIndex){
   const stage=Number(s.stage||1);const next=Number(s.next_point||0);
   const baseNeed=stage>=5?1:10;
   const percent=stage>=5?100:Math.max(0,Math.min(100,Math.round((1-(next/baseNeed))*100)));
-  const stageLabels=['','?�앗','?�싹','?�장','꽃봉?�리','?�짝 ??];
-  document.getElementById('gtPlantModalEmoji').textContent=s.emoji||'?��';
-  document.getElementById('gtPlantModalTitle').textContent=s.plant_name||'?�의 ?�물';
+  const stageLabels=['','씨앗','새싹','성장','꽃봉오리','활짝 핌'];
+  document.getElementById('gtPlantModalEmoji').textContent=s.emoji||'🌱';
+  document.getElementById('gtPlantModalTitle').textContent=s.plant_name||'나의 식물';
   document.getElementById('gtPlantModalInfo').innerHTML=`
-    ?�계: ${stageLabels[stage]||stage+'?�계'}<br>
-    ?�장?? <b style="color:var(--gold)">${percent}%</b><br>
-    ?�음 ?�계까�?: ${stage>=5?'?�성!':next+' ?�인??}<br>
-    ?��? ?? ${s.planted_at?s.planted_at.slice(0,10):'?????�음'}
+    단계: ${stageLabels[stage]||stage+'단계'}<br>
+    성장도: <b style="color:var(--gold)">${percent}%</b><br>
+    다음 단계까지: ${stage>=5?'완성!':next+' 포인트'}<br>
+    심은 날: ${s.planted_at?s.planted_at.slice(0,10):'알 수 없음'}
   `;
   modal.classList.add('on');
 }
 function closePlantInfo(){const m=document.getElementById('gtPlantModal');if(m)m.classList.remove('on');}
 
-<<<<<<< Updated upstream
-/* ?�?� ?�원 �??�?� */
-=======
->>>>>>> Stashed changes
+/* ── 정원 뷰 ── */
 function renderGardenTagView(garden){
   GT_LAST_GARDEN=garden;
   let slots=Array.isArray(garden.garden_slots)?garden.garden_slots:[];
   if(!slots.length){
     slots=[
-      {slot:0,plant_type:'dandelion',plant_name:'민들???�싹',emoji:'?��',stage:1,growth_point:0,next_point:10,unlocked:true,empty:false},
+      {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:0,next_point:10,unlocked:true,empty:false},
       ...Array.from({length:8},(_,i)=>({slot:i+1,unlocked:false}))
     ];
   }
   _lastGarden=garden;
   const activePlant=getCurrentPlant(slots);
-  const gardenName=garden.garden_name||garden.owner||'?�의';
+  const gardenName=garden.garden_name||garden.owner||'나의';
   const inventory=normalizeInventory(garden);
   let progressHtml='';
   if(activePlant){
@@ -231,40 +215,40 @@ function renderGardenTagView(garden){
     const baseNeed=stage>=5?1:10;
     const percent=stage>=5?100:Math.max(0,Math.min(100,Math.round((1-(next/baseNeed))*100)));
     progressHtml=`
-      <div class="gt-growth-name">${activePlant.emoji||'?��'} ${esc(activePlant.plant_name||'?�의 ?�물')}</div>
-      <div class="gt-progress-text">?�장??<b style="color:var(--gold)">${percent}%</b></div>
+      <div class="gt-growth-name">${activePlant.emoji||'🌱'} ${esc(activePlant.plant_name||'나의 식물')}</div>
+      <div class="gt-progress-text">성장도 <b style="color:var(--gold)">${percent}%</b></div>
       <div class="gt-bar"><div class="gt-bar-fill" style="width:${percent}%"></div></div>
-      <div class="gt-progress-text">${stage>=5?'?�짝 ?�었?�니??:'?�음 ?�계까�? <b style="color:var(--gold)">'+next+' ?�인??/b>'}</div>
+      <div class="gt-progress-text">${stage>=5?'활짝 피었습니다':'다음 단계까지 <b style="color:var(--gold)">'+next+' 포인트</b>'}</div>
     `;
   }else{
-    progressHtml=`<div class="gt-growth-name">비어 ?�는 ?�원</div><div class="gt-empty-tip">?�린 ?�단???�러 ?�하???�앗???�어보세??</div>`;
+    progressHtml=`<div class="gt-growth-name">비어 있는 정원</div><div class="gt-empty-tip">열린 화단을 눌러 원하는 씨앗을 심어보세요.</div>`;
   }
   app.innerHTML=`
     ${brand()}
     <div class="gt-wrap">
       <div class="gt-title">SAEGIM GARDEN</div>
-      <div class="gt-garden-name">?�� ${esc(gardenName)}???�원</div>
-      <div class="gt-sub">?�늘??천천???�라�??�습?�다.</div>
+      <div class="gt-garden-name">🌿 ${esc(gardenName)}의 정원</div>
+      <div class="gt-sub">오늘도 천천히 자라고 있습니다.</div>
       <div class="gt-resource-bar">
-        <div class="gt-resource">${repeatIcon('?��',inventory.water)}<span class="gt-resource-label">?�늘??�?/span></div>
-        <div class="gt-resource">${repeatIcon('?��',inventory.fertilizer)}<span class="gt-resource-label">비료</span></div>
-        <div class="gt-resource">??x${inventory.booster}<span class="gt-resource-label">?�장촉진??/span></div>
+        <div class="gt-resource">${repeatIcon('💧',inventory.water)}<span class="gt-resource-label">오늘의 물</span></div>
+        <div class="gt-resource">${repeatIcon('🌾',inventory.fertilizer)}<span class="gt-resource-label">비료</span></div>
+        <div class="gt-resource">✨ x${inventory.booster}<span class="gt-resource-label">성장촉진제</span></div>
       </div>
       <div class="gt-garden">
         ${slots.map(s=>{
-          if(s&&s.unlocked&&s.empty)return`<div class="gt-slot empty-open" onclick="openSeedModal(${s.slot})"><div class="gt-plant">�?/div></div>`;
-          if(s&&s.unlocked)return`<div class="gt-slot" onclick="openPlantInfo(${s.slot})"><div class="gt-plant">${s.emoji||'?��'}</div></div>`;
-          return`<div class="gt-slot locked"><div class="gt-lock-wrap"><span class="gt-lock">?��</span><span class="gt-lock-text">개화 ???�림</span></div></div>`;
+          if(s&&s.unlocked&&s.empty)return`<div class="gt-slot empty-open" onclick="openSeedModal(${s.slot})"><div class="gt-plant">＋</div></div>`;
+          if(s&&s.unlocked)return`<div class="gt-slot" onclick="openPlantInfo(${s.slot})"><div class="gt-plant">${s.emoji||'🌱'}</div></div>`;
+          return`<div class="gt-slot locked"><div class="gt-lock-wrap"><span class="gt-lock">🔒</span><span class="gt-lock-text">개화 후 열림</span></div></div>`;
         }).join('')}
       </div>
       <div class="gt-info">
         ${progressHtml}
         <div class="gt-progress-text" style="display:flex;justify-content:space-between;margin-top:12px">
-          <span>�?방문 ${garden.visit_count||0}??/span>
-          <span>물주�?${garden.water_count||0}??/span>
+          <span>총 방문 ${garden.visit_count||0}회</span>
+          <span>물주기 ${garden.water_count||0}회</span>
         </div>
-        <button class="btn" onclick="waterGarden()">?�� 물주�?/button>
-        <button class="btn sub" onclick="fertilizeGarden()">?�� 비료주기</button>
+        <button class="btn" onclick="waterGarden()">💧 물주기</button>
+        <button class="btn sub" onclick="fertilizeGarden()">🌾 비료주기</button>
       </div>
     </div>
     ${seedModalHtml()}
@@ -274,39 +258,33 @@ function renderGardenTagView(garden){
   `;
 }
 
-<<<<<<< Updated upstream
-/* ?�?� GT 메인 로드 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── GT 메인 로드 ── */
 async function renderGardenTag(data){
   app.innerHTML=`
     ${brand()}
     <div class="gt-wrap">
       <div class="gt-title">SAEGIM GARDEN</div>
       <div class="gt-loading">
-        <div class="gt-loading-plant">?��</div>
-        <div class="gt-sub">?�원?�로 가??중입?�다...</div>
-        <div class="gt-loading-dots">?��? ?�싹??깨우�??�어??/div>
+        <div class="gt-loading-plant">🌱</div>
+        <div class="gt-sub">정원으로 가는 중입니다...</div>
+        <div class="gt-loading-dots">작은 새싹을 깨우고 있어요</div>
       </div>
     </div>
     <div class="footer">SAEGIM · GARDEN TAG</div>
   `;
   try{
-    if(!window.firestoreDb||!window.firestoreApi)throw new Error('Firestore 초기??미완�?);
+    if(!window.firestoreDb||!window.firestoreApi)throw new Error('Firestore 초기화 미완료');
     let garden=await getOrCreateGardenData();
     garden=await refreshDailyResources(garden);
     garden=await applyDailyVisitBonus(garden);
     renderGardenTagView(garden);
   }catch(e){
     console.error('GT Error:',e);
-    renderError('?�원 로딩 ?�류: '+e.message);
+    renderError('정원 로딩 오류: '+e.message);
   }
 }
 
-<<<<<<< Updated upstream
-/* ?�?� Firestore ?�퍼 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── Firestore 헬퍼 ── */
 async function getOrCreateGardenData(){
   const {doc,getDoc,setDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
@@ -316,7 +294,7 @@ async function getOrCreateGardenData(){
   const initData={
     code:CODE,owner:QR_DATA.owner||'',
     garden_slots:[
-      {slot:0,plant_type:'dandelion',plant_name:'민들???�싹',emoji:'?��',stage:1,growth_point:12,next_point:8,unlocked:true},
+      {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:12,next_point:8,unlocked:true},
       {slot:1,unlocked:false},{slot:2,unlocked:false},{slot:3,unlocked:false},
       {slot:4,unlocked:false},{slot:5,unlocked:false},{slot:6,unlocked:false},
       {slot:7,unlocked:false},{slot:8,unlocked:false}
@@ -350,23 +328,20 @@ async function applyDailyVisitBonus(garden){
   const snap=await getDoc(ref);return snap.data();
 }
 
-<<<<<<< Updated upstream
-/* ?�?� ?�앗 ?�기 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 씨앗 심기 ── */
 async function plantSeed(type){
-  if(GT_SELECTED_SLOT===null){alert('?�을 ?�롯??먼�? ?�택?�주?�요.');return;}
-  if(!window.firestoreDb){alert('Firestore ?�결 중입?�다.');return;}
+  if(GT_SELECTED_SLOT===null){alert('심을 슬롯을 먼저 선택해주세요.');return;}
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
   const seed=GT_SEEDS.find(s=>s.type===type);
-  if(!seed){alert('?�앗 ?�보�?찾을 ???�습?�다.');return;}
+  if(!seed){alert('씨앗 정보를 찾을 수 없습니다.');return;}
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
-  if(!snap.exists()){alert('?�원 ?�이?��? 찾을 ???�습?�다.');return;}
+  if(!snap.exists()){alert('정원 데이터를 찾을 수 없습니다.');return;}
   const garden=snap.data();
   const slots=garden.garden_slots||[];
   slots[GT_SELECTED_SLOT]={
-    slot:GT_SELECTED_SLOT,plant_type:seed.type,plant_name:seed.name+' ?�앗',
+    slot:GT_SELECTED_SLOT,plant_type:seed.type,plant_name:seed.name+' 씨앗',
     emoji:getPlantStages(seed.type)[0],stage:1,growth_point:0,next_point:10,
     unlocked:true,empty:false,planted_at:new Date().toISOString()
   };
@@ -375,45 +350,42 @@ async function plantSeed(type){
   const newSnap=await getDoc(ref);renderGardenTagView(newSnap.data());
 }
 
-<<<<<<< Updated upstream
-/* ?�?� 물주�?/ 비료 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 물주기 / 비료 ── */
 async function waterGarden(){
-  if(!window.firestoreDb){alert('Firebase ?�결 중입?�다.');return;}
+  if(!window.firestoreDb){alert('Firebase 연결 중입니다.');return;}
   const {doc,getDoc}=window.firestoreApi;
   const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
   if(!snap.exists())return;
   let garden=snap.data();
   garden=await refreshDailyResources(garden);
   const inventory=normalizeInventory(garden);
-  if(inventory.water<=0){alert('?�늘??물을 모두 ?�용?�어??\n?�일 ?�시 물이 채워집니???��');renderGardenTagView(garden);return;}
+  if(inventory.water<=0){alert('오늘의 물을 모두 사용했어요.\n내일 다시 물이 채워집니다 💧');renderGardenTagView(garden);return;}
   await applyGrowthResource({point:1,waterDelta:-1,fertilizerDelta:0});
 }
 async function fertilizeGarden(){
-  if(!window.firestoreDb){alert('Firebase ?�결 중입?�다.');return;}
+  if(!window.firestoreDb){alert('Firebase 연결 중입니다.');return;}
   const {doc,getDoc}=window.firestoreApi;
   const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
   if(!snap.exists())return;
   let garden=snap.data();
   garden=await refreshDailyResources(garden);
   const inventory=normalizeInventory(garden);
-  if(inventory.fertilizer<=0){alert('?�늘??비료�?모두 ?�용?�어??\n?�일 ?�시 받을 ???�어???��');renderGardenTagView(garden);return;}
+  if(inventory.fertilizer<=0){alert('오늘의 비료를 모두 사용했어요.\n내일 다시 받을 수 있어요 🌾');renderGardenTagView(garden);return;}
   await applyGrowthResource({point:3,waterDelta:0,fertilizerDelta:-1});
 }
 async function applyGrowthResource({point,waterDelta,fertilizerDelta}){
   const {doc,getDoc,updateDoc}=window.firestoreApi;
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const snap=await getDoc(ref);
-  if(!snap.exists()){alert('?�원 ?�이?��? 찾을 ???�습?�다.');return;}
+  if(!snap.exists()){alert('정원 데이터를 찾을 수 없습니다.');return;}
   const garden=snap.data();
   const inventory=normalizeInventory(garden);
   const slots=garden.garden_slots||[];
   let activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
   if(activeIndex<0)activeIndex=slots.findIndex(s=>s&&s.unlocked&&!s.empty);
-  if(activeIndex<0){alert('?�볼 ?�물???�습?�다.');return;}
+  if(activeIndex<0){alert('돌볼 식물이 없습니다.');return;}
   const plant=slots[activeIndex];
-  if((plant.stage||1)>=5){alert('?��? ???��? ?�물?�니?? ???�앗???�어주세??');renderGardenTagView(garden);return;}
+  if((plant.stage||1)>=5){alert('이미 다 자란 식물입니다. 새 씨앗을 심어주세요.');renderGardenTagView(garden);return;}
   plant.growth_point=(plant.growth_point||0)+point;
   plant.next_point=Math.max(0,(plant.next_point||0)-point);
   if(plant.next_point===0){
@@ -424,7 +396,7 @@ async function applyGrowthResource({point,waterDelta,fertilizerDelta}){
       plant.stage=5;plant.next_point=0;
       const nextLocked=slots.findIndex(s=>s&&!s.unlocked);
       if(nextLocked>=0)slots[nextLocked]={slot:nextLocked,unlocked:true,empty:true};
-      setTimeout(()=>alert(nextLocked>=0?'?�� 꽃이 ?�었?�니??\n?�로???�분???�렸?�니??':'?�� 꽃이 ?�었?�니??'),300);
+      setTimeout(()=>alert(nextLocked>=0?'🎉 꽃이 피었습니다!\n새로운 화분이 열렸습니다.':'🎉 꽃이 피었습니다!'),300);
     }else{plant.next_point=10;}
   }
   slots[activeIndex]=plant;
@@ -437,78 +409,75 @@ async function applyGrowthResource({point,waterDelta,fertilizerDelta}){
   const newSnap=await getDoc(ref);renderGardenTagView(newSnap.data());
 }
 
-<<<<<<< Updated upstream
-/* ?�?� ?�영??모드 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 운영자 모드 ── */
 function renderGardenAdminPassword(){
   app.innerHTML=`${brand()}
-    <div class="main-title">GT ?�영??모드</div>
-    <div class="sub">관리자 비�?번호�??�력?�주?�요.</div>
-    <input id="gt_admin_pw" type="password" placeholder="관리자 비�?번호">
-    <button class="btn" onclick="checkGardenAdminPassword()">?�인</button>
-    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">?�아가�?/a>`;
+    <div class="main-title">GT 운영자 모드</div>
+    <div class="sub">관리자 비밀번호를 입력해주세요.</div>
+    <input id="gt_admin_pw" type="password" placeholder="관리자 비밀번호">
+    <button class="btn" onclick="checkGardenAdminPassword()">확인</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">돌아가기</a>`;
 }
 async function checkGardenAdminPassword(){
   const pw=document.getElementById('gt_admin_pw').value.trim();
-  if(!pw){alert('비�?번호�??�력?�주?�요.');return;}
+  if(!pw){alert('비밀번호를 입력해주세요.');return;}
   const r=await apiGet('verifyPassword',{password:pw});
-  if(!r.success){alert(r.message||'비�?번호가 ?�치?��? ?�습?�다.');return;}
+  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
   renderGardenAdmin();
 }
 function adminGrowthPreview(s){
-  if(!s||!s.unlocked||s.empty)return`<div style="color:rgba(230,200,143,.4);font-size:13px;margin:8px 0">?�어�??�물???�습?�다.</div>`;
+  if(!s||!s.unlocked||s.empty)return`<div style="color:rgba(230,200,143,.4);font-size:13px;margin:8px 0">심어진 식물이 없습니다.</div>`;
   const stages=getPlantStages(s.plant_type);const cur=s.stage||1;
   return`<div class="gt-admin-growth">${stages.map((em,idx)=>{const active=(idx+1===cur)?' active':'';return`<div class="gt-admin-stage${active}">${em}</div>`;}).join('')}</div>`;
 }
 async function renderGardenAdmin(){
-  if(!window.firestoreDb){alert('Firestore ?�결 중입?�다.');return;}
+  if(!window.firestoreDb){alert('Firestore 연결 중입니다.');return;}
   const {doc,getDoc}=window.firestoreApi;
   const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
-  if(!snap.exists()){alert('?�원 ?�이?��? ?�습?�다.');return;}
+  if(!snap.exists()){alert('정원 데이터가 없습니다.');return;}
   const garden=snap.data();const slots=garden.garden_slots||[];
   const inv=normalizeInventory(garden);
   app.innerHTML=`
     ${brand()}
-    <div class="main-title">GT ?�영??모드</div>
-    <div class="sub">${esc(CODE)} ?�원 관�?/div>
+    <div class="main-title">GT 운영자 모드</div>
+    <div class="sub">${esc(CODE)} 정원 관리</div>
     <div class="info">
-      ${infoRow('방문 ??,garden.visit_count||0)}
-      ${infoRow('물주�???,garden.water_count||0)}
-      ${infoRow('?�늘??�?,inv.water)}
-      ${infoRow('?�늘??비료',inv.fertilizer)}
-      ${infoRow('?�장촉진??,inv.booster)}
-      ${infoRow('?�원 ?�짜',garden.resource_date||'-')}
-      ${infoRow('마�?�?방문',garden.last_visit_at||'-')}
-      ${infoRow('마�?�?물주�?,garden.last_watered_at||'-')}
+      ${infoRow('방문 수',garden.visit_count||0)}
+      ${infoRow('물주기 수',garden.water_count||0)}
+      ${infoRow('오늘의 물',inv.water)}
+      ${infoRow('오늘의 비료',inv.fertilizer)}
+      ${infoRow('성장촉진제',inv.booster)}
+      ${infoRow('자원 날짜',garden.resource_date||'-')}
+      ${infoRow('마지막 방문',garden.last_visit_at||'-')}
+      ${infoRow('마지막 물주기',garden.last_watered_at||'-')}
     </div>
-    <div class="section-title">?�롯 관�?/div>
+    <div class="section-title">슬롯 관리</div>
     ${slots.map((s,i)=>`
       <div class="edit-group">
-        <div class="bmt-memory-title">?�롯 ${i}</div>
+        <div class="bmt-memory-title">슬롯 ${i}</div>
         <div class="sub" style="text-align:left;margin-bottom:10px">
-          ?�태: ${s.unlocked?'?�림':'?��?'} ${s.empty?'· 비어?�음':''}<br>
-          ?�물: ${s.plant_name||'-'} ${s.emoji||''}<br>
+          상태: ${s.unlocked?'열림':'잠김'} ${s.empty?'· 비어있음':''}<br>
+          식물: ${s.plant_name||'-'} ${s.emoji||''}<br>
           stage: ${s.stage??'-'} / point: ${s.growth_point??'-'} / next: ${s.next_point??'-'}
         </div>
         ${adminGrowthPreview(s)}
-        <button class="btn sub" onclick="adminUnlockSlot(${i})">?�롯 ?�기</button>
-        <button class="btn sub" onclick="adminResetSlot(${i})">?�롯 초기??/button>
+        <button class="btn sub" onclick="adminUnlockSlot(${i})">슬롯 열기</button>
+        <button class="btn sub" onclick="adminResetSlot(${i})">슬롯 초기화</button>
       </div>
     `).join('')}
-    <div class="section-title">?�장 관�?/div>
-    <button class="btn" onclick="adminGrowOne()">+1 ?�계 ?�장</button>
-    <button class="btn" onclick="adminBloom()">?�� 즉시 개화</button>
-    <button class="btn sub" onclick="adminGrowAll()">?�체 +1 ?�장</button>
-    <div class="section-title">?�벤?�리 관�?/div>
-    <button class="btn" onclick="adminAddInventory('water',3)">?�� �?+3</button>
-    <button class="btn" onclick="adminAddInventory('fertilizer',1)">?�� 비료 +1</button>
-    <button class="btn sub" onclick="adminAddInventory('fertilizer',5)">?�� 비료 +5</button>
-    <div class="section-title">초기??/div>
-    <button class="btn sub" onclick="adminResetResources()">?�늘 ?�원 ?�시 채우�?/button>
-    <button class="btn sub" onclick="adminResetVisit()">?�늘 방문 초기??/button>
-    <button class="btn danger" onclick="adminResetGarden()">?�원 ?�체 초기??/button>
-    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">?�용???�면 보기</a>
+    <div class="section-title">성장 관리</div>
+    <button class="btn" onclick="adminGrowOne()">+1 단계 성장</button>
+    <button class="btn" onclick="adminBloom()">🌼 즉시 개화</button>
+    <button class="btn sub" onclick="adminGrowAll()">전체 +1 성장</button>
+    <div class="section-title">인벤토리 관리</div>
+    <button class="btn" onclick="adminAddInventory('water',3)">💧 물 +3</button>
+    <button class="btn" onclick="adminAddInventory('fertilizer',1)">🌾 비료 +1</button>
+    <button class="btn sub" onclick="adminAddInventory('fertilizer',5)">🌾 비료 +5</button>
+    <div class="section-title">초기화</div>
+    <button class="btn sub" onclick="adminResetResources()">오늘 자원 다시 채우기</button>
+    <button class="btn sub" onclick="adminResetVisit()">오늘 방문 초기화</button>
+    <button class="btn danger" onclick="adminResetGarden()">정원 전체 초기화</button>
+    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">사용자 화면 보기</a>
   `;
 }
 async function adminUpdateGarden(update){
@@ -549,9 +518,9 @@ async function adminResetResources(){
 }
 async function adminResetVisit(){await adminUpdateGarden({last_visit_at:'',visit_log:{}});}
 async function adminResetGarden(){
-  if(!confirm('?�원???�체 초기?�할까요?'))return;
+  if(!confirm('정원을 전체 초기화할까요?'))return;
   const slots=[
-    {slot:0,plant_type:'dandelion',plant_name:'민들???�싹',emoji:'?��',stage:1,growth_point:0,next_point:10,unlocked:true,empty:false},
+    {slot:0,plant_type:'dandelion',plant_name:'민들레 새싹',emoji:'🌱',stage:1,growth_point:0,next_point:10,unlocked:true,empty:false},
     ...Array.from({length:8},(_,i)=>({slot:i+1,unlocked:false}))
   ];
   await adminUpdateGarden({garden_slots:slots,water_count:0,visit_count:0,streak_count:0,last_watered_at:'',last_visit_at:''});
@@ -561,7 +530,7 @@ async function adminGrowOne(){
   const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
   const garden=snap.data();const slots=garden.garden_slots||[];
   const idx=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
-  if(idx<0){alert('?�장 가?�한 ?�물???�습?�다.');return;}
+  if(idx<0){alert('성장 가능한 식물이 없습니다.');return;}
   const plant=slots[idx];
   plant.stage=Math.min(5,(plant.stage||1)+1);
   plant.next_point=plant.stage>=5?0:10;
@@ -575,7 +544,7 @@ async function adminBloom(){
   const snap=await getDoc(doc(window.firestoreDb,'garden_tags',CODE));
   const garden=snap.data();const slots=garden.garden_slots||[];
   const idx=slots.findIndex(s=>s&&s.unlocked&&!s.empty&&s.stage<5);
-  if(idx<0){alert('개화 가?�한 ?�물???�습?�다.');return;}
+  if(idx<0){alert('개화 가능한 식물이 없습니다.');return;}
   const plant=slots[idx];
   plant.stage=5;plant.next_point=0;plant.emoji=getPlantStages(plant.plant_type)[4];
   slots[idx]=plant;
@@ -596,29 +565,26 @@ async function adminGrowAll(){
   location.reload();
 }
 
-<<<<<<< Updated upstream
-/* ?�?� 최초 ?�록 ?�?� */
-=======
->>>>>>> Stashed changes
+/* ── 최초 등록 ── */
 function renderRegister(data){
   const d=data||{};
   app.innerHTML=`
     ${brand()}
-    <div class="main-title">최초 ?�록</div>
-    <div class="sub">?�� 가???�그<br>?�원 ?�름???�정??주세??</div>
-    <label>?�원 주인 ?�름</label>
-    <input id="owner" placeholder="?? ?�길?? value="${esc(d.owner||'')}">
-    <label>?�원 ?�름 (?�택)</label>
-    <input id="garden_name" placeholder="?? 길동?�의 ?��? ?�원">
+    <div class="main-title">최초 등록</div>
+    <div class="sub">🌿 가든 태그<br>정원 이름을 설정해 주세요.</div>
+    <label>정원 주인 이름</label>
+    <input id="owner" placeholder="예) 홍길동" value="${esc(d.owner||'')}">
+    <label>정원 이름 (선택)</label>
+    <input id="garden_name" placeholder="예) 길동이의 작은 정원">
     <hr>
-    <input id="new_password" type="password" placeholder="?�용??비�?번호 (4???�상)">
-    <button class="btn" onclick="registerFirst()">?�록 ?�료</button>`;
+    <input id="new_password" type="password" placeholder="사용할 비밀번호 (4자 이상)">
+    <button class="btn" onclick="registerFirst()">등록 완료</button>`;
 }
 async function registerFirst(){
-  const pw=val('new_password');if(!pw||pw.length<4){alert('비�?번호�?4???�상 ?�력?�주?�요.');return;}
+  const pw=val('new_password');if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
   const r=await apiPost({action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify([])});
-  if(!r.success){alert(r.message||'?�록 ?�패');return;}
-  alert('?�록???�료?�었?�니??');location.href='?code='+encodeURIComponent(CODE);
+  if(!r.success){alert(r.message||'등록 실패');return;}
+  alert('등록이 완료되었습니다!');location.href='?code='+encodeURIComponent(CODE);
 }
 
 loadData();
@@ -633,4 +599,3 @@ window.firestoreApi={collection,doc,getDoc,setDoc,updateDoc,addDoc,query,orderBy
 </script>
 </body>
 </html>
-
