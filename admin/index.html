@@ -310,12 +310,25 @@ async function loadDashboard() {
 }
 
 // ── 테이블 ────────────────────────────────────────
+function getItemType(item) {
+  var type = String(item.product_type || '').trim().toUpperCase();
+  if (type) return type;
+  var code = String(item.code || item.id || '').trim().toUpperCase();
+  if (code.indexOf('-') > -1) return code.split('-')[0];
+  return '';
+}
+
+function getProductNameByType(type) {
+  var names = { CD:'미아방지', BMT:'부산 메모리 태그', GT:'가든 태그', WT:'바램태그', TT:'길동무 태그' };
+  return names[type] || '';
+}
+
 function getProductLabel(item) {
-  var type = item.product_type || '';
-  var name = item.product || '';
-  if (name) return type + ' · ' + name;
-  var fallback = { CD:'미아방지', BMT:'부산 메모리 태그', GT:'가든 태그', WT:'바램태그', TT:'길동무 태그' };
-  return type + (fallback[type] ? ' · ' + fallback[type] : '');
+  var type = getItemType(item);
+  var name = String(item.product || '').trim();
+  if (!name) name = getProductNameByType(type);
+  if (type && name) return type + ' · ' + name;
+  return type || name || '-';
 }
 
 function renderTable(items) {
@@ -326,7 +339,7 @@ function renderTable(items) {
   }
   tbody.innerHTML = items.map(item => {
     const status  = item.status || '-';
-    const code    = item.code   || '-';
+    const code    = item.code || item.id || '-';
     const viewUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
     return '<tr>'
       + '<td style="font-weight:700">' + code + '</td>'
@@ -348,11 +361,16 @@ window.filterTable = function() {
   const status = document.getElementById('filterStatus').value;
   const type   = document.getElementById('filterType').value;
 
-  const filtered = allItems.filter(item =>
-    (!code   || (item.code||'').toUpperCase().includes(code)) &&
-    (!status || item.status === status) &&
-    (!type   || (item.product_type||'').toUpperCase() === type)
-  );
+  const filtered = allItems.filter(function(item) {
+    const itemCode = String(item.code || item.id || '').toUpperCase();
+    const itemType = getItemType(item);
+    const owner    = String(item.owner || item.child_name || '').toUpperCase();
+    const product  = String(item.product || getProductNameByType(itemType) || '').toUpperCase();
+
+    return (!code   || itemCode.includes(code) || owner.includes(code) || product.includes(code))
+        && (!status || item.status === status)
+        && (!type   || itemType === type);
+  });
   renderTable(filtered);
 };
 
