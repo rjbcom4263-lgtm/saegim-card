@@ -264,15 +264,28 @@ const I18N={
     tt:{find_question:'您在寻找什么？',facilities:{restroom:'洗手间',cafe:'咖啡厅',convenience:'便利店',bus:'公交站',subway:'地铁站',hospital:'医院',atm:'ATM',tourist:'旅游咨询处'},lost_title:'您找到这个标签了吗？',lost_sub:'请联系主人。',chat:'给主人发消息',call:'打电话',email_contact:'发送邮件',locating:'正在定位...',loc_fail:'位置确认失败。使用普通搜索。'}}
 };
 
-loadData();
+// loadData() → Firestore module below
 </script>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
-import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,doc,getDoc}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",authDomain:"saegim-memory.firebaseapp.com",projectId:"saegim-memory",storageBucket:"saegim-memory.firebasestorage.app",messagingSenderId:"888229102391",appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"});
 const db=getFirestore(fbApp);
 window.firestoreDb=db;
 window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+(async function(){
+  try{
+    const snap=await getDoc(doc(db,'qr_cards',CODE));
+    if(!snap.exists()){renderError('등록되지 않은 QR 코드입니다. ('+CODE+')');return;}
+    const d=snap.data();
+    const links=[];
+    for(let i=1;i<=5;i++){const url=d['link'+i+'_url'];if(url)links.push({type:d['link'+i+'_type']||'',label:d['link'+i+'_label']||'',url});}
+    d.links=links;
+    QR_DATA=d;
+    if(MODE==='edit'){renderPassword();return;}
+    renderView(d);
+  }catch(e){renderError('데이터를 불러오지 못했습니다: '+e.message);}
+})();
 </script>
 </body>
-</html
+</html>

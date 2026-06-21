@@ -574,12 +574,12 @@ const I18N={
   zh:{bmt_title:'釜山记忆标签',notice_title:'您找到这个标签了吗？',notice_text:'请使用下面的联系方式联系主人。',public_sub:'这是一个记录釜山旅行回忆的标签。',contact:'联系主人',memory_view:'查看记忆',edit:'修改信息',memory_password_text:'仅所有者可查看。<br>请输入密码。',password_placeholder:'密码',confirm:'确认',back:'返回',sub:'记录釜山旅行场景和记忆的标签。',section:'釜山旅行记录',memo:'旅行备忘录',places:'访问地点',voice:'语音记录',bmt_edit_title:'修改釜山记忆标签',edit_password_text:'请输入注册密码。',basic_info:'基本信息',owner:'显示名称',travel_record:'釜山旅行记录',travel_memo:'旅行备忘录',travel_voice:'旅行录音',photo_display:'照片显示方式',photo_position:'照片位置',contact_section:'联系信息',contact_type:'联系方式',contact_label:'按钮名称',contact_url:'联系地址',save:'保存',cancel:'取消',none:'不选择',phone:'电话',kakao:'Kakao',email:'邮件',link_section:'链接',prev:'上一张',next:'下一张',photo_hint:'点击照片查看全部{n}张。',send_message:'发送消息',chat_title:'发送消息',chat_sub:'请给标签主人留言。',nickname_label:'昵称',nickname_placeholder:'请输入昵称',nickname_required:'请输入昵称。',message_placeholder:'输入消息...',send:'发送',chat_empty:'暂无消息。',chat_loading:'正在加载消息...',owner_label:'主人',inbox_title:'收到的消息',inbox_empty:'暂无收到的消息。',reply_placeholder:'输入回复...',send_fail:'发送失败',owner_email:'通知邮件',push_enable:'🔔 接收实时通知',push_enabled:'✅ 通知已启用',single_photo:'代表照片',slider_mode:'幻灯片',center:'居中',top:'顶部',bottom:'底部',cover_photo:'代表照片',gallery_photo_2:'图库照片2',gallery_photo_3:'图库照片3',gallery_photo_4:'图库照片4',gallery_photo_5:'图库照片5',voice_file:'音频文件'}
 };
 
-loadData();
+// loadData() → Firestore module below
 </script>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
-import{getFirestore,collection,addDoc,query,orderBy,onSnapshot}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,doc,getDoc}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",authDomain:"saegim-memory.firebaseapp.com",projectId:"saegim-memory",storageBucket:"saegim-memory.firebasestorage.app",messagingSenderId:"888229102391",appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"});
 const storage=getStorage(fbApp);
 const db=getFirestore(fbApp);
@@ -589,16 +589,26 @@ window.uploadToFirebase=function(file,path,onProgress){
   return new Promise((resolve,reject)=>{
     const storageRef=ref(storage,path);
     const task=uploadBytesResumable(storageRef,file);
-    task.on('state_changed',snap=>{if(onProgress)onProgress(Math.round(snap.bytesTransferred/snap.totalBytes*100));},err=>reject(err),async()=>{resolve(await getDownloadURL(task.snapshot.ref));});
+    task.on('state_changed',
+      snap=>{if(onProgress)onProgress(Math.round(snap.bytesTransferred/snap.totalBytes*100));},
+      err=>reject(err),
+      ()=>getDownloadURL(task.snapshot.ref).then(resolve).catch(reject)
+    );
   });
 };
-</script>
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-window.OneSignalDeferred=window.OneSignalDeferred||[];
-OneSignalDeferred.push(async function(OneSignal){
-  await OneSignal.init({appId:'4454afde-61d3-4c7a-9f09-84de382a029d',welcomeNotification:{disable:true},notifyButton:{enable:false},promptOptions:{slidedown:{prompts:[]}}});
-});
+(async function(){
+  try{
+    const snap=await getDoc(doc(db,'qr_cards',CODE));
+    if(!snap.exists()){renderError('등록되지 않은 QR 코드입니다. ('+CODE+')');return;}
+    const d=snap.data();
+    const links=[];
+    for(let i=1;i<=5;i++){const url=d['link'+i+'_url'];if(url)links.push({type:d['link'+i+'_type']||'',label:d['link'+i+'_label']||'',url});}
+    d.links=links;
+    QR_DATA=d;
+    if(MODE==='edit'){renderPassword();return;}
+    renderView(d);
+  }catch(e){renderError('데이터를 불러오지 못했습니다: '+e.message);}
+})();
 </script>
 </body>
 </html>
