@@ -4,39 +4,27 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>새김 오늘의 바램</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
-:root{--bg:#0C0C0E;--card:#1C1B19;--line:#5a5043;--gold:#CDB68C;--gold2:#A8773C;--text:#ECE6DA;--muted:#87837b}
 *{box-sizing:border-box}
-body{margin:0;background:#0C0C0E;color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif}
-.wrap{max-width:520px;margin:0 auto;padding:28px 18px}
-.card{border:1px solid rgba(255,255,255,.06);border-radius:28px;background:#131211;padding:26px 20px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.brand{text-align:center;margin-bottom:24px}.logo{font-family:serif;font-size:34px;letter-spacing:.18em;color:var(--gold)}.slogan{margin-top:8px;color:var(--muted);font-size:14px}
-.loading,.error{text-align:center;color:var(--muted);padding:70px 20px}
-.footer{text-align:center;margin-top:20px;color:var(--muted);font-size:12px;letter-spacing:.18em}
-.lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
-.lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
-.lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(205,182,140,.08)}
-/* WT */
-.wt-wrap{padding:10px 0}
-.wt-label{text-align:center;color:var(--gold);font-size:13px;letter-spacing:.18em;font-weight:800;margin-bottom:8px}
-.wt-sub{text-align:center;color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.6}
-.wt-card{border:1px solid rgba(205,182,140,.18);border-radius:20px;background:rgba(255,255,255,.025);padding:38px 24px;margin-bottom:22px}
-.wt-sentence{text-align:center;font-size:18px;line-height:1.8;font-weight:500;color:var(--text);white-space:pre-line;letter-spacing:.03em}
-.wt-sentence.fade{opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
-.wt-again{display:block;width:100%;margin-top:0;padding:18px;border-radius:18px;text-align:center;color:#ECE6DA;background:#1A1A1E;font-weight:600;border:1px solid rgba(255,255,255,.1);font-size:16px;cursor:pointer;letter-spacing:.04em}
+html,body{margin:0;height:100%;font-family:'Pretendard',system-ui,-apple-system,'Noto Sans KR',sans-serif}
+body{transition:background .7s ease}
+button{font-family:'Pretendard',system-ui,sans-serif;cursor:pointer}
+#app{min-height:100vh}
+.loading,.error{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:14px;color:#87837b;font-family:inherit}
+@keyframes saegim-breathe{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}50%{transform:translate(-50%,-50%) scale(1.13);opacity:1}}
 .wt-form{width:100%;max-width:360px;margin:0 auto}
-.form-label{display:block;color:var(--gold);font-size:13px;margin-top:10px;margin-bottom:7px}
-.form-input,.form-select{display:block;width:100%;height:46px;margin:0 0 13px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px;outline:none}
-.form-input:focus,.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(230,200,143,.12)}
+.form-label{display:block;color:var(--fl,#A8773C);font-size:13px;margin-top:10px;margin-bottom:7px}
+.form-input,.form-select{display:block;width:100%;height:46px;margin:0 0 13px;padding:0 14px;border-radius:14px;border:1px solid var(--fli,rgba(28,27,25,.2));background:var(--fib,rgba(0,0,0,.04));color:var(--fit,#1C1B19);font-size:15px;outline:none;font-family:inherit;appearance:auto}
+.form-input:focus,.form-select:focus{border-color:var(--fl,#A8773C);box-shadow:0 0 0 2px rgba(168,119,60,.12)}
 .date-row{display:flex;gap:8px;align-items:center;margin-bottom:13px}
 .date-row .form-input{margin:0;flex:1;min-width:0}
-.date-btn{height:46px;white-space:nowrap;padding:0 12px;border-radius:14px;border:1px solid var(--line);background:#151515;color:var(--gold);cursor:pointer;font-size:13px}
-.wt-sub-btn{display:block;margin:14px auto 0;padding:10px 18px;border-radius:18px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
-input[type="date"]{color-scheme:dark}
+.date-btn{height:46px;white-space:nowrap;padding:0 12px;border-radius:14px;border:1px solid var(--fli,rgba(28,27,25,.2));background:transparent;color:var(--fl,#A8773C);cursor:pointer;font-size:13px;font-family:inherit}
+input[type="date"]{color-scheme:light dark}
 </style>
 </head>
 <body>
-<div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중...</div></div></div>
+<div id="app"><div class="loading">불러오는 중...</div></div>
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbz-upNw2e2XG7ZZDXa7KFuAXiQ7BXsLVnDrXVsg4qTOPUzuGSawCFoT4srdbQj1kDhooA/exec';
 const params=new URLSearchParams(location.search);
@@ -349,12 +337,14 @@ const WT_SENTENCES={
   ja:['ゆっくりでも、大丈夫です。\nあなたの道は消えません。','答えを探すより、\n問いと一緒に歩いてみてください。','今日の迷いも、\nあなたを守ろうとする心かもしれません。','今必要なのは、\n速さではなく、少し立ち止まることかもしれません。','あなたは思っているより、\nうまくやっています。','すべての花が\n同じ季節に咲くわけではありません。','小さな勇気が\n大きな変化を生みます。','今日の心配が、\n明日の答えになることもあります。','心が向く方向を、\n一度信じてみてください。','完璧な準備より、\n一歩踏み出すことが大切です。','自分のペースを\n疑わないでください。','寄り道も、\n道のひとつです。','焦りより、\n信頼が必要な日です。','揺れない人など\nいません。','今日は、自分に\nもう少し優しくしてください。','不安は、新しい始まりの前に\nよく訪れます。','あなたの努力は、見えなくても\n積み重なっています。','答えが遅く来る\n日もあります。','今の悩みは、\n真剣さの証です。','明日のあなたも、\n今日の選択を応援しています。','小さな幸せを\n見逃さないでください。','今この瞬間も、\n十分に意味があります。','すべての出会いには\n理由があります。','あなたの願いは、\n思ったより近くにあります。','道に迷ったと感じても、\nあなたは道の上にいます。','今日の沈黙も、\n必要な時間です。','自分を\n追い詰めすぎないでください。','あなたはすでに、\n多くのことをやり遂げています。','遅すぎると思った瞬間が、\n始まりかもしれません。','今日はゆっくり歩いても\n大丈夫です。','心の声を、\n少し聞いてみてください。','休むことは、\n遅れることではありません。','小さな選択が、\n大きな方向を作ります。','あなたは\n一人ではありません。','今の時間も、\nいつか思い出になります。','今日すべての答えを\n見つけなくてもいいです。','待つことも、\nひとつのプロセスです。','あなたは十分に\n大切な存在です。','今日の失敗も、\n明日の財産になります。','完璧でなくても\n大丈夫です。'],
   zh:['慢一点也没关系。\n你的路不会消失。','与其寻找答案，\n不如带着问题一起前行。','今天的犹豫，\n也许是你内心在保护自己。','此刻需要的，\n也许不是更快的脚步，而是片刻的停留。','你比自己想象的，\n做得更好。','不是所有的花\n都在同一个季节盛开。','小小的勇气，\n可以带来巨大的改变。','今天的担忧，\n有时会成为明天的答案。','试着相信\n心中指向的方向。','一步踏出，\n胜过万全的准备。','不要怀疑\n自己的节奏。','绕路而行，\n也是一条路。','今天需要的是信任，\n而不是焦急。','没有人能\n一直不动摇。','今天，\n对自己多一点温柔。','焦虑常常出现\n在新开始之前。','你的努力在积累，\n即使暂时看不见。','有些答案，\n来得慢一些。','今天的烦恼，\n是你认真在乎的证明。','明天的你，\n也会为今天的选择加油。','不要错过\n身边小小的幸福。','此刻，\n本身就充满意义。','每一次相遇，\n都有它的理由。','你所期待的，\n比你想的更近。','即使感到迷路，\n你仍在路上。','今天的沉默，\n也是必要的时间。','不要\n对自己太苛刻。','你已经\n完成了很多事情。','觉得太晚的那一刻，\n也许正是开始。','今天慢慢走\n也没关系。','试着听一听\n内心的声音。','休息，\n不代表落后。','小小的选择，\n造就大大的方向。','你\n并不孤单。','此刻的时光，\n终将成为回忆。','今天不必\n找到所有的答案。','等待，\n也是旅途的一部分。','你是\n足够珍贵的人。','今天的错误，\n是明天的积累。','不完美\n也没关系。']
 };
+
 const WT_REGISTER_LABELS={
   ko:{title:'새김 바램태그 설정',subtitle:'처음 사용 시 기본 정보를 설정해주세요.',lang:'언어 설정',theme:'바램 테마',birth:'생년월일 (선택)',pickDate:'달력 선택',password:'사용할 비밀번호 (4자 이상)',submit:'등록 완료',themes:{general:'일반',luck:'행운',health:'건강',money:'재물',exam:'합격',love:'사랑'},pwAlert:'비밀번호를 4자 이상 입력해주세요.',fail:'등록 실패',done:'등록되었습니다!',error:'오류: ',settingsBtn:'설정 변경',settingsTitle:'바램태그 설정 변경',settingsSubtitle:'비밀번호 확인 후 설정을 변경할 수 있습니다.',saveSettings:'설정 저장',cancel:'취소',passwordCheck:'비밀번호 확인',editPasswordPlaceholder:'현재 비밀번호 또는 관리자 비밀번호'},
   en:{title:'SAEGIM Wish Tag Setup',subtitle:'Please set your basic information for first use.',lang:'Language',theme:'Wish Theme',birth:'Birth Date (optional)',pickDate:'Pick Date',password:'Password to use (at least 4 characters)',submit:'Complete Registration',themes:{general:'General',luck:'Luck',health:'Health',money:'Wealth',exam:'Success',love:'Love'},pwAlert:'Please enter a password with at least 4 characters.',fail:'Registration failed',done:'Registration completed!',error:'Error: ',settingsBtn:'Change Settings',settingsTitle:'Change Wish Tag Settings',settingsSubtitle:'Enter your password to update your settings.',saveSettings:'Save Settings',cancel:'Cancel',passwordCheck:'Password',editPasswordPlaceholder:'Current password or admin password'},
   ja:{title:'SAEGIM 願いタグ設定',subtitle:'初回使用時に基本情報を設定してください。',lang:'言語設定',theme:'願いのテーマ',birth:'生年月日（任意）',pickDate:'日付を選択',password:'使用するパスワード（4文字以上）',submit:'登録完了',themes:{general:'一般',luck:'幸運',health:'健康',money:'金運',exam:'合格',love:'愛'},pwAlert:'パスワードを4文字以上入力してください。',fail:'登録に失敗しました',done:'登録されました！',error:'エラー: ',settingsBtn:'設定変更',settingsTitle:'願いタグ設定変更',settingsSubtitle:'パスワード確認後、設定を変更できます。',saveSettings:'設定を保存',cancel:'キャンセル',passwordCheck:'パスワード確認',editPasswordPlaceholder:'現在のパスワードまたは管理者パスワード'},
   zh:{title:'SAEGIM 心愿标签设置',subtitle:'首次使用时，请设置基本信息。',lang:'语言设置',theme:'心愿主题',birth:'出生日期（可选）',pickDate:'选择日期',password:'请输入密码（至少4个字符）',submit:'完成注册',themes:{general:'普通',luck:'幸运',health:'健康',money:'财运',exam:'成功',love:'爱情'},pwAlert:'请输入至少4个字符的密码。',fail:'注册失败',done:'注册完成！',error:'错误: ',settingsBtn:'更改设置',settingsTitle:'更改心愿标签设置',settingsSubtitle:'请输入密码后更改设置。',saveSettings:'保存设置',cancel:'取消',passwordCheck:'密码确认',editPasswordPlaceholder:'当前密码或管理员密码'}
 };
+
 function getRegLabels(){
   const base=WT_REGISTER_LABELS.ko||{};
   const cur=WT_REGISTER_LABELS[currentLang]||{};
@@ -616,6 +606,269 @@ async function wtSaveFirst(){
     location.href='?code='+encodeURIComponent(CODE)+'&v='+(Date.now());
   }catch(e){alert(l.error+e.message);}
 }
+async function recordScanCount(code){
+  try{
+    await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'recordScan',code:code}),redirect:'follow'});
+  }catch(e){console.warn('scan count 기록 실패:',e);}
+}
+
+// ── 테마 팔레트 ──────────────────────────────────────────
+const DAY_PAL = {
+  bg:'radial-gradient(125% 90% at 50% -5%, #FFFFFF 0%, #F4F2EC 100%)',
+  text:'#1C1B19', muted:'#9b968d', accent:'#A8773C',
+  accentSoft:'rgba(168,119,60,.10)', pillBorder:'rgba(28,27,25,.13)',
+  hair:'rgba(28,27,25,.12)',
+  btnBg:'#1C1B19', btnText:'#F6F3EC', btnBorder:'rgba(0,0,0,0)',
+  wash:'radial-gradient(circle, rgba(168,119,60,.16) 0%, rgba(168,119,60,0) 68%)',
+  footer:'#c2bcae', ring:'rgba(28,27,25,.06)',
+  formLabelColor:'#A8773C', formInputBg:'rgba(0,0,0,.03)',
+  formInputText:'#1C1B19', formInputBorder:'rgba(28,27,25,.18)'
+};
+const NIGHT_PAL = {
+  bg:'radial-gradient(125% 90% at 50% -8%, #1A1A1E 0%, #0C0C0E 60%, #000000 100%)',
+  text:'#EDE7DB', muted:'#87837b', accent:'#CDB68C',
+  accentSoft:'rgba(205,182,140,.12)', pillBorder:'rgba(237,231,219,.14)',
+  hair:'rgba(237,231,219,.13)',
+  btnBg:'rgba(205,182,140,.12)', btnText:'#E4D0A6', btnBorder:'rgba(205,182,140,.5)',
+  wash:'radial-gradient(circle, rgba(205,182,140,.22) 0%, rgba(205,182,140,0) 66%)',
+  footer:'#5a5750', ring:'rgba(237,231,219,.07)',
+  formLabelColor:'#CDB68C', formInputBg:'rgba(255,255,255,.04)',
+  formInputText:'#EDE7DB', formInputBorder:'rgba(237,231,219,.18)'
+};
+let WT_THEME_MODE = localStorage.getItem('wt_theme') || 'auto';
+
+function isNightHour(){ const h=new Date().getHours(); return h<6||h>=18; }
+function effectiveTheme(){
+  if(WT_THEME_MODE==='auto') return isNightHour()?'night':'day';
+  return WT_THEME_MODE;
+}
+function getPal(){ return effectiveTheme()==='night'?NIGHT_PAL:DAY_PAL; }
+function toggleWtTheme(){
+  const cur=effectiveTheme();
+  WT_THEME_MODE=cur==='night'?'day':'night';
+  localStorage.setItem('wt_theme',WT_THEME_MODE);
+  renderWishTag(WT_DATA);
+}
+function themeMeta(){
+  const t=effectiveTheme();
+  const auto=WT_THEME_MODE==='auto';
+  const label=auto?(t==='night'?'자동 · 밤':'자동 · 낮'):(t==='night'?'밤':'낮');
+  return {icon:t==='night'?'☾':'☀',label};
+}
+function applyBg(){
+  document.body.style.background=getPal().bg;
+}
+function applyFormVars(pal){
+  const r=document.documentElement;
+  r.style.setProperty('--fl',pal.formLabelColor);
+  r.style.setProperty('--fib',pal.formInputBg);
+  r.style.setProperty('--fit',pal.formInputText);
+  r.style.setProperty('--fli',pal.formInputBorder);
+}
+
+const WT_UI = {
+  ko:{label:'오늘의 바램',sub:'마음속 질문을 떠올려 보세요',again:'다른 바램 보기',settings:'설정 변경'},
+  en:{label:"TODAY'S WISH",sub:'Take a moment to think of a question',again:'Draw another wish',settings:'Settings'},
+  ja:{label:'今日の願い',sub:'心の中の問いを思い浮かべてください',again:'もう一度',settings:'設定'},
+  zh:{label:'今日心愿',sub:'请在心中想一个问题',again:'再来一次',settings:'设置'}
+};
+function getUI(){ return WT_UI[currentLang]||WT_UI.ko; }
+
+const app=document.getElementById('app');
+
+function renderError(msg){
+  applyBg();
+  const pal=getPal();
+  app.innerHTML='<div class="error" style="color:'+pal.muted+'">'+esc(msg)+'</div>';
+}
+function renderInactive(){
+  applyBg(); const pal=getPal();
+  renderSimple(pal,'등록 안내','아직 등록되지 않은 QR입니다.','구매 후 등록하면 사용할 수 있습니다.');
+}
+function renderStopped(){
+  applyBg(); const pal=getPal();
+  renderSimple(pal,'사용 중지','사용이 중지된 QR입니다.','현재 이 QR은 비활성화 상태입니다.');
+}
+function renderSimple(pal,label,title,sub){
+  app.innerHTML='<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:'+pal.text+'">'+
+    '<div style="text-align:center;padding:40px 28px">'+
+    '<div style="font-size:18px;font-weight:300;letter-spacing:.34em;padding-left:.34em;margin-bottom:24px">SAEGIM</div>'+
+    '<div style="font-size:12px;letter-spacing:.3em;color:'+pal.accent+';font-weight:600;margin-bottom:12px">'+esc(label)+'</div>'+
+    '<div style="font-size:15px;font-weight:500;margin-bottom:8px">'+esc(title)+'</div>'+
+    '<div style="font-size:13px;color:'+pal.muted+'">'+esc(sub)+'</div>'+
+    '</div></div>';
+}
+
+function renderWishTag(data){
+  applyBg();
+  const pal=getPal();
+  applyFormVars(pal);
+  const sentence=wtDailySentence(data||WT_DATA);
+  const ui=getUI();
+  const meta=wtMetaText(data||WT_DATA);
+  const tm=themeMeta();
+
+  app.innerHTML=
+    '<div style="color:'+pal.text+';min-height:100vh;display:flex;justify-content:center">'+
+    '<div style="width:100%;max-width:460px;min-height:100vh;display:flex;flex-direction:column;padding:30px 28px">'+
+
+    // 상단 테마 토글
+    '<div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;height:42px">'+
+      '<span style="font-size:11px;letter-spacing:.06em;color:'+pal.muted+'">'+tm.label+'</span>'+
+      '<button onclick="toggleWtTheme()" style="width:42px;height:42px;border-radius:50%;border:1px solid '+pal.hair+';background:transparent;color:'+pal.accent+';font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center">'+tm.icon+'</button>'+
+    '</div>'+
+
+    // 브랜드
+    '<div style="text-align:center;margin-top:6px">'+
+      '<div style="font-size:18px;font-weight:300;letter-spacing:.34em;padding-left:.34em;color:'+pal.text+'">SAEGIM</div>'+
+      '<div style="font-size:11px;letter-spacing:.16em;color:'+pal.muted+';margin-top:10px">기억을 새기다 · 마음을 잇다</div>'+
+    '</div>'+
+
+    // 언어 선택
+    '<div style="display:flex;gap:7px;justify-content:center;margin-top:26px">'+
+      ['ko','en','ja','zh'].map(l=>{
+        const active=l===currentLang;
+        return '<button onclick="setLang(''+l+'')" style="padding:8px 15px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid '+(active?pal.accent:pal.pillBorder)+';color:'+(active?pal.accent:pal.muted)+';background:'+(active?pal.accentSoft:'rgba(0,0,0,0)')+';transition:all .4s;font-family:inherit">'+
+          (l==='ko'?'한국어':l==='en'?'EN':l==='ja'?'日本語':'中文')+'</button>';
+      }).join('')+
+    '</div>'+
+
+    // 라벨 + 메타
+    '<div style="text-align:center;margin-top:34px">'+
+      '<div style="font-size:12px;letter-spacing:.3em;color:'+pal.accent+';font-weight:600;padding-left:.3em">'+ui.label+'</div>'+
+      '<div style="font-size:13px;color:'+pal.muted+';margin-top:11px">'+ui.sub+'</div>'+
+      (meta?'<div style="font-size:12px;color:'+pal.accent+';margin-top:11px;letter-spacing:.04em">'+esc(meta)+'</div>':'')+
+    '</div>'+
+
+    // 원형 + 문장
+    '<div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;margin:8px 0">'+
+      '<div style="position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%)"></div>'+
+      '<div style="position:absolute;top:50%;left:50%;width:430px;height:430px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%);opacity:.6"></div>'+
+      '<div style="position:absolute;top:50%;left:50%;width:310px;height:310px;border-radius:50%;background:'+pal.wash+';animation:saegim-breathe 7s ease-in-out infinite"></div>'+
+      '<div id="wtSentence" style="position:relative;z-index:1;text-align:center;font-size:22px;line-height:2.05;font-weight:400;color:'+pal.text+';letter-spacing:.01em;white-space:pre-line;padding:0 6px;transition:opacity .35s ease">'+
+        esc(sentence)+
+      '</div>'+
+    '</div>'+
+
+    // 버튼
+    '<button onclick="wtAgain()" style="width:100%;height:58px;border-radius:16px;background:'+pal.btnBg+';color:'+pal.btnText+';border:1px solid '+pal.btnBorder+';font-size:15px;font-weight:600;letter-spacing:.02em;cursor:pointer;font-family:inherit;transition:all .7s">'+
+      ui.again+
+    '</button>'+
+
+    // 설정 변경
+    '<div onclick="renderWtSettings()" style="text-align:center;margin-top:18px;font-size:13px;color:'+pal.muted+';letter-spacing:.02em;cursor:pointer">'+
+      getRegLabels().settingsBtn+
+    '</div>'+
+
+    // 풋터
+    '<div style="text-align:center;margin-top:18px;font-size:10px;letter-spacing:.3em;color:'+pal.footer+'">SAEGIM WT</div>'+
+    '</div></div>';
+}
+
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('saegim_lang',lang);
+  renderWishTag(WT_DATA);
+}
+
+function wtAgain(){
+  const el=document.getElementById('wtSentence');
+  if(!el)return;
+  el.style.opacity='0';
+  setTimeout(()=>{
+    const list=WT_SENTENCES[currentLang]||WT_SENTENCES.ko;
+    let n=_wtLastIdx;
+    if(list.length>1){while(n===_wtLastIdx)n=Math.floor(Math.random()*list.length);}
+    _wtLastIdx=n;
+    el.innerHTML=esc(list[n]).replace(/\n/g,'<br>');
+    el.style.opacity='1';
+  },350);
+}
+
+function renderRegister(){
+  applyBg(); const pal=getPal(); applyFormVars(pal);
+  const l=getRegLabels();
+  app.innerHTML=
+    '<div style="color:'+pal.text+';min-height:100vh;display:flex;justify-content:center">'+
+    '<div style="width:100%;max-width:460px;padding:30px 28px">'+
+    '<div style="text-align:center;margin-bottom:32px">'+
+      '<div style="font-size:18px;font-weight:300;letter-spacing:.34em;padding-left:.34em">SAEGIM</div>'+
+    '</div>'+
+    '<div class="wt-form">'+
+    '<div style="font-size:12px;letter-spacing:.3em;color:'+pal.accent+';font-weight:600;text-align:center;margin-bottom:6px">'+l.title+'</div>'+
+    '<div style="font-size:13px;color:'+pal.muted+';text-align:center;margin-bottom:24px">'+l.subtitle+'</div>'+
+    '<label class="form-label">'+l.lang+'</label>'+
+    '<select id="wt_lang_sel" class="form-select" onchange="setRegisterLang(this.value)">'+
+      '<option value="ko" '+(currentLang==='ko'?'selected':'')+'>한국어</option>'+
+      '<option value="en" '+(currentLang==='en'?'selected':'')+'>English</option>'+
+      '<option value="ja" '+(currentLang==='ja'?'selected':'')+'>日本語</option>'+
+      '<option value="zh" '+(currentLang==='zh'?'selected':'')+'>中文</option>'+
+    '</select>'+
+    '<label class="form-label">'+l.theme+'</label>'+
+    '<select id="wt_theme_sel" class="form-select">'+
+      '<option value="general">'+l.themes.general+'</option>'+
+      '<option value="luck">'+l.themes.luck+'</option>'+
+      '<option value="health">'+l.themes.health+'</option>'+
+      '<option value="money">'+l.themes.money+'</option>'+
+      '<option value="exam">'+l.themes.exam+'</option>'+
+      '<option value="love">'+l.themes.love+'</option>'+
+    '</select>'+
+    '<label class="form-label">'+l.birth+'</label>'+
+    '<div class="date-row">'+
+      '<input id="wt_birth" type="date" class="form-input">'+
+      '<button type="button" class="date-btn" onclick="openBirthPicker()">'+l.pickDate+'</button>'+
+    '</div>'+
+    '<input id="wt_pw" type="password" class="form-input" placeholder="'+l.password+'">'+
+    '<button onclick="wtSaveFirst()" style="width:100%;height:58px;border-radius:16px;background:'+pal.btnBg+';color:'+pal.btnText+';border:1px solid '+pal.btnBorder+';font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px">'+l.submit+'</button>'+
+    '</div></div></div>';
+}
+
+function renderWtSettings(){
+  applyBg(); const pal=getPal(); applyFormVars(pal);
+  const l=getRegLabels();
+  const data=WT_DATA||{};
+  const lang=data.wt_lang||currentLang||'ko';
+  const theme=data.wt_theme||'general';
+  const birth=data.wt_birth_date||'';
+  app.innerHTML=
+    '<div style="color:'+pal.text+';min-height:100vh;display:flex;justify-content:center">'+
+    '<div style="width:100%;max-width:460px;padding:30px 28px">'+
+    '<div style="text-align:center;margin-bottom:32px">'+
+      '<div style="font-size:18px;font-weight:300;letter-spacing:.34em;padding-left:.34em">SAEGIM</div>'+
+    '</div>'+
+    '<div class="wt-form">'+
+    '<div style="font-size:12px;letter-spacing:.3em;color:'+pal.accent+';font-weight:600;text-align:center;margin-bottom:6px">'+l.settingsTitle+'</div>'+
+    '<div style="font-size:13px;color:'+pal.muted+';text-align:center;margin-bottom:24px">'+l.settingsSubtitle+'</div>'+
+    '<label class="form-label">'+l.lang+'</label>'+
+    '<select id="wt_edit_lang" class="form-select" onchange="setSettingsLang(this.value)">'+
+      '<option value="ko" '+(lang==='ko'?'selected':'')+'>한국어</option>'+
+      '<option value="en" '+(lang==='en'?'selected':'')+'>English</option>'+
+      '<option value="ja" '+(lang==='ja'?'selected':'')+'>日本語</option>'+
+      '<option value="zh" '+(lang==='zh'?'selected':'')+'>中文</option>'+
+    '</select>'+
+    '<label class="form-label">'+l.theme+'</label>'+
+    '<select id="wt_edit_theme" class="form-select">'+
+      '<option value="general" '+(theme==='general'?'selected':'')+'>'+l.themes.general+'</option>'+
+      '<option value="luck" '+(theme==='luck'?'selected':'')+'>'+l.themes.luck+'</option>'+
+      '<option value="health" '+(theme==='health'?'selected':'')+'>'+l.themes.health+'</option>'+
+      '<option value="money" '+(theme==='money'?'selected':'')+'>'+l.themes.money+'</option>'+
+      '<option value="exam" '+(theme==='exam'?'selected':'')+'>'+l.themes.exam+'</option>'+
+      '<option value="love" '+(theme==='love'?'selected':'')+'>'+l.themes.love+'</option>'+
+    '</select>'+
+    '<label class="form-label">'+l.birth+'</label>'+
+    '<div class="date-row">'+
+      '<input id="wt_edit_birth" type="date" class="form-input" value="'+esc(birth)+'">'+
+      '<button type="button" class="date-btn" onclick="openEditBirthPicker()">'+l.pickDate+'</button>'+
+    '</div>'+
+    '<label class="form-label">'+l.passwordCheck+'</label>'+
+    '<input id="wt_edit_pw" type="password" class="form-input" placeholder="'+l.editPasswordPlaceholder+'">'+
+    '<button onclick="wtSaveSettings()" style="width:100%;height:58px;border-radius:16px;background:'+pal.btnBg+';color:'+pal.btnText+';border:1px solid '+pal.btnBorder+';font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;margin-top:4px">'+l.saveSettings+'</button>'+
+    '<div onclick="renderWishTag(WT_DATA)" style="text-align:center;margin-top:18px;font-size:13px;color:'+pal.muted+';cursor:pointer">'+l.cancel+'</div>'+
+    '</div></div></div>';
+}
+
+// loadData는 아래 module script에서 Firestore 조회 후 호출
 async function recordScanCount(code){
   try{
     await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
