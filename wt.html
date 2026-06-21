@@ -31,7 +31,7 @@ body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 1
 <script>
 const API_URL='https://script.google.com/macros/s/AKfycbz-upNw2e2XG7ZZDXa7KFuAXiQ7BXsLVnDrXVsg4qTOPUzuGSawCFoT4srdbQj1kDhooA/exec';
 const params=new URLSearchParams(location.search);
-const CODE=(params.get('code')||'WT-0001').toUpperCase();
+const CODE=(params.get('code')||'').trim().toUpperCase();
 
 const WT_SENTENCES={
   ko:[
@@ -342,6 +342,7 @@ const WT_SENTENCES={
 };
 let _wtLastIdx=-1;
 let currentLang=localStorage.getItem('saegim_lang')||'ko';
+let WT_DATA=null;
 const app=document.getElementById('app');
 
 function wtRandomSentence(){
@@ -350,22 +351,76 @@ function wtRandomSentence(){
   do{idx=Math.floor(Math.random()*list.length);}while(list.length>1&&idx===_wtLastIdx);
   _wtLastIdx=idx;return list[idx];
 }
-function setLang(lang){currentLang=lang;localStorage.setItem('saegim_lang',lang);renderWishTag();}
+function setLang(lang){
+  currentLang=lang;
+  localStorage.setItem('saegim_lang',lang);
+  renderWishTag(WT_DATA);
+}
 function langBar(){return`<div class="lang-bar">${['ko','en','ja','zh'].map(l=>`<button class="lang-btn${currentLang===l?' active':''}" onclick="setLang('${l}')">${l==='ko'?'한국어':l==='en'?'English':l==='ja'?'日本語':'中文'}</button>`).join('')}</div>`;}
 function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}
 function esc(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 
-function renderWishTag(){
-  const sentence=wtRandomSentence();
-  const wtLabels={ko:['오늘의 바램','마음속 질문을 떠올려 보세요','다시 받기'],en:["Today's Wish",'Take a moment to think of a question','Try Again'],ja:['今日の願い','心の中の問いを思い浮かべてください','もう一度'],zh:['今日心愿','请在心中想一个问题','再来一次']};
+function todayKey(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+day;
+}
+function hashString(str){
+  let h=0;
+  for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0;}
+  return Math.abs(h);
+}
+function getThemeLabel(theme){
+  const map={
+    luck:{ko:'행운',en:'Luck',ja:'幸運',zh:'幸运'},
+    health:{ko:'건강',en:'Health',ja:'健康',zh:'健康'},
+    money:{ko:'재물',en:'Wealth',ja:'財運',zh:'财运'},
+    exam:{ko:'합격',en:'Success',ja:'合格',zh:'成功'},
+    love:{ko:'사랑',en:'Love',ja:'愛',zh:'爱情'},
+    general:{ko:'일반',en:'General',ja:'一般',zh:'普通'}
+  };
+  const item=map[theme||'general']||map.general;
+  return item[currentLang]||item.ko;
+}
+function wtDailySentence(data){
+  const list=WT_SENTENCES[currentLang]||WT_SENTENCES.ko;
+  const theme=(data&&data.wt_theme)||'general';
+  const seed=CODE+'|'+todayKey()+'|'+currentLang+'|'+theme;
+  const idx=hashString(seed)%list.length;
+  _wtLastIdx=idx;
+  return list[idx];
+}
+function wtMetaText(data){
+  if(!data)return '';
+  const parts=[];
+  if(data.wt_theme){parts.push(getThemeLabel(data.wt_theme));}
+  if(data.wt_birth_date){parts.push(String(data.wt_birth_date));}
+  if(!parts.length)return '';
+  return parts.join(' · ');
+}
+function renderWishTag(data){
+  const sentence=wtDailySentence(data||WT_DATA);
+  const wtLabels={
+    ko:['오늘의 바램','마음속 질문을 떠올려 보세요','다른 바램 보기','오늘 고정 문장'],
+    en:["Today's Wish",'Take a moment to think of a question','Try Another Wish','Fixed for today'],
+    ja:['今日の願い','心の中の問いを思い浮かべてください','もう一度','今日の固定メッセージ'],
+    zh:['今日心愿','请在心中想一个问题','再来一次','今日固定心愿']
+  };
   const lbl=wtLabels[currentLang]||wtLabels.ko;
+  const meta=wtMetaText(data||WT_DATA);
   app.innerHTML=`
     ${brand()}
     ${langBar()}
     <div class="wt-wrap">
       <div class="wt-label">${lbl[0]}</div>
       <div class="wt-sub">${lbl[1]}</div>
-      <div class="wt-card"><div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div></div>
+      ${meta?'<div class="wt-sub" style="font-size:13px;color:var(--gold);margin-top:-10px">'+esc(meta)+'</div>':''}
+      <div class="wt-card">
+        <div style="text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px">${lbl[3]} · ${todayKey()}</div>
+        <div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div>
+      </div>
       <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
     </div>
     <div class="footer">SAEGIM WT</div>`;
@@ -390,6 +445,15 @@ function renderRegister(){
   '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">언어 설정</label>'+
   '<select id="wt_lang_sel" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
   '<option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option></select>'+
+  '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">바램 테마</label>'+
+  '<select id="wt_theme_sel" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
+  '<option value="general">일반</option>'+
+  '<option value="luck">행운</option>'+
+  '<option value="health">건강</option>'+
+  '<option value="money">재물</option>'+
+  '<option value="exam">합격</option>'+
+  '<option value="love">사랑</option>'+
+  '</select>'+
   '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">생년월일 (선택)</label>'+
   '<input id="wt_birth" type="date" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
   '<input id="wt_pw" type="password" placeholder="사용할 비밀번호 (4자 이상)" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
@@ -400,10 +464,11 @@ async function wtSaveFirst(){
   const pw=document.getElementById('wt_pw').value.trim();
   if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
   const lang=document.getElementById('wt_lang_sel').value;
+  const theme=document.getElementById('wt_theme_sel').value;
   const birth=document.getElementById('wt_birth').value;
   try{
     const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'registerSoldQr',code:CODE,password:pw,owner:'바램태그',wt_lang:lang,wt_birth_date:birth}),redirect:'follow'});
+      body:JSON.stringify({action:'registerSoldQr',code:CODE,password:pw,owner:'바램태그',wt_lang:lang,wt_theme:theme,wt_birth_date:birth}),redirect:'follow'});
     const d=await r.json();
     if(!d.success){alert(d.message||'등록 실패');return;}
     alert('등록되었습니다!');location.href='?code='+encodeURIComponent(CODE);
@@ -423,9 +488,11 @@ const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",auth
 const db=getFirestore(fbApp);
 (async function(){
   try{
+    if(!CODE){renderError('QR 코드가 없습니다.');return;}
     const snap=await getDoc(doc(db,'qr_cards',CODE));
     if(!snap.exists()){renderError('등록되지 않은 QR 코드입니다. ('+CODE+')');return;}
     const d=snap.data();
+    WT_DATA=d;
     const status=String(d.status||'').trim();
     if(status==='미등록'){renderInactive();return;}
     if(status==='중지'){renderStopped();return;}
@@ -435,7 +502,7 @@ const db=getFirestore(fbApp);
       currentLang=d.wt_lang;
       localStorage.setItem('saegim_lang',d.wt_lang);
     }
-    renderWishTag();
+    renderWishTag(d);
     recordScanCount(CODE);
   }catch(e){renderError('데이터를 불러오지 못했습니다: '+e.message);}
 })();
