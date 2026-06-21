@@ -284,4 +284,12 @@ async function saveEdit(){
 }
 
 // ── 유틸 ───────────────────────────────────────────────────
-function val(id){const el=document.getElementById(id);return el?el.v
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+function renderError(msg){app.innerHTML='<div class="error">'+esc(msg)+'</div>';}
+
+loadData();
+</script>
+</body>
+</html>
+/html>
