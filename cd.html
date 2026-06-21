@@ -47,7 +47,7 @@ const FIREBASE_CONFIG = {
 };
 
 // ── 고객용 Apps Script (쓰기 전용: 등록/수정/비밀번호 확인) ──
-const API_URL = 'https://script.google.com/macros/s/AKfycbxVZ3C9OELTQs73DmVsmTSBfJxIqOYDFh73dnkeT3EoW7DNMIfpovGycB7hXwUrq00l/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzNeuU1PI0LKbhkXA-PEXvveDn63nNLfXDtpPveyK7S4TcioZslBwbL4HC17gXZRs28sA/exec';
 
 const params = new URLSearchParams(location.search);
 const CODE   = params.get('code') || 'CD-0001';
@@ -307,57 +307,4 @@ window.addLinkItem = function() {
   var links = collectLinksRaw();
   if (links.length >= 5) { alert('최대 5개까지 가능합니다.'); return; }
   links.push({type: '전화', label: '', url: ''});
-  document.getElementById('linksEdit').innerHTML = editLinks(links);
-};
-window.removeLinkItem = function(index) {
-  var links = collectLinksRaw();
-  links.splice(index, 1);
-  document.getElementById('linksEdit').innerHTML = editLinks(links.length ? links : [{type: '전화', label: '', url: ''}]);
-};
-
-// ── 등록 & 저장 ────────────────────────────────────────────
-window.registerFirst = async function() {
-  try {
-    var pw = val('new_password');
-    if (!pw || pw.length < 4) { alert('비밀번호를 4자 이상 입력해주세요.'); return; }
-    var links = collectLinks();
-    var form = {
-      action: 'registerSoldQr', code: CODE, password: pw,
-      owner: val('owner'), links: JSON.stringify(links),
-      child_name: val('child_name'), guardian_name: val('guardian_name'),
-      guardian_phone: val('guardian_phone'), child_note: val('child_note'),
-      child_allergy: val('child_allergy'), blood_type: val('blood_type'),
-      child_message: val('child_message')
-    };
-    var r = await apiPost(form);
-    if (!r.success) { alert(r.message || '등록 실패'); return; }
-    alert('등록이 완료되었습니다!');
-    location.href = '?code=' + encodeURIComponent(CODE);
-  } catch(e) { alert('오류: ' + e.message); }
-};
-
-window.saveEdit = async function() {
-  var links = collectLinks();
-  var form = {
-    action: 'updateCustomerData', code: CODE, password: val('password'),
-    owner: val('owner'), links: JSON.stringify(links),
-    child_name: val('child_name'), guardian_name: val('guardian_name'),
-    guardian_phone: val('guardian_phone'), child_note: val('child_note'),
-    child_allergy: val('child_allergy'), blood_type: val('blood_type'),
-    child_message: val('child_message')
-  };
-  var r = await apiPost(form);
-  if (!r.success) { alert(r.message || '저장 실패'); return; }
-  alert('저장되었습니다.');
-  location.href = '?code=' + encodeURIComponent(CODE);
-};
-
-// ── 유틸 ───────────────────────────────────────────────────
-function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
-function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-function renderError(msg) { app.innerHTML = '<div class="error">' + esc(msg) + '</div>'; }
-
-loadData();
-</script>
-</body>
-</html>
+  document.getElementById('linksE

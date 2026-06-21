@@ -93,8 +93,9 @@ function getHeaderMap_() {
 function findQrRow_(code) {
   const sheet = getSheet_();
   const values = sheet.getDataRange().getValues();
+  const targetCode = String(code || '').trim().toUpperCase();
   for (let i = 1; i < values.length; i++) {
-    if (String(values[i][0]).trim() === String(code).trim()) {
+    if (String(values[i][0] || '').trim().toUpperCase() === targetCode) {
       return i + 1;
     }
   }
