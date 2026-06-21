@@ -1,22 +1,17 @@
 const SPREADSHEET_ID = '1IgfzKJT4_ohsvP6FZYaj8K_2eMgHBSKrybLtUevM67o';
 const SHEET_NAME = 'QR_DB';
-const PHOTO_FOLDER_NAME = 'SAEGIM_CHILD_PHOTOS';
 
 // ─── 진입점 ───────────────────────────────────────────────
 
 function doGet(e) {
   const action = e?.parameter?.action;
-
   if (action) {
     return handleApi_(e.parameter);
   }
-
-  const template = HtmlService.createTemplateFromFile('Index');
-  template.code = e?.parameter?.code || '';
-  template.lang = e?.parameter?.lang || 'ko';
-  return template.evaluate()
-    .setTitle('새김 QR')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  // Firebase Hosting으로 이전 후 GAS는 API 전용으로만 사용
+  return ContentService
+    .createTextOutput(JSON.stringify({ success: false, message: 'action 파라미터가 필요합니다.' }))
+    .setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -49,9 +44,6 @@ function handleApi_(params) {
         result = updateCustomerData(
           typeof params.form === 'string' ? JSON.parse(params.form) : params
         );
-        break;
-      case 'changeLostMode':
-        result = changeLostMode(params.code, params.password, params.lost_mode);
         break;
       case 'sendOwnerEmailAlert':
         result = sendOwnerEmailAlert(params);
@@ -403,6 +395,8 @@ function changeStatus(code, password, newStatus) {
 function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'owner', form.owner || '');
 
+  // CD 필드
+  setByHeader_(sheet, headers, row, 'child_photo', form.child_photo || '');
   setByHeader_(sheet, headers, row, 'child_name', form.child_name || '');
   setByHeader_(sheet, headers, row, 'guardian_name', form.guardian_name || '');
   setByHeader_(sheet, headers, row, 'guardian_phone', form.guardian_phone || '');
@@ -462,28 +456,6 @@ function parseLinks_(links) {
     }));
 }
 
-function saveChildPhoto_(code, dataUrl) {
-  const match = String(dataUrl || '').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
-  if (!match) throw new Error('아이 사진 형식이 올바르지 않습니다.');
-
-  const contentType = match[1];
-  const bytes = Utilities.base64Decode(match[2]);
-  const ext = contentType.includes('png') ? 'png' : 'jpg';
-  const fileName = String(code || 'child') + '_child_photo_' + Date.now() + '.' + ext;
-
-  const blob = Utilities.newBlob(bytes, contentType, fileName);
-  const folder = getPhotoFolder_();
-  const file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return 'https://drive.google.com/thumbnail?id=' + file.getId() + '&sz=w600';
-}
-
-function getPhotoFolder_() {
-  const folders = DriveApp.getFoldersByName(PHOTO_FOLDER_NAME);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(PHOTO_FOLDER_NAME);
-}
-
 function setByHeader_(sheet, headers, row, key, value) {
   if (!headers[key]) return;
   sheet.getRange(row, headers[key]).setValue(value);
@@ -519,24 +491,19 @@ function nowText_() {
   );
 }
 
-function changeLostMode(code, password, lostMode) {
-  try {
-    const row = findQrRow_(code);
-    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+function getOneSignalConfig_() {
+  const props = PropertiesService.getScriptProperties();
+  const appId = String(props.getProperty('ONESIGNAL_APP_ID') || '').trim();
+  const restApiKey = String(props.getProperty('ONESIGNAL_REST_API_KEY') || '').trim();
+  if (!appId) throw new Error('Script Properties에 ONESIGNAL_APP_ID가 없습니다.');
+  if (!restApiKey) throw new Error('Script Properties에 ONESIGNAL_REST_API_KEY가 없습니다.');
+  return { app_id: appId, rest_api_key: restApiKey };
+}
 
-    const pwCheck = verifyPassword(code, password);
-    if (!pwCheck.success) return pwCheck;
-
-    const sheet = getSheet_();
-    const headers = getHeaderMap_();
-
-    setByHeader_(sheet, headers, row, 'lost_mode', lostMode === 'on' ? 'on' : '');
-    setByHeader_(sheet, headers, row, 'updated_at', nowText_());
-
-    return { success: true };
-  } catch (err) {
-    return { success: false, message: String(err) };
-  }
+function checkOneSignalSettings() {
+  const config = getOneSignalConfig_();
+  Logger.log('ONESIGNAL_APP_ID 설정 확인: ' + config.app_id);
+  Logger.log('ONESIGNAL_REST_API_KEY 설정 확인 완료');
 }
 
 function sendOwnerEmailAlert(params) {
@@ -556,10 +523,13 @@ function sendOwnerEmailAlert(params) {
 
     if (!ownerEmail) return { success: false, message: '알림 이메일이 등록되어 있지 않습니다.' };
 
+    const productCode = code.split('-')[0].toUpperCase();
+    const productNames = { BMT: '부산 메모리 태그', TT: '길동무 태그', CD: '어린이 안심 태그', GT: '가든 태그' };
+    const productName = productNames[productCode] || '새김 태그';
     const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
     const subject = '[새김] ' + code + ' 새 메시지가 도착했습니다.';
     const body =
-      '새김 부산 메모리 태그에 새로운 메시지가 도착했습니다.\n\n' +
+      '새김 ' + productName + '에 새로운 메시지가 도착했습니다.\n\n' +
       '태그번호: ' + code + '\n' +
       '닉네임: ' + nickname + '\n\n' +
       '메시지:\n' + message + '\n\n' +
@@ -606,24 +576,30 @@ function sendOwnerPushAlert(params) {
     const data = getRowObject_(row);
     const playerId = String(data.push_token || '').trim();
     if (!playerId) return { success: false, message: '푸시 토큰이 없습니다.' };
+
+    const oneSignal = getOneSignalConfig_();
     const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
     const payload = JSON.stringify({
-      app_id: '4454afde-61d3-4c7a-9f09-84de382a029d',
+      app_id: oneSignal.app_id,
       include_subscription_ids: [playerId],
-      headings: { en: '[새김] ' + code + ' 새 메시지', ko: '[새김] ' + code + ' 새 메시지' },
+      headings: { en: '[SAEGIM] ' + code + ' New message', ko: '[새김] ' + code + ' 새 메시지' },
       contents: { en: nickname + ': ' + message, ko: nickname + ': ' + message },
       url: pageUrl
     });
     const response = UrlFetchApp.fetch('https://api.onesignal.com/notifications', {
       method: 'post',
       contentType: 'application/json',
-      headers: { Authorization: 'Key os_v2_app_irkk7xtb2nghvhyjqtpdqkqctul2cyqw76buolfthjqff6znmsqemlbos3nmy7pob6ma2bk7zptx76cm655dyaccxtyvxuoyl5sglia' },
+      headers: { Authorization: 'Key ' + oneSignal.rest_api_key },
       payload: payload,
       muteHttpExceptions: true
     });
-    const result = JSON.parse(response.getContentText());
+    const text = response.getContentText();
+    const result = text ? JSON.parse(text) : {};
+    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
+      return { success: false, message: 'OneSignal 전송 실패: ' + text };
+    }
     if (result.errors) return { success: false, message: JSON.stringify(result.errors) };
-    return { success: true };
+    return { success: true, message: '푸시 알림 전송 완료' };
   } catch (err) {
     return { success: false, message: String(err) };
   }
