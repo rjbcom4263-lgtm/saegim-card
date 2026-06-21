@@ -108,7 +108,7 @@ function getProducts() {
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return [];
 
-  const headers = values[0].map(h => String(h).trim());
+  const headers     = values[0].map(h => String(h).trim());
   const typeCol     = headers.indexOf('product_type');
   const nameCol     = headers.indexOf('product_name');
   const activeCol   = headers.indexOf('is_active');
@@ -286,6 +286,18 @@ function makeQrRow_(code, productType, productName, qrFile) {
   return row;
 }
 
+// ✅ QR_DB에서 코드 중복 검사
+function codeExistsInMaster_(code) {
+  const sheet  = getMasterSheet_();
+  const values = sheet.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0] || '').trim().toUpperCase() === String(code || '').trim().toUpperCase()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function createQrInventory(form) {
   const productType = String(form.product_type || '').trim().toUpperCase();
   const quantity    = Number(form.quantity || 0);
@@ -309,13 +321,22 @@ function createQrInventory(form) {
   const rows         = [];
   const createdCodes = [];
 
+  let nextNumber = startNumber;
+
   for (let i = 0; i < quantity; i++) {
-    const code   = makeCode_(productType, startNumber + i);
+    // ✅ 중복 코드 건너뜀
+    let code = makeCode_(productType, nextNumber);
+    while (codeExistsInMaster_(code)) {
+      nextNumber++;
+      code = makeCode_(productType, nextNumber);
+    }
+
     const qrUrl  = CARD_BASE_URL + '/?code=' + encodeURIComponent(code);
     const qrFile = saveQrImage_(folder, code, qrUrl);
 
     rows.push(makeQrRow_(code, productType, product.product_name, qrFile));
     createdCodes.push(code);
+    nextNumber++;
   }
 
   productSheet
@@ -474,16 +495,27 @@ function getSettingsData() {
 // Utilities
 // ─────────────────────────────────────────────
 
+// ✅ 제품 시트 + QR_DB 둘 다 스캔해서 다음 번호 계산 (중복 방지)
 function getNextNumber_(sheet, productType) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return 1;
+  const ss          = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const masterSheet = ss.getSheetByName(MASTER_SHEET_NAME);
 
-  const codes = sheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
   let max = 0;
-  codes.forEach(code => {
-    const match = String(code || '').match(new RegExp('^' + productType + '-(\\d+)$'));
-    if (match) max = Math.max(max, Number(match[1]));
-  });
+
+  function scanSheet_(targetSheet) {
+    if (!targetSheet) return;
+    const lastRow = targetSheet.getLastRow();
+    if (lastRow < 2) return;
+    const values = targetSheet.getRange(2, 1, lastRow - 1, 1).getValues().flat();
+    values.forEach(function(code) {
+      const match = String(code || '').trim().match(new RegExp('^' + productType + '-(\\d+)$'));
+      if (match) max = Math.max(max, Number(match[1]));
+    });
+  }
+
+  scanSheet_(sheet);
+  scanSheet_(masterSheet);
+
   return max + 1;
 }
 
@@ -850,4 +882,287 @@ function initializeActiveSheets() {
     success: true,
     message: 'QR_DB 및 활성 제품 시트 헤더 정리 완료: ' + ACTIVE_PRODUCT_TYPES.join(', ')
   };
+}
+
+// ─────────────────────────────────────────────
+// QR_DB → Firestore 전체 이관
+// Apps Script 에디터에서 직접 실행
+// ─────────────────────────────────────────────
+
+// 이관 제외 필드 (비밀번호류)
+const MIGRATE_EXCLUDE_FIELDS = ['password', 'admin_password'];
+
+// QR_DB 전체 행을 Firestore qr_cards 컬렉션에 upsert
+// 실행 전 반드시 CD-0025 같은 중복 행 정리 필요
+function migrateQrDbToFirestore() {
+  const sheet   = getMasterSheet_();
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const codeIdx = headers.indexOf('code');
+
+  if (codeIdx < 0) throw new Error('QR_DB에 code 헤더가 없습니다.');
+
+  const token    = getFirestoreToken_();
+  const results  = { success: 0, skipped: 0, errors: [] };
+
+  for (let i = 1; i < data.length; i++) {
+    const code = String(data[i][codeIdx] || '').trim();
+    if (!code) { results.skipped++; continue; }
+
+    try {
+      const rowData = {};
+      headers.forEach(function(h, j) {
+        if (h && MIGRATE_EXCLUDE_FIELDS.indexOf(h) < 0) {
+          rowData[h] = data[i][j];
+        }
+      });
+
+      const backupAt = nowText_();
+      rowData['firestore_backup_at'] = backupAt;
+
+      // Firestore REST fields 변환
+      const fields = {};
+      Object.keys(rowData).forEach(function(key) {
+        var val = rowData[key];
+        if (val === undefined || val === null || val === '') {
+          fields[key] = { nullValue: null };
+        } else if (key === 'scan_count') {
+          fields[key] = { integerValue: String(Number(val) || 0) };
+        } else {
+          fields[key] = { stringValue: String(val) };
+        }
+      });
+
+      const url = 'https://firestore.googleapis.com/v1/projects/' + FIRESTORE_PROJECT_ID
+                + '/databases/(default)/documents/' + FIRESTORE_COLLECTION
+                + '/' + encodeURIComponent(code);
+
+      const res = UrlFetchApp.fetch(url, {
+        method:      'patch',
+        contentType: 'application/json',
+        headers:     { Authorization: 'Bearer ' + token },
+        payload:     JSON.stringify({ fields: fields }),
+        muteHttpExceptions: true
+      });
+
+      if (res.getResponseCode() === 200) {
+        // firestore_backup_at 시트에도 기록
+        const backupColIdx = headers.indexOf('firestore_backup_at');
+        if (backupColIdx >= 0) {
+          sheet.getRange(i + 1, backupColIdx + 1).setValue(backupAt);
+        }
+        results.success++;
+      } else {
+        results.errors.push(code + ': HTTP ' + res.getResponseCode());
+      }
+
+      // 토큰은 1시간 유효, 대량 이관 시 속도 제한 대응
+      Utilities.sleep(200);
+
+    } catch (e) {
+      results.errors.push(code + ': ' + e.message);
+    }
+  }
+
+  const summary = '이관 완료: ' + results.success + '건'
+    + ' / 스킵: ' + results.skipped + '건'
+    + (results.errors.length ? ' / 오류: ' + results.errors.join(', ') : '');
+
+  Logger.log(summary);
+  return { success: true, message: summary, details: results };
+}
+
+// ─────────────────────────────────────────────
+// V1: qr_cards(공개) + qr_card_private(비공개) 분리 이관
+// ─────────────────────────────────────────────
+
+const FIRESTORE_PUBLIC_COLLECTION  = 'qr_cards';
+const FIRESTORE_PRIVATE_COLLECTION = 'qr_card_private';
+
+const FIRESTORE_PUBLIC_FIELDS = [
+  'code', 'product', 'product_type', 'owner', 'status', 'qr_file',
+  'link1_type', 'link1_label', 'link1_url',
+  'link2_type', 'link2_label', 'link2_url',
+  'link3_type', 'link3_label', 'link3_url',
+  'link4_type', 'link4_label', 'link4_url',
+  'link5_type', 'link5_label', 'link5_url',
+  'child_name', 'guardian_name', 'guardian_phone',
+  'child_allergy', 'blood_type', 'child_note', 'child_message',
+  'scan_count', 'sold_at', 'registered_at', 'updated_at',
+  'bmt_photo1', 'bmt_photo2', 'bmt_photo3', 'bmt_photo4', 'bmt_photo5',
+  'bmt_travel_memo', 'bmt_places', 'bmt_voice', 'bmt_visit_date',
+  'bmt_photo_fit', 'bmt_photo_position',
+  'lost_mode', 'lost_contact_type', 'lost_contact_label', 'lost_contact_url',
+  'lost_message_ko', 'lost_message_en', 'lost_message_ja', 'lost_message_zh',
+  'gt_garden_name', 'gt_growth_point', 'gt_stage', 'gt_slots', 'gt_inventory',
+  'wt_birth_date', 'wt_theme', 'wt_last_message_id', 'wt_lang',
+  'gm_default_area', 'gm_enabled_categories',
+  'firestore_backup_at'
+];
+
+const FIRESTORE_PRIVATE_FIELDS = [
+  'code', 'password', 'admin_password', 'owner_email', 'push_token', 'memo',
+  'firestore_backup_at'
+];
+
+// 중복 코드 검사
+function findDuplicateQrCodes() {
+  const result = collectDuplicateQrCodes_();
+  Logger.log(JSON.stringify(result, null, 2));
+  return { success: true, duplicate_count: result.length, duplicates: result };
+}
+
+function collectDuplicateQrCodes_() {
+  const sheet   = getMasterSheet_();
+  const data    = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+
+  const headers = data[0].map(function(h) { return String(h || '').trim(); });
+  const codeCol = headers.indexOf('code');
+  if (codeCol < 0) throw new Error('QR_DB에서 code 헤더를 찾을 수 없습니다.');
+
+  const seen = {};
+  for (let i = 1; i < data.length; i++) {
+    const code = String(data[i][codeCol] || '').trim().toUpperCase();
+    if (!code) continue;
+    if (!seen[code]) { seen[code] = [i + 1]; } else { seen[code].push(i + 1); }
+  }
+
+  return Object.keys(seen)
+    .filter(function(c) { return seen[c].length > 1; })
+    .map(function(c) { return { code: c, rows: seen[c] }; });
+}
+
+// qr_cards(공개) + qr_card_private(비공개) 분리 이관
+function migrateQrDbToFirestoreV1() {
+  const duplicates = collectDuplicateQrCodes_();
+  if (duplicates.length > 0) {
+    throw new Error(
+      '중복 코드 정리 먼저: ' +
+      duplicates.map(function(d) { return d.code + ' rows=' + d.rows.join(','); }).join(' / ')
+    );
+  }
+
+  const sheet   = getMasterSheet_();
+  const data    = sheet.getDataRange().getValues();
+  if (data.length < 2) return { success: true, message: '이관할 데이터가 없습니다.' };
+
+  const headers = data[0].map(function(h) { return String(h || '').trim(); });
+  const codeCol = headers.indexOf('code');
+  if (codeCol < 0) throw new Error('QR_DB에서 code 헤더를 찾을 수 없습니다.');
+
+  // 토큰 1회 발급 — 행마다 재발급하지 않음
+  const token = getFirestoreToken_();
+
+  let successCount = 0;
+  let skipCount = 0;
+  const failed = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const code = String(data[i][codeCol] || '').trim().toUpperCase();
+    if (!code) { skipCount++; continue; }
+
+    const rowData = {};
+    headers.forEach(function(h, j) { if (h) rowData[h] = data[i][j]; });
+
+    try {
+      migrateOneQrRowV1_(token, rowData);
+      successCount++;
+    } catch (e) {
+      failed.push(code + ': ' + e.message);
+    }
+
+    Utilities.sleep(150); // 속도 제한 대응
+  }
+
+  const message = '분리 이관 완료: 성공 ' + successCount
+    + '건 / 스킵 ' + skipCount
+    + '건 / 실패 ' + failed.length + '건';
+  Logger.log(message);
+  if (failed.length) Logger.log(failed.join('\n'));
+
+  return { success: failed.length === 0, message: message, failed: failed };
+}
+
+function migrateOneQrRowV1_(token, rowData) {
+  const code = String(rowData.code || '').trim().toUpperCase();
+  if (!code) throw new Error('code 없음');
+
+  const backupAt = nowText_();
+  rowData.firestore_backup_at = backupAt;
+
+  const publicData  = pickFields_(rowData, FIRESTORE_PUBLIC_FIELDS);
+  const privateData = pickFields_(rowData, FIRESTORE_PRIVATE_FIELDS);
+
+  writeFirestoreDoc_(token, FIRESTORE_PUBLIC_COLLECTION,  code, publicData);
+  writeFirestoreDoc_(token, FIRESTORE_PRIVATE_COLLECTION, code, privateData);
+
+  updateFirestoreBackupAt_(code, backupAt);
+}
+
+function pickFields_(rowData, fields) {
+  const obj = {};
+  fields.forEach(function(key) { obj[key] = rowData[key] === undefined ? '' : rowData[key]; });
+  return obj;
+}
+
+function writeFirestoreDoc_(token, collectionName, docId, data) {
+  const url = 'https://firestore.googleapis.com/v1/projects/' + FIRESTORE_PROJECT_ID
+    + '/databases/(default)/documents/'
+    + encodeURIComponent(collectionName) + '/' + encodeURIComponent(docId);
+
+  const res = UrlFetchApp.fetch(url, {
+    method:      'patch',
+    contentType: 'application/json',
+    headers:     { Authorization: 'Bearer ' + token },
+    payload:     JSON.stringify({ fields: toFirestoreFields_(data) }),
+    muteHttpExceptions: true
+  });
+
+  if (res.getResponseCode() !== 200) {
+    throw new Error(collectionName + '/' + docId + ' 저장 실패 (' + res.getResponseCode() + '): ' + res.getContentText());
+  }
+}
+
+function toFirestoreFields_(data) {
+  const fields = {};
+  Object.keys(data).forEach(function(key) {
+    var val = data[key];
+    if (val === undefined || val === null || val === '') {
+      fields[key] = { nullValue: null };
+    } else if (key === 'scan_count' || key === 'gt_growth_point' || key === 'gt_stage') {
+      fields[key] = { integerValue: String(Number(val) || 0) };
+    } else {
+      fields[key] = { stringValue: String(val) };
+    }
+  });
+  return fields;
+}
+
+// ─────────────────────────────────────────────
+// 단일 코드 이관 테스트 (에디터에서 바로 실행)
+function testMigrateSingle() {
+  const code    = 'CD-0024';
+  const sheet   = getMasterSheet_();
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => String(h || '').trim());
+  const codeIdx = headers.indexOf('code');
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][codeIdx] || '').trim() !== code) continue;
+
+    const rowData = {};
+    headers.forEach(function(h, j) {
+      if (h && MIGRATE_EXCLUDE_FIELDS.indexOf(h) < 0) {
+        rowData[h] = data[i][j];
+      }
+    });
+
+    const backupAt = backupQrToFirestore_(rowData);
+    updateFirestoreBackupAt_(code, backupAt);
+    Logger.log('이관 성공: ' + code + ' / ' + backupAt);
+    return;
+  }
+
+  throw new Error(code + ' 을 QR_DB에서 찾을 수 없습니다.');
 }

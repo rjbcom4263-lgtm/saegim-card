@@ -8,7 +8,6 @@ function doGet(e) {
   if (action) {
     return handleApi_(e.parameter);
   }
-  // Firebase Hosting으로 이전 후 GAS는 API 전용으로만 사용
   return ContentService
     .createTextOutput(JSON.stringify({ success: false, message: 'action 파라미터가 필요합니다.' }))
     .setMimeType(ContentService.MimeType.JSON);
@@ -44,6 +43,9 @@ function handleApi_(params) {
         result = updateCustomerData(
           typeof params.form === 'string' ? JSON.parse(params.form) : params
         );
+        break;
+      case 'changeLostMode':
+        result = changeLostMode(params.code, params.password, params.lost_mode);
         break;
       case 'sendOwnerEmailAlert':
         result = sendOwnerEmailAlert(params);
@@ -199,6 +201,8 @@ function updateProductSheetField_(code, key, value) {
   return true;
 }
 
+// ─────────────────────────────────────────────────────────
+
 function getQrData(code) {
   try {
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
@@ -240,7 +244,7 @@ function getQrData(code) {
       bmt_visit_date: data.bmt_visit_date || '',
       bmt_photo_fit: data.bmt_photo_fit || 'single',
       bmt_photo_position: data.bmt_photo_position || 'center',
-      // ── BMT 분실물 모드 v2 ──
+
       lost_mode: data.lost_mode || '',
       lost_contact_type: data.lost_contact_type || '',
       lost_contact_label: data.lost_contact_label || '',
@@ -392,6 +396,27 @@ function changeStatus(code, password, newStatus) {
   }
 }
 
+function changeLostMode(code, password, lostMode) {
+  try {
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+
+    const pwCheck = verifyPassword(code, password);
+    if (!pwCheck.success) return pwCheck;
+
+    const sheet = getSheet_();
+    const headers = getHeaderMap_();
+    setByHeader_(sheet, headers, row, 'lost_mode', lostMode === 'on' ? 'on' : '');
+    setByHeader_(sheet, headers, row, 'updated_at', nowText_());
+
+    syncQrDbRowToProductSheet_(code);
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
 function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'owner', form.owner || '');
 
@@ -405,6 +430,7 @@ function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'child_note', form.child_note || '');
   setByHeader_(sheet, headers, row, 'child_message', form.child_message || '');
 
+  // BMT 필드
   setByHeader_(sheet, headers, row, 'bmt_photo1', form.bmt_photo1 || '');
   setByHeader_(sheet, headers, row, 'bmt_photo2', form.bmt_photo2 || '');
   setByHeader_(sheet, headers, row, 'bmt_photo3', form.bmt_photo3 || '');
@@ -416,7 +442,8 @@ function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'bmt_visit_date', form.bmt_visit_date || '');
   setByHeader_(sheet, headers, row, 'bmt_photo_fit', form.bmt_photo_fit || 'single');
   setByHeader_(sheet, headers, row, 'bmt_photo_position', form.bmt_photo_position || 'center');
-  // ── BMT 분실물 모드 v2 ──
+
+  // 분실 모드 공통
   setByHeader_(sheet, headers, row, 'lost_mode', form.lost_mode || '');
   setByHeader_(sheet, headers, row, 'lost_contact_type', form.lost_contact_type || '');
   setByHeader_(sheet, headers, row, 'lost_contact_label', form.lost_contact_label || '');

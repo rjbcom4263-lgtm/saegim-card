@@ -1,5 +1,125 @@
 # saegim-card 수정 이력
 
+## 2026-06-21 — Firebase Firestore 이관 1단계 완료
+
+### 배경
+
+Apps Script + Google Sheet + Firebase 혼합 구조에서 반복적인 문제 발생:
+- cd.html 무한 로딩
+- QR 코드 중복 생성 (CD-0025)
+- 고객용/관리자용 API 혼선
+- QR_DB와 제품별 시트 동기화 오류
+
+**결정**: Firestore를 메인 DB로 전환, Google Sheet는 백업/조회용으로 격하.
+
+---
+
+### 신규 구조
+
+```
+Firestore qr_cards/{code}          ← 공개 데이터 (고객 화면용)
+Firestore qr_card_private/{code}   ← 민감 데이터 (비밀번호·이메일·푸시토큰)
+Google Sheet QR_DB                 ← 백업·조회용
+Firebase /admin                    ← 관리자 화면 (다음 단계)
+```
+
+---
+
+### 작업 1: cd.html 파일 잘림 버그 수정
+
+**원인**
+`cd.html`이 286행에서 파일이 잘려 있었음. `val()` 함수 중간에서 끊겼고 `esc()`, `renderError()`, `loadData()` 호출이 모두 없었음. 브라우저가 스크립트 파싱 오류로 화면을 렌더링하지 못해 "불러오는 중입니다..."에서 무한 로딩 발생.
+
+**수정 내용** (`cd.html` 말미에 추가)
+```js
+function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
+function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
+function renderError(msg){app.innerHTML='<div class="error">'+esc(msg)+'</div>';}
+
+loadData();
+```
+
+**규칙**: 파일 말미에 반드시 `loadData()` 호출이 있어야 화면이 뜸.
+
+---
+
+### 작업 2: admin_Code.gs QR 중복 방지 패치
+
+**원인**
+`getNextNumber_()` 함수가 제품별 시트만 보고 다음 번호를 계산 → QR_DB에 이미 있는 코드를 다시 생성하는 중복 발생 (CD-0025 2개 생성).
+
+**수정 내용** (`admin_Code.gs`)
+
+```js
+// 제품 시트 + QR_DB 둘 다 스캔해서 max 계산
+function getNextNumber_(sheet, productType) {
+  const masterSheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(MASTER_SHEET_NAME);
+  let max = 0;
+  function scanSheet_(s) { /* ...코드별 최대 번호 추출... */ }
+  scanSheet_(sheet);
+  scanSheet_(masterSheet);
+  return max + 1;
+}
+```
+
+추가로 `codeExistsInMaster_()` 함수 + `createQrInventory()` while 루프로 생성 중 중복 건너뛰기 적용.
+
+---
+
+### 작업 3: QR_DB → Firestore 이관 (admin_Code.gs)
+
+**추가 함수**
+
+| 함수 | 역할 |
+|---|---|
+| `findDuplicateQrCodes()` | QR_DB 중복 코드 검사 |
+| `migrateQrDbToFirestoreV1()` | qr_cards + qr_card_private 분리 이관 |
+| `migrateOneQrRowV1_()` | 단일 행 분리 이관 |
+| `writeFirestoreDoc_()` | Firestore REST API patch (토큰 재사용) |
+| `toFirestoreFields_()` | 값 → Firestore fields 포맷 변환 |
+| `pickFields_()` | 필드 목록 기반 객체 추출 |
+
+**공개 컬렉션** `qr_cards` — 고객 화면에 필요한 모든 필드 (비밀번호 제외)
+
+**비공개 컬렉션** `qr_card_private` — password, admin_password, owner_email, push_token, memo
+
+**토큰 최적화**: 행마다 토큰을 재발급하지 않고 이관 시작 시 1회만 발급해 전 행에 재사용.
+
+---
+
+### 이관 결과
+
+```
+실행 함수: migrateQrDbToFirestoreV1
+결과: 분리 이관 완료 — 성공 29건 / 스킵 0건 / 실패 0건
+
+Firestore qr_cards        → 29개 문서 (CD, BMT, GT, WT, TT)
+Firestore qr_card_private → 29개 문서 (password, admin_password, owner_email, push_token, memo)
+```
+
+---
+
+### 다음 단계
+
+```
+1. Firestore 보안 규칙 설정
+   - qr_cards: 읽기 공개 / 쓰기 인증 필요
+   - qr_card_private: 읽기·쓰기 모두 인증 필요
+
+2. Firebase /admin 관리자 화면 제작
+   - public/admin/index.html
+   - Firebase Auth (Google 로그인, 허용 이메일 제한)
+   - Firestore 직접 읽기/쓰기
+
+3. cd.html Firestore 직접 조회로 전환
+   - Apps Script API 제거
+   - Firebase SDK로 qr_cards/{code} 읽기
+
+4. BMT → TT → WT → GT 순서로 전환
+```
+
+---
+
 ## 2026-06-20 — CD QR 등록 완료 기능 복구 및 전체 정비
 
 ### 배경

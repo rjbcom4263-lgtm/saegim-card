@@ -6,7 +6,9 @@
       "**/.*",
       "**/node_modules/**",
       "Code.gs",
-      ".github/**"
+      "admin_Code.gs",
+      ".github/**",
+      "CHANGELOG.md"
     ]
   }
 }
