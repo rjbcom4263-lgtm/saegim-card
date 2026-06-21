@@ -453,6 +453,12 @@ function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'bmt_photo_fit', form.bmt_photo_fit || 'single');
   setByHeader_(sheet, headers, row, 'bmt_photo_position', form.bmt_photo_position || 'center');
 
+  // WT 새김 바램태그 필드
+  setIfProvided_(sheet, headers, row, 'wt_birth_date', form);
+  setIfProvided_(sheet, headers, row, 'wt_theme', form);
+  setIfProvided_(sheet, headers, row, 'wt_last_message_id', form);
+  setIfProvided_(sheet, headers, row, 'wt_lang', form);
+
   // 분실 모드 공통
   setByHeader_(sheet, headers, row, 'lost_mode', form.lost_mode || '');
   setByHeader_(sheet, headers, row, 'lost_contact_type', form.lost_contact_type || '');
@@ -496,6 +502,13 @@ function parseLinks_(links) {
 function setByHeader_(sheet, headers, row, key, value) {
   if (!headers[key]) return;
   sheet.getRange(row, headers[key]).setValue(value);
+}
+
+function setIfProvided_(sheet, headers, row, key, form) {
+  if (!form) return;
+  if (Object.prototype.hasOwnProperty.call(form, key)) {
+    setByHeader_(sheet, headers, row, key, form[key] || '');
+  }
 }
 
 function increaseScanCount_(row) {

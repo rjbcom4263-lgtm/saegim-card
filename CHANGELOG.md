@@ -1,5 +1,71 @@
 # saegim-card 수정 이력
 
+## 2026-06-21 — WT 바램태그 Firestore 기능 추가 (3단계)
+
+### 변경 파일
+
+- `wt.html` — Firestore 조회 + 상태별 라우팅 + recordScan 신규 추가
+- `Code.gs` — `saveCustomerFields_`에 WT 필드 추가, `setIfProvided_` 헬퍼 신규
+
+### 배경
+
+WT(바램태그)는 기존에 `renderWishTag()`만 호출하는 순수 정적 페이지였음.
+CD/BMT/TT/GT가 `getQrData` → Firestore로 **전환**한 것과 달리,
+WT는 QR 데이터 조회 자체가 없었으므로 "전환"이 아니라 **기능 추가**.
+
+### wt.html 주요 변경
+
+| 항목 | 내용 |
+|------|------|
+| URL 파라미터 | `?code=WT-0001` 파싱 → `CODE` 상수 |
+| Firebase 모듈 | `firebase-app`, `firebase-firestore` v11 import |
+| Firestore 조회 | `qr_cards/{CODE}` 직접 조회 (IIFE) |
+| 상태별 라우팅 | `미등록` → 안내 / `중지` → 중지 안내 / `판매완료` → 등록 폼 / `사용중·분실` → 바램 문장 |
+| 언어 설정 | Firestore `wt_lang` → `currentLang` 반영 |
+| recordScan | 상태 `사용중·분실` 시 `recordScan` API 호출 |
+| 최초 등록 폼 | 비밀번호 + 언어 + 생년월일 → `registerSoldQr` API |
+| API_URL | 최신 배포 URL 적용 |
+
+### Code.gs 주요 변경
+
+```js
+// setByHeader_ 아래에 추가
+function setIfProvided_(sheet, headers, row, key, form) {
+  if (!form) return;
+  if (Object.prototype.hasOwnProperty.call(form, key)) {
+    setByHeader_(sheet, headers, row, key, form[key] || '');
+  }
+}
+```
+
+```js
+// saveCustomerFields_ 안, BMT 아래 / 분실 모드 위
+// WT 새김 바램태그 필드
+setIfProvided_(sheet, headers, row, 'wt_birth_date', form);
+setIfProvided_(sheet, headers, row, 'wt_theme', form);
+setIfProvided_(sheet, headers, row, 'wt_last_message_id', form);
+setIfProvided_(sheet, headers, row, 'wt_lang', form);
+```
+
+### 차이점 정리
+
+```
+CD / BMT / TT / GT
+  기존 getQrData 조회 있음 → Firestore 조회로 교체
+
+WT
+  기존 QR 데이터 조회 없음 → Firestore 조회 기능을 새로 추가
+```
+
+### 테스트 항목
+
+- [ ] `?code=WT-0001` 접속 → scan_count 증가 확인
+- [ ] `wt_lang` 저장 → 언어 반영 확인
+- [ ] `wt_birth_date` 저장 → QR_DB / WT 시트 / Firestore 동시 반영 확인
+- [ ] `판매완료` 상태 → 등록 폼 표시 → 등록 완료 후 바램 문장 표시
+
+---
+
 ## 2026-06-21 — Firebase Firestore 이관 1단계 완료
 
 ### 배경
@@ -271,4 +337,145 @@ GitHub Desktop 방식: Changes 탭 → Summary 입력 → Commit to main → Pus
 배포 후 브라우저가 이전 버전을 캐싱하는 경우 URL에 `?v=숫자` 파라미터를 붙여 확인:
 ```
 https://saegim-memory.web.app/cd.html?code=CD-0023&v=3
+```
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+---
+
+## 2026-06-21 — Firestore 이관 2단계 완료
+
+### 작업 개요
+
+고객 화면 전체 Firestore 직접 조회 전환 + 고객용 Code.gs Firestore 동기화 추가
+
+---
+
+### 작업 1: bmt.html / tt.html / gt.html Firestore 직접 조회 전환
+
+**변경 파일**: `bmt.html`, `tt.html`, `gt.html`
+
+cd.html에 이어 나머지 고객 페이지도 동일 패턴 적용.
+
+**변경 전**
+```
+loadData() → apiGet('getQrData') → Apps Script → QR_DB
+```
+
+**변경 후**
+```
+모듈 IIFE → getDoc(doc(db, 'qr_cards', CODE)) → Firestore 직접 조회
+```
+
+**세부 내용**
+- 기존 `<script>` 내 `loadData()` 호출 제거 (`// loadData() → Firestore module below` 주석 대체)
+- 각 파일의 `<script type="module">` 내 Firebase 임포트에 `doc, getDoc` 추가
+- 모듈 하단 IIFE에서 Firestore `qr_cards/{CODE}` 조회 후 `renderView(d)` 호출
+- `link1_url ~ link5_url` 개별 필드 → `links[]` 배열 재구성 (cd.html과 동일)
+- 조회 성공 후 `recordScanCount(CODE)` 호출 추가
+- 파일 잘림 문제(모듈 스크립트 중간 truncation)도 함께 복원
+
+**파일별 특이사항**
+- `bmt.html`: Storage(파일 업로드) + Firestore 채팅 모두 유지. `firestoreApi`에 `collection, addDoc, query, orderBy, onSnapshot` 노출
+- `tt.html`: Firestore 채팅만. Storage 없음
+- `gt.html`: `MODE==='admin'` 분기. `firestoreApi`에 `doc, getDoc, setDoc, updateDoc` 노출 (garden_tags 기능용)
+- `wt.html`: QR 데이터 조회 자체가 없어 변환 불필요 — 변경 없음
+
+---
+
+### 작업 2: 고객용 Code.gs Firestore V1 백업 추가
+
+**변경 파일**: `Code.gs`
+
+**추가 함수**
+```
+getFirestoreToken_()               Firebase 서비스 계정 JWT 발급
+pickFirestoreFields_(rowData, fields)  지정 필드만 추출
+toFirestoreFields_(data)           Firestore REST API 형식 변환
+writeFirestoreDoc_(token, col, id, data)  Firestore 문서 PATCH
+backupCustomerQrToFirestoreV1_(code)   qr_cards + qr_card_private 동시 백업
+savePushToken(params)              푸시 토큰 저장 (기존 switch에만 있고 함수 누락됐던 것 추가)
+recordScan(code)                   scan_count 증가 + Sheet/Firestore 동기화
+```
+
+**Firestore 백업 트리거 추가**
+```
+registerSoldQr     → syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+updateCustomerData → syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+changeStatus       → syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+changeLostMode     → syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+savePushToken      → syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+recordScan         → scan_count++ + syncQrDbRowToProductSheet_ + backupCustomerQrToFirestoreV1_
+```
+
+**보안 패치**
+- `getQrData()` 응답에서 `owner_email`, `push_token` 직접 노출 제거
+- 대신 `has_owner_email: bool`, `has_push_token: bool` 형태로 변경
+
+**안정성 패치**
+- `findQrRow_()` 대소문자 비교 → `.toUpperCase()` 정규화로 교체 (소문자 코드 URL 대응)
+- `getQrData()` scan_count 증가 후 `syncQrDbRowToProductSheet_` + `backupCustomerQrToFirestoreV1_` 추가 (기존 getQrData 경로도 Firestore 반영)
+- `backupCustomerQrToFirestoreV1_` 내 `firestore_backup_at` 기록 후 `syncQrDbRowToProductSheet_` 추가 (제품별 시트 동기화 일치)
+
+**Script Properties 필요 항목 (고객용 Apps Script)**
+```
+FIREBASE_CLIENT_EMAIL   Firebase 서비스 계정 이메일
+FIREBASE_PRIVATE_KEY    Firebase 서비스 계정 비공개 키
+ONESIGNAL_APP_ID        OneSignal 앱 ID
+ONESIGNAL_REST_API_KEY  OneSignal REST API 키
+```
+
+---
+
+### 작업 3: recordScan 고객 페이지 연동
+
+**변경 파일**: `cd.html`, `bmt.html`, `tt.html`, `gt.html`
+
+Firestore 직접 조회로 전환 시 기존 `getQrData()`가 올리던 scan_count가 누락되는 문제 해결.
+
+```js
+// 각 파일 모듈 IIFE 내 renderView(d) 직후
+recordScanCount(CODE);
+
+// 각 파일에 추가된 함수
+async function recordScanCount(code) {
+  await fetch(API_URL, {
+    method: 'POST',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify({ action: 'recordScan', code: code }),
+    redirect: 'follow'
+  });
+}
+```
+
+---
+
+### 작업 4: 고객용 Apps Script 배포 URL 갱신
+
+**변경 파일**: `cd.html`, `bmt.html`, `tt.html`, `gt.html`
+
+```
+구: AKfycbxVZ3C9OELTQs73DmVsmTSBfJxIqOYDFh73dnkeT3EoW7DNMIfpovGycB7hXwUrq00l
+신: AKfycbzNeuU1PI0LKbhkXA-PEXvveDn63nNLfXDtpPveyK7S4TcioZslBwbL4HC17gXZRs28sA
+```
+
+---
+
+### 최종 완성된 데이터 흐름
+
+```
+고객 화면 보기    → Firestore qr_cards/{code} 직접 조회
+고객 등록/수정   → Apps Script → QR_DB + 제품별 시트 + Firestore qr_cards + qr_card_private
+조회수 기록      → Apps Script recordScan → QR_DB + 제품별 시트 + Firestore
+/admin QR 생성  → Apps Script → Drive + QR_DB + 제품별 시트 + Firestore
+/admin 상태변경 → Apps Script → QR_DB + 제품별 시트 + Firestore
+```
+
+---
+
+### 다음 단계
+
+```
+1. 고객용 Code.gs Apps Script 새 버전 배포
+2. Script Properties FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY 설정
+3. CD-0025로 수정 저장 → QR_DB / CD 시트 / Firestore 동시 반영 확인
+4. scan_count 증가 확인
 ```
