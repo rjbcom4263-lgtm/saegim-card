@@ -24,6 +24,12 @@ body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 1
 .wt-sentence{text-align:center;font-size:18px;line-height:1.8;font-weight:500;color:var(--text);white-space:pre-line;letter-spacing:.03em}
 .wt-sentence.fade{opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
 .wt-again{display:block;width:100%;margin-top:0;padding:18px;border-radius:18px;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+.form-label{display:block;color:var(--gold);font-size:13px;margin-top:10px;margin-bottom:7px}
+.form-input,.form-select{width:100%;margin:0 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px}
+.date-row{display:flex;gap:8px;align-items:center;margin-bottom:13px}
+.date-row .form-input{margin:0;flex:1}
+.date-btn{white-space:nowrap;padding:14px 12px;border-radius:14px;border:1px solid var(--line);background:#151515;color:var(--gold);cursor:pointer}
+input[type="date"]{color-scheme:dark}
 </style>
 </head>
 <body>
@@ -340,6 +346,13 @@ const WT_SENTENCES={
   ja:['ゆっくりでも、大丈夫です。\nあなたの道は消えません。','答えを探すより、\n問いと一緒に歩いてみてください。','今日の迷いも、\nあなたを守ろうとする心かもしれません。','今必要なのは、\n速さではなく、少し立ち止まることかもしれません。','あなたは思っているより、\nうまくやっています。','すべての花が\n同じ季節に咲くわけではありません。','小さな勇気が\n大きな変化を生みます。','今日の心配が、\n明日の答えになることもあります。','心が向く方向を、\n一度信じてみてください。','完璧な準備より、\n一歩踏み出すことが大切です。','自分のペースを\n疑わないでください。','寄り道も、\n道のひとつです。','焦りより、\n信頼が必要な日です。','揺れない人など\nいません。','今日は、自分に\nもう少し優しくしてください。','不安は、新しい始まりの前に\nよく訪れます。','あなたの努力は、見えなくても\n積み重なっています。','答えが遅く来る\n日もあります。','今の悩みは、\n真剣さの証です。','明日のあなたも、\n今日の選択を応援しています。','小さな幸せを\n見逃さないでください。','今この瞬間も、\n十分に意味があります。','すべての出会いには\n理由があります。','あなたの願いは、\n思ったより近くにあります。','道に迷ったと感じても、\nあなたは道の上にいます。','今日の沈黙も、\n必要な時間です。','自分を\n追い詰めすぎないでください。','あなたはすでに、\n多くのことをやり遂げています。','遅すぎると思った瞬間が、\n始まりかもしれません。','今日はゆっくり歩いても\n大丈夫です。','心の声を、\n少し聞いてみてください。','休むことは、\n遅れることではありません。','小さな選択が、\n大きな方向を作ります。','あなたは\n一人ではありません。','今の時間も、\nいつか思い出になります。','今日すべての答えを\n見つけなくてもいいです。','待つことも、\nひとつのプロセスです。','あなたは十分に\n大切な存在です。','今日の失敗も、\n明日の財産になります。','完璧でなくても\n大丈夫です。'],
   zh:['慢一点也没关系。\n你的路不会消失。','与其寻找答案，\n不如带着问题一起前行。','今天的犹豫，\n也许是你内心在保护自己。','此刻需要的，\n也许不是更快的脚步，而是片刻的停留。','你比自己想象的，\n做得更好。','不是所有的花\n都在同一个季节盛开。','小小的勇气，\n可以带来巨大的改变。','今天的担忧，\n有时会成为明天的答案。','试着相信\n心中指向的方向。','一步踏出，\n胜过万全的准备。','不要怀疑\n自己的节奏。','绕路而行，\n也是一条路。','今天需要的是信任，\n而不是焦急。','没有人能\n一直不动摇。','今天，\n对自己多一点温柔。','焦虑常常出现\n在新开始之前。','你的努力在积累，\n即使暂时看不见。','有些答案，\n来得慢一些。','今天的烦恼，\n是你认真在乎的证明。','明天的你，\n也会为今天的选择加油。','不要错过\n身边小小的幸福。','此刻，\n本身就充满意义。','每一次相遇，\n都有它的理由。','你所期待的，\n比你想的更近。','即使感到迷路，\n你仍在路上。','今天的沉默，\n也是必要的时间。','不要\n对自己太苛刻。','你已经\n完成了很多事情。','觉得太晚的那一刻，\n也许正是开始。','今天慢慢走\n也没关系。','试着听一听\n内心的声音。','休息，\n不代表落后。','小小的选择，\n造就大大的方向。','你\n并不孤单。','此刻的时光，\n终将成为回忆。','今天不必\n找到所有的答案。','等待，\n也是旅途的一部分。','你是\n足够珍贵的人。','今天的错误，\n是明天的积累。','不完美\n也没关系。']
 };
+const WT_REGISTER_LABELS={
+  ko:{title:'새김 바램태그 설정',subtitle:'처음 사용 시 기본 정보를 설정해주세요.',lang:'언어 설정',theme:'바램 테마',birth:'생년월일 (선택)',pickDate:'달력 선택',password:'사용할 비밀번호 (4자 이상)',submit:'등록 완료',themes:{general:'일반',luck:'행운',health:'건강',money:'재물',exam:'합격',love:'사랑'},pwAlert:'비밀번호를 4자 이상 입력해주세요.',fail:'등록 실패',done:'등록되었습니다!',error:'오류: '},
+  en:{title:'SAEGIM Wish Tag Setup',subtitle:'Please set your basic information for first use.',lang:'Language',theme:'Wish Theme',birth:'Birth Date (optional)',pickDate:'Pick Date',password:'Password to use (at least 4 characters)',submit:'Complete Registration',themes:{general:'General',luck:'Luck',health:'Health',money:'Wealth',exam:'Success',love:'Love'},pwAlert:'Please enter a password with at least 4 characters.',fail:'Registration failed',done:'Registration completed!',error:'Error: '},
+  ja:{title:'SAEGIM 願いタグ設定',subtitle:'初回使用時に基本情報を設定してください。',lang:'言語設定',theme:'願いのテーマ',birth:'生年月日（任意）',pickDate:'日付を選択',password:'使用するパスワード（4文字以上）',submit:'登録完了',themes:{general:'一般',luck:'幸運',health:'健康',money:'金運',exam:'合格',love:'愛'},pwAlert:'パスワードを4文字以上入力してください。',fail:'登録に失敗しました',done:'登録されました！',error:'エラー: '},
+  zh:{title:'SAEGIM 心愿标签设置',subtitle:'首次使用时，请设置基本信息。',lang:'语言设置',theme:'心愿主题',birth:'出生日期（可选）',pickDate:'选择日期',password:'请输入密码（至少4个字符）',submit:'完成注册',themes:{general:'普通',luck:'幸运',health:'健康',money:'财运',exam:'成功',love:'爱情'},pwAlert:'请输入至少4个字符的密码。',fail:'注册失败',done:'注册完成！',error:'错误: '}
+};
+function getRegLabels(){return WT_REGISTER_LABELS[currentLang]||WT_REGISTER_LABELS.ko;}
 let _wtLastIdx=-1;
 let currentLang=localStorage.getItem('saegim_lang')||'ko';
 let WT_DATA=null;
@@ -441,38 +454,76 @@ function renderError(msg){app.innerHTML='<div class="error">'+esc(msg)+'</div>';
 function renderInactive(){app.innerHTML=brand()+'<div class="wt-wrap"><div class="wt-label">아직 등록되지 않은 QR입니다</div><div class="wt-sub">구매 후 등록하면 사용할 수 있습니다.</div></div><div class="footer">SAEGIM WT</div>';}
 function renderStopped(){app.innerHTML=brand()+'<div class="wt-wrap"><div class="wt-label">사용이 중지된 QR입니다</div><div class="wt-sub">현재 이 QR은 비활성화 상태입니다.</div></div><div class="footer">SAEGIM WT</div>';}
 function renderRegister(){
-  app.innerHTML=brand()+'<div class="wt-wrap"><div class="wt-label">새김 바램태그 설정</div><div class="wt-sub">처음 사용 시 기본 정보를 설정해주세요.</div>'+
-  '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">언어 설정</label>'+
-  '<select id="wt_lang_sel" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
-  '<option value="ko">한국어</option><option value="en">English</option><option value="ja">日本語</option><option value="zh">中文</option></select>'+
-  '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">바램 테마</label>'+
-  '<select id="wt_theme_sel" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
-  '<option value="general">일반</option>'+
-  '<option value="luck">행운</option>'+
-  '<option value="health">건강</option>'+
-  '<option value="money">재물</option>'+
-  '<option value="exam">합격</option>'+
-  '<option value="love">사랑</option>'+
-  '</select>'+
-  '<label style="display:block;color:var(--gold);font-size:13px;margin-top:6px">생년월일 (선택)</label>'+
-  '<input id="wt_birth" type="date" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
-  '<input id="wt_pw" type="password" placeholder="사용할 비밀번호 (4자 이상)" style="width:100%;margin:7px 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px">'+
-  '<button class="wt-again" onclick="wtSaveFirst()">등록 완료</button>'+
-  '</div><div class="footer">SAEGIM WT</div>';
+  const l=getRegLabels();
+  app.innerHTML=
+    brand()+
+    '<div class="wt-wrap">'+
+      '<div class="wt-label">'+l.title+'</div>'+
+      '<div class="wt-sub">'+l.subtitle+'</div>'+
+      '<label class="form-label">'+l.lang+'</label>'+
+      '<select id="wt_lang_sel" class="form-select" onchange="setRegisterLang(this.value)">'+
+        '<option value="ko" '+(currentLang==='ko'?'selected':'')+'>한국어</option>'+
+        '<option value="en" '+(currentLang==='en'?'selected':'')+'>English</option>'+
+        '<option value="ja" '+(currentLang==='ja'?'selected':'')+'>日本語</option>'+
+        '<option value="zh" '+(currentLang==='zh'?'selected':'')+'>中文</option>'+
+      '</select>'+
+      '<label class="form-label">'+l.theme+'</label>'+
+      '<select id="wt_theme_sel" class="form-select">'+
+        '<option value="general">'+l.themes.general+'</option>'+
+        '<option value="luck">'+l.themes.luck+'</option>'+
+        '<option value="health">'+l.themes.health+'</option>'+
+        '<option value="money">'+l.themes.money+'</option>'+
+        '<option value="exam">'+l.themes.exam+'</option>'+
+        '<option value="love">'+l.themes.love+'</option>'+
+      '</select>'+
+      '<label class="form-label">'+l.birth+'</label>'+
+      '<div class="date-row">'+
+        '<input id="wt_birth" type="date" class="form-input">'+
+        '<button type="button" class="date-btn" onclick="openBirthPicker()">'+l.pickDate+'</button>'+
+      '</div>'+
+      '<input id="wt_pw" type="password" class="form-input" placeholder="'+l.password+'">'+
+      '<button class="wt-again" onclick="wtSaveFirst()">'+l.submit+'</button>'+
+    '</div>'+
+    '<div class="footer">SAEGIM WT</div>';
+}
+function setRegisterLang(lang){
+  currentLang=lang;
+  localStorage.setItem('saegim_lang',lang);
+  const birth=document.getElementById('wt_birth')?.value||'';
+  const pw=document.getElementById('wt_pw')?.value||'';
+  const theme=document.getElementById('wt_theme_sel')?.value||'general';
+  renderRegister();
+  const birthEl=document.getElementById('wt_birth');
+  const pwEl=document.getElementById('wt_pw');
+  const themeEl=document.getElementById('wt_theme_sel');
+  if(birthEl)birthEl.value=birth;
+  if(pwEl)pwEl.value=pw;
+  if(themeEl)themeEl.value=theme;
+}
+function openBirthPicker(){
+  const el=document.getElementById('wt_birth');
+  if(!el)return;
+  if(typeof el.showPicker==='function'){el.showPicker();}else{el.focus();el.click();}
 }
 async function wtSaveFirst(){
+  const l=getRegLabels();
   const pw=document.getElementById('wt_pw').value.trim();
-  if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
+  if(!pw||pw.length<4){alert(l.pwAlert);return;}
   const lang=document.getElementById('wt_lang_sel').value;
   const theme=document.getElementById('wt_theme_sel').value;
   const birth=document.getElementById('wt_birth').value;
   try{
-    const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},
-      body:JSON.stringify({action:'registerSoldQr',code:CODE,password:pw,owner:'바램태그',wt_lang:lang,wt_theme:theme,wt_birth_date:birth}),redirect:'follow'});
+    const r=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'registerSoldQr',code:CODE,password:pw,owner:'바램태그',wt_lang:lang,wt_theme:theme,wt_birth_date:birth}),
+      redirect:'follow'
+    });
     const d=await r.json();
-    if(!d.success){alert(d.message||'등록 실패');return;}
-    alert('등록되었습니다!');location.href='?code='+encodeURIComponent(CODE);
-  }catch(e){alert('오류: '+e.message);}
+    if(!d.success){alert(d.message||l.fail);return;}
+    alert(l.done);
+    location.href='?code='+encodeURIComponent(CODE)+'&v='+(Date.now());
+  }catch(e){alert(l.error+e.message);}
 }
 async function recordScanCount(code){
   try{
