@@ -32,261 +32,316 @@ textarea{min-height:86px;resize:vertical}label{display:block;color:var(--gold);f
 </head>
 <body>
 <div class="wrap"><div id="app" class="card"><div class="loading">불러오는 중입니다...</div></div></div>
-<script>
-const API_URL='https://script.google.com/macros/s/AKfycbxVZ3C9OELTQs73DmVsmTSBfJxIqOYDFh73dnkeT3EoW7DNMIfpovGycB7hXwUrq00l/exec';
-const params=new URLSearchParams(location.search);
-const CODE=params.get('code')||'CD-0001';
-const MODE=params.get('mode')||'view';
-let QR_DATA=null;
-let currentLang=localStorage.getItem('saegim_lang')||'ko';
-const app=document.getElementById('app');
+<script type="module">
+import { initializeApp }       from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
+import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
 
-// ── API ────────────────────────────────────────────────────
-async function apiGet(action,extra={}){
-  const url=API_URL+'?action='+action+'&code='+encodeURIComponent(CODE)+Object.entries(extra).map(([k,v])=>'&'+k+'='+encodeURIComponent(v)).join('');
-  const r=await fetch(url);return r.json();
+// ── Firebase 설정 ──────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            'AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg',
+  authDomain:        'saegim-memory.firebaseapp.com',
+  projectId:         'saegim-memory',
+  storageBucket:     'saegim-memory.firebasestorage.app',
+  messagingSenderId: '888229102391',
+  appId:             '1:888229102391:web:f4fe41ece07ddacd2a10b2'
+};
+
+// ── 고객용 Apps Script (쓰기 전용: 등록/수정/비밀번호 확인) ──
+const API_URL = 'https://script.google.com/macros/s/AKfycbxVZ3C9OELTQs73DmVsmTSBfJxIqOYDFh73dnkeT3EoW7DNMIfpovGycB7hXwUrq00l/exec';
+
+const params = new URLSearchParams(location.search);
+const CODE   = params.get('code') || 'CD-0001';
+const MODE   = params.get('mode') || 'view';
+let QR_DATA  = null;
+const app    = document.getElementById('app');
+
+const fbApp = initializeApp(FIREBASE_CONFIG);
+const db    = getFirestore(fbApp);
+
+// ── API 쓰기 헬퍼 (POST only) ─────────────────────────────
+async function apiGet(action, extra = {}) {
+  const url = API_URL + '?action=' + action + '&code=' + encodeURIComponent(CODE) +
+    Object.entries(extra).map(([k, v]) => '&' + k + '=' + encodeURIComponent(v)).join('');
+  const r = await fetch(url);
+  return r.json();
 }
-async function apiPost(payload){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),redirect:'follow'});
+async function apiPost(payload) {
+  const r = await fetch(API_URL, {
+    method:   'POST',
+    headers:  {'Content-Type': 'text/plain'},
+    body:     JSON.stringify(payload),
+    redirect: 'follow'
+  });
   return r.json();
 }
 
-// ── 데이터 로드 ────────────────────────────────────────────
-async function loadData(){
-  try{
-    const data=await apiGet('getQrData');
-    QR_DATA=data;
-    if(MODE==='edit'){renderPassword();return;}
-    renderView(data);
-  }catch(e){renderError('데이터를 불러오지 못했습니다.');}
+// ── Firestore 직접 조회 ────────────────────────────────────
+async function loadData() {
+  try {
+    const snap = await getDoc(doc(db, 'qr_cards', CODE));
+
+    if (!snap.exists()) {
+      renderError('등록되지 않은 QR 코드입니다. (' + CODE + ')');
+      return;
+    }
+
+    const d = snap.data();
+
+    // link1~5 개별 필드 → links 배열 재구성
+    const links = [];
+    for (let i = 1; i <= 5; i++) {
+      const url = d['link' + i + '_url'];
+      if (url) links.push({
+        type:  d['link' + i + '_type']  || '',
+        label: d['link' + i + '_label'] || '',
+        url:   url
+      });
+    }
+    d.links = links;
+    QR_DATA = d;
+
+    if (MODE === 'edit') { renderPassword(); return; }
+    renderView(d);
+
+  } catch(e) {
+    renderError('데이터를 불러오지 못했습니다: ' + e.message);
+  }
 }
 
 // ── 공통 UI ───────────────────────────────────────────────
-function brand(){
-  return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;
+function brand() {
+  return '<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>';
 }
-function infoRow(label,value){
-  return`<div class="row"><div class="label">${esc(label)}</div><div class="value">${value&&String(value).includes('<a ')?value:esc(value)}</div></div>`;
+function infoRow(label, value) {
+  return '<div class="row"><div class="label">' + esc(label) + '</div><div class="value">' +
+    (value && String(value).includes('<a ') ? value : esc(value)) + '</div></div>';
 }
-function thanks(){
-  return`<div class="thanks">도움을 주셔서 감사합니다.<div class="small">따뜻한 관심과 배려에 감사드립니다.</div></div>`;
+function thanks() {
+  return '<div class="thanks">도움을 주셔서 감사합니다.<div class="small">따뜻한 관심과 배려에 감사드립니다.</div></div>';
 }
-function editBtn(){
-  return`<a class="btn sub" href="?code=${encodeURIComponent(CODE)}&mode=edit">정보 수정하기</a>`;
+function editBtn() {
+  return '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '&mode=edit">정보 수정하기</a>';
 }
-function renderLinkButtons(links){
-  if(!links||!links.length)return'<div class="sub">등록된 연결 항목이 없습니다.</div>';
-  return links.map(l=>{
-    if(!l||!l.url)return'';
-    let href=l.url;
-    if(l.type==='전화'&&!href.startsWith('tel:'))href='tel:'+href.replace(/[^0-9+]/g,'');
-    return`<a class="call-btn" href="${esc(href)}">${esc(l.label||l.type||'연락하기')}</a>`;
+function renderLinkButtons(links) {
+  if (!links || !links.length) return '<div class="sub">등록된 연결 항목이 없습니다.</div>';
+  return links.map(function(l) {
+    if (!l || !l.url) return '';
+    var href = l.url;
+    if (l.type === '전화' && !href.startsWith('tel:')) href = 'tel:' + href.replace(/[^0-9+]/g, '');
+    return '<a class="call-btn" href="' + esc(href) + '">' + esc(l.label || l.type || '연락하기') + '</a>';
   }).join('');
 }
 
 // ── 라우팅 ─────────────────────────────────────────────────
-function renderView(data){
-  if(data.status==='미등록'){renderInactive();return;}
-  if(data.status==='판매완료'){renderRegister(data);return;}
-  if(data.status==='중지'){renderStopped();return;}
-  // 등록 안 된 CD 방어 처리
-  if(!data.child_name&&!data.owner){renderRegister(data);return;}
+function renderView(data) {
+  if (data.status === '미등록')  { renderInactive(); return; }
+  if (data.status === '판매완료') { renderRegister(data); return; }
+  if (data.status === '중지')    { renderStopped(); return; }
+  if (!data.child_name && !data.owner) { renderRegister(data); return; }
   renderCare(data);
 }
 
 // ── CD 보기 화면 ───────────────────────────────────────────
-function renderCare(data){
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">보호 중인 분을 발견하셨나요?</div>
-    <div class="sub">아래 연결 항목으로 연락 부탁드립니다.</div>
-    ${renderLinkButtons(data.links||[])}
-    <div class="section-title">정보</div>
-    <div class="info">
-      ${infoRow('이름',data.child_name||data.owner||'-')}
-      ${infoRow('보호자',data.guardian_name||'-')}
-      ${infoRow('특이사항',data.child_note||'-')}
-      ${infoRow('알레르기·질환',data.child_allergy||'-')}
-      ${infoRow('혈액형',data.blood_type||'-')}
-      ${infoRow('안내 메시지',data.child_message||'-')}
-    </div>
-    ${thanks()}
-    ${editBtn()}
-    <div class="footer">SAEGIM · ANSIM QR</div>`;
+function renderCare(data) {
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">보호 중인 분을 발견하셨나요?</div>' +
+    '<div class="sub">아래 연결 항목으로 연락 부탁드립니다.</div>' +
+    renderLinkButtons(data.links || []) +
+    '<div class="section-title">정보</div>' +
+    '<div class="info">' +
+      infoRow('이름',       data.child_name   || data.owner || '-') +
+      infoRow('보호자',     data.guardian_name || '-') +
+      infoRow('특이사항',   data.child_note    || '-') +
+      infoRow('알레르기·질환', data.child_allergy || '-') +
+      infoRow('혈액형',     data.blood_type    || '-') +
+      infoRow('안내 메시지', data.child_message || '-') +
+    '</div>' +
+    thanks() +
+    editBtn() +
+    '<div class="footer">SAEGIM · ANSIM QR</div>';
 }
 
 // ── 미등록 / 중지 ──────────────────────────────────────────
-function renderInactive(){
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">아직 등록되지 않은 QR입니다</div>
-    <div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있습니다.</div>
-    <div class="footer">SAEGIM QR</div>`;
+function renderInactive() {
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">아직 등록되지 않은 QR입니다</div>' +
+    '<div class="sub">제품 구매 또는 판매처 등록 후 사용할 수 있습니다.</div>' +
+    '<div class="footer">SAEGIM QR</div>';
 }
-function renderStopped(){
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">사용이 중지된 QR입니다</div>
-    <div class="sub">현재 이 QR은 비활성화 상태입니다.</div>
-    <div class="footer">SAEGIM QR</div>`;
+function renderStopped() {
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">사용이 중지된 QR입니다</div>' +
+    '<div class="sub">현재 이 QR은 비활성화 상태입니다.</div>' +
+    '<div class="footer">SAEGIM QR</div>';
 }
 
 // ── 최초 등록 ──────────────────────────────────────────────
-function renderRegister(data){
-  const d=data||{};
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">최초 등록</div>
-    <div class="sub">📦 안심태그(CD)<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>
-    <label>아이 이름</label>
-    <input id="child_name" class="input" placeholder="아이 이름" value="${esc(d.child_name||'')}">
-    <label>보호자 연락처</label>
-    <input id="guardian_phone" class="input" placeholder="보호자 연락처" value="${esc(d.guardian_phone||'')}">
-    <label>알레르기·질환 정보</label>
-    <textarea id="child_allergy" class="input" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">${esc(d.child_allergy||'')}</textarea>
-    <label>혈액형</label>
-    <select id="blood_type" class="input">
-      <option value="">선택</option>
-      ${['A','B','O','AB','RH-'].map(v=>`<option value="${v}" ${d.blood_type===v?'selected':''}>${v}형</option>`).join('')}
-    </select>
-    <label>특이사항</label>
-    <textarea id="child_note" class="input" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">${esc(d.child_note||'')}</textarea>
-    <label>보호자 이름</label>
-    <input id="guardian_name" class="input" placeholder="보호자 이름" value="${esc(d.guardian_name||'')}">
-    <label>발견자에게 전달 메시지</label>
-    <textarea id="child_message" class="input" placeholder="안녕하세요.&#10;보호 중인 아이입니다.&#10;QR을 스캔해 주셔서 감사합니다.&#10;아래 연락처로 연락 부탁드립니다.">${esc(d.child_message||'')}</textarea>
-    <div id="linksEdit">${editLinks([{type:'전화',label:'',url:''}])}</div>
-    <hr>
-    <input id="new_password" class="input" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">
-    <button class="btn" onclick="registerFirst()">등록 완료</button>`;
+function renderRegister(data) {
+  var d = data || {};
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">최초 등록</div>' +
+    '<div class="sub">📦 안심태그(CD)<br>아래 정보를 입력하고 비밀번호를 설정해주세요.</div>' +
+    '<label>아이 이름</label>' +
+    '<input id="child_name" class="input" placeholder="아이 이름" value="' + esc(d.child_name || '') + '">' +
+    '<label>보호자 연락처</label>' +
+    '<input id="guardian_phone" class="input" placeholder="보호자 연락처" value="' + esc(d.guardian_phone || '') + '">' +
+    '<label>알레르기·질환 정보</label>' +
+    '<textarea id="child_allergy" class="input" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">' + esc(d.child_allergy || '') + '</textarea>' +
+    '<label>혈액형</label>' +
+    '<select id="blood_type" class="input">' +
+      '<option value="">선택</option>' +
+      ['A','B','O','AB','RH-'].map(function(v) { return '<option value="' + v + '"' + (d.blood_type === v ? ' selected' : '') + '>' + v + '형</option>'; }).join('') +
+    '</select>' +
+    '<label>특이사항</label>' +
+    '<textarea id="child_note" class="input" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">' + esc(d.child_note || '') + '</textarea>' +
+    '<label>보호자 이름</label>' +
+    '<input id="guardian_name" class="input" placeholder="보호자 이름" value="' + esc(d.guardian_name || '') + '">' +
+    '<label>발견자에게 전달 메시지</label>' +
+    '<textarea id="child_message" class="input" placeholder="안녕하세요.&#10;보호 중인 아이입니다.&#10;QR을 스캔해 주셔서 감사합니다.&#10;아래 연락처로 연락 부탁드립니다.">' + esc(d.child_message || '') + '</textarea>' +
+    '<div id="linksEdit">' + editLinks([{type:'전화',label:'',url:''}]) + '</div>' +
+    '<hr>' +
+    '<input id="new_password" class="input" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">' +
+    '<button class="btn" onclick="registerFirst()">등록 완료</button>';
 }
 
 // ── 비밀번호 확인 & 수정 ───────────────────────────────────
-function renderPassword(){
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">정보 수정하기</div>
-    <div class="sub">등록된 비밀번호를 입력해주세요.</div>
-    <input id="pw" type="password" placeholder="비밀번호">
-    <button class="btn" onclick="checkPassword()">확인</button>
-    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">돌아가기</a>`;
+function renderPassword() {
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">정보 수정하기</div>' +
+    '<div class="sub">등록된 비밀번호를 입력해주세요.</div>' +
+    '<input id="pw" type="password" placeholder="비밀번호">' +
+    '<button class="btn" onclick="checkPassword()">확인</button>' +
+    '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">돌아가기</a>';
 }
-async function checkPassword(){
-  const password=document.getElementById('pw').value.trim();
-  if(!password){alert('비밀번호를 입력해주세요.');return;}
-  const r=await apiGet('verifyPassword',{code:CODE,password});
-  if(!r.success){alert(r.message||'비밀번호가 일치하지 않습니다.');return;}
+
+window.checkPassword = async function() {
+  var password = document.getElementById('pw').value.trim();
+  if (!password) { alert('비밀번호를 입력해주세요.'); return; }
+  var r = await apiGet('verifyPassword', {code: CODE, password: password});
+  if (!r.success) { alert(r.message || '비밀번호가 일치하지 않습니다.'); return; }
   renderCdEditForm(password);
-}
-function renderCdEditForm(password){
-  const d=QR_DATA;
-  app.innerHTML=`
-    ${brand()}
-    <div class="main-title">정보 수정</div>
-    <input id="password" type="hidden" value="${esc(password)}">
-    <div class="section-title">기본 정보</div>
-    <label>표시 이름</label><input id="owner" value="${esc(d.owner||'')}">
-    <label>이름</label><input id="child_name" value="${esc(d.child_name||'')}">
-    <label>보호자 연락처</label><input id="guardian_phone" value="${esc(d.guardian_phone||'')}">
-    <label>알레르기·질환</label><textarea id="child_allergy" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">${esc(d.child_allergy||'')}</textarea>
-    <label>혈액형</label><select id="blood_type">
-      <option value="">선택</option>
-      ${['A','B','O','AB','RH-'].map(v=>`<option value="${v}" ${d.blood_type===v?'selected':''}>${v}형</option>`).join('')}
-    </select>
-    <label>특이사항</label><textarea id="child_note" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">${esc(d.child_note||'')}</textarea>
-    <label>보호자</label><input id="guardian_name" value="${esc(d.guardian_name||'')}">
-    <label>안내 메시지</label><textarea id="child_message" placeholder="안녕하세요.&#10;보호 중인 아이입니다.">${esc(d.child_message||'')}</textarea>
-    <div class="section-title">연결 항목</div>
-    <div id="linksEdit">${editLinks(d.links||[])}</div>
-    <button class="btn" onclick="saveEdit()">저장하기</button>
-    <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">취소</a>`;
+};
+
+function renderCdEditForm(password) {
+  var d = QR_DATA;
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">정보 수정</div>' +
+    '<input id="password" type="hidden" value="' + esc(password) + '">' +
+    '<div class="section-title">기본 정보</div>' +
+    '<label>표시 이름</label><input id="owner" value="' + esc(d.owner || '') + '">' +
+    '<label>이름</label><input id="child_name" value="' + esc(d.child_name || '') + '">' +
+    '<label>보호자 연락처</label><input id="guardian_phone" value="' + esc(d.guardian_phone || '') + '">' +
+    '<label>알레르기·질환</label><textarea id="child_allergy" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">' + esc(d.child_allergy || '') + '</textarea>' +
+    '<label>혈액형</label><select id="blood_type">' +
+      '<option value="">선택</option>' +
+      ['A','B','O','AB','RH-'].map(function(v) { return '<option value="' + v + '"' + (d.blood_type === v ? ' selected' : '') + '>' + v + '형</option>'; }).join('') +
+    '</select>' +
+    '<label>특이사항</label><textarea id="child_note" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">' + esc(d.child_note || '') + '</textarea>' +
+    '<label>보호자</label><input id="guardian_name" value="' + esc(d.guardian_name || '') + '">' +
+    '<label>안내 메시지</label><textarea id="child_message" placeholder="안녕하세요.&#10;보호 중인 아이입니다.">' + esc(d.child_message || '') + '</textarea>' +
+    '<div class="section-title">연결 항목</div>' +
+    '<div id="linksEdit">' + editLinks(d.links || []) + '</div>' +
+    '<button class="btn" onclick="saveEdit()">저장하기</button>' +
+    '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">취소</a>';
 }
 
 // ── 연결 항목 편집 ─────────────────────────────────────────
-const LINK_TYPES=['전화','카카오','인스타그램','이메일','홈페이지','지도','왓츠앱','라인','텔레그램','기타'];
-function editLinks(links){
-  let arr=(links||[]).filter(l=>l&&(l.label||l.url||l.type));
-  if(!arr.length)arr=[{type:'전화',label:'',url:''}];
-  arr=arr.slice(0,5);
-  return`${arr.map((l,i)=>linkEditBox(l,i,arr.length)).join('')}
-    ${arr.length<5?`<button class="btn sub" onclick="addLinkItem()">항목 추가</button>`:''}`;
+var LINK_TYPES = ['전화','카카오','인스타그램','이메일','홈페이지','지도','왓츠앱','라인','텔레그램','기타'];
+
+function editLinks(links) {
+  var arr = (links || []).filter(function(l) { return l && (l.label || l.url || l.type); });
+  if (!arr.length) arr = [{type:'전화', label:'', url:''}];
+  arr = arr.slice(0, 5);
+  return arr.map(function(l, i) { return linkEditBox(l, i, arr.length); }).join('') +
+    (arr.length < 5 ? '<button class="btn sub" onclick="addLinkItem()">항목 추가</button>' : '');
 }
-function linkEditBox(l,i,total){
-  return`
-    <div class="edit-group link-edit">
-      <label>종류</label>
-      <select id="link${i}_type">${LINK_TYPES.map(t=>`<option value="${esc(t)}" ${String(l.type||'전화')===t?'selected':''}>${esc(t)}</option>`).join('')}</select>
-      <label>버튼 이름</label>
-      <input id="link${i}_label" value="${esc(l.label||'')}">
-      <label>연결 주소</label>
-      <input id="link${i}_url" value="${esc(String(l.url||'').replace(/^tel:/,''))}">
-      ${total>1?`<button class="btn sub" onclick="removeLinkItem(${i})">항목 제거</button>`:''}
-    </div>`;
+
+function linkEditBox(l, i, total) {
+  return '<div class="edit-group link-edit">' +
+    '<label>종류</label>' +
+    '<select id="link' + i + '_type">' +
+      LINK_TYPES.map(function(t) { return '<option value="' + esc(t) + '"' + (String(l.type || '전화') === t ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') +
+    '</select>' +
+    '<label>버튼 이름</label>' +
+    '<input id="link' + i + '_label" value="' + esc(l.label || '') + '">' +
+    '<label>연결 주소</label>' +
+    '<input id="link' + i + '_url" value="' + esc(String(l.url || '').replace(/^tel:/, '')) + '">' +
+    (total > 1 ? '<button class="btn sub" onclick="removeLinkItem(' + i + ')">항목 제거</button>' : '') +
+    '</div>';
 }
-function collectLinksRaw(){
-  return Array.from(document.querySelectorAll('.link-edit')).map((g,i)=>({
-    type:val('link'+i+'_type')||'전화',label:val('link'+i+'_label'),url:val('link'+i+'_url')
-  }));
+
+function collectLinksRaw() {
+  return Array.from(document.querySelectorAll('.link-edit')).map(function(g, i) {
+    return { type: val('link' + i + '_type') || '전화', label: val('link' + i + '_label'), url: val('link' + i + '_url') };
+  });
 }
-function collectLinks(){
-  return collectLinksRaw().filter(l=>l.url).map(l=>{
-    if(l.type==='지도'&&!l.url.startsWith('http'))
-      return{...l,label:l.label||l.url,url:'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(l.url)};
+function collectLinks() {
+  return collectLinksRaw().filter(function(l) { return l.url; }).map(function(l) {
+    if (l.type === '지도' && !l.url.startsWith('http'))
+      return Object.assign({}, l, {label: l.label || l.url, url: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.url)});
     return l;
-  }).slice(0,5);
+  }).slice(0, 5);
 }
-function addLinkItem(){
-  const links=collectLinksRaw();
-  if(links.length>=5){alert('최대 5개까지 가능합니다.');return;}
-  links.push({type:'전화',label:'',url:''});
-  document.getElementById('linksEdit').innerHTML=editLinks(links);
-}
-function removeLinkItem(index){
-  const links=collectLinksRaw();
-  links.splice(index,1);
-  document.getElementById('linksEdit').innerHTML=editLinks(links.length?links:[{type:'전화',label:'',url:''}]);
-}
+
+window.addLinkItem = function() {
+  var links = collectLinksRaw();
+  if (links.length >= 5) { alert('최대 5개까지 가능합니다.'); return; }
+  links.push({type: '전화', label: '', url: ''});
+  document.getElementById('linksEdit').innerHTML = editLinks(links);
+};
+window.removeLinkItem = function(index) {
+  var links = collectLinksRaw();
+  links.splice(index, 1);
+  document.getElementById('linksEdit').innerHTML = editLinks(links.length ? links : [{type: '전화', label: '', url: ''}]);
+};
 
 // ── 등록 & 저장 ────────────────────────────────────────────
-async function registerFirst(){
-  try{
-    const pw=val('new_password');
-    if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
-    const links=collectLinks();
-    const form={
-      action:'registerSoldQr',code:CODE,password:pw,
-      owner:val('owner'),links:JSON.stringify(links),
-      child_name:val('child_name'),guardian_name:val('guardian_name'),
-      guardian_phone:val('guardian_phone'),child_note:val('child_note'),
-      child_allergy:val('child_allergy'),blood_type:val('blood_type'),
-      child_message:val('child_message')
+window.registerFirst = async function() {
+  try {
+    var pw = val('new_password');
+    if (!pw || pw.length < 4) { alert('비밀번호를 4자 이상 입력해주세요.'); return; }
+    var links = collectLinks();
+    var form = {
+      action: 'registerSoldQr', code: CODE, password: pw,
+      owner: val('owner'), links: JSON.stringify(links),
+      child_name: val('child_name'), guardian_name: val('guardian_name'),
+      guardian_phone: val('guardian_phone'), child_note: val('child_note'),
+      child_allergy: val('child_allergy'), blood_type: val('blood_type'),
+      child_message: val('child_message')
     };
-    const r=await apiPost(form);
-    if(!r.success){alert(r.message||'등록 실패');return;}
+    var r = await apiPost(form);
+    if (!r.success) { alert(r.message || '등록 실패'); return; }
     alert('등록이 완료되었습니다!');
-    location.href='?code='+encodeURIComponent(CODE);
-  }catch(e){alert('오류: '+e.message);}
-}
-async function saveEdit(){
-  const links=collectLinks();
-  const form={
-    action:'updateCustomerData',code:CODE,password:val('password'),
-    owner:val('owner'),links:JSON.stringify(links),
-    child_name:val('child_name'),guardian_name:val('guardian_name'),
-    guardian_phone:val('guardian_phone'),child_note:val('child_note'),
-    child_allergy:val('child_allergy'),blood_type:val('blood_type'),
-    child_message:val('child_message')
+    location.href = '?code=' + encodeURIComponent(CODE);
+  } catch(e) { alert('오류: ' + e.message); }
+};
+
+window.saveEdit = async function() {
+  var links = collectLinks();
+  var form = {
+    action: 'updateCustomerData', code: CODE, password: val('password'),
+    owner: val('owner'), links: JSON.stringify(links),
+    child_name: val('child_name'), guardian_name: val('guardian_name'),
+    guardian_phone: val('guardian_phone'), child_note: val('child_note'),
+    child_allergy: val('child_allergy'), blood_type: val('blood_type'),
+    child_message: val('child_message')
   };
-  const r=await apiPost(form);
-  if(!r.success){alert(r.message||'저장 실패');return;}
+  var r = await apiPost(form);
+  if (!r.success) { alert(r.message || '저장 실패'); return; }
   alert('저장되었습니다.');
-  location.href='?code='+encodeURIComponent(CODE);
-}
+  location.href = '?code=' + encodeURIComponent(CODE);
+};
 
 // ── 유틸 ───────────────────────────────────────────────────
-function val(id){const el=document.getElementById(id);return el?el.value.trim():'';}
-function esc(s){const d=document.createElement('div');d.textContent=s==null?'':String(s);return d.innerHTML;}
-function renderError(msg){app.innerHTML='<div class="error">'+esc(msg)+'</div>';}
+function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function renderError(msg) { app.innerHTML = '<div class="error">' + esc(msg) + '</div>'; }
 
 loadData();
 </script>
