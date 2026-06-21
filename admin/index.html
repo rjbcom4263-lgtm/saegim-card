@@ -451,7 +451,7 @@ window.normalizeFirestoreCards = async function() {
 
 // ── QR 생성 (Apps Script API 연동) ────────────────────
 // admin_Code.gs 새 버전 배포 후 실제 URL로 교체
-const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9LcUM--SnxgJYFA6wsXoUKsYWVIlcrRt_LVbJuFJ-JhcJQFkE6aL5UoNtNyGlJCcWNg/exec';
+const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzqG5iTqrM0meOVVm1UHhNHFpQokrvn3EkE0bmw75DLwN9tmBpT4drg3C5kAYyJHIap9Q/exec';
 
 function getAdminApiKey() {
   let key = sessionStorage.getItem('admin_api_key');
@@ -513,17 +513,30 @@ window.createQrCardsViaApi = async function() {
 window.saveStatus = async function() {
   const code   = document.getElementById('modalCode').value;
   const status = document.getElementById('modalStatus').value;
-  try {
-    const nowText = new Date().toISOString().replace('T',' ').slice(0,19);
-    const updateData = { status, updated_at: nowText };
-    if (status === '판매완료') updateData.sold_at       = nowText;
-    if (status === '사용중')   updateData.registered_at = nowText;
 
-    await updateDoc(doc(db, 'qr_cards', code), updateData);
+  if (!code)   { alert('코드가 없습니다.'); return; }
+  if (!status) { alert('상태값이 없습니다.'); return; }
+
+  if (!confirm(code + ' 상태를 [' + status + ']로 변경할까요?')) return;
+
+  const adminKey = getAdminApiKey();
+  if (!adminKey) return;
+
+  try {
+    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+      method:   'POST',
+      headers:  { 'Content-Type': 'text/plain' },
+      body:     JSON.stringify({ action: 'updateQrStatusFromAdmin', admin_key: adminKey, code: code, status: status }),
+      redirect: 'follow'
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || '상태 변경 실패');
+
     closeModal('statusModal');
     await loadInventory();
     await loadDashboard();
-    alert(code + ' 상태를 [' + status + ']로 변경했습니다.');
+    alert(data.message || code + ' 상태를 [' + status + ']로 변경했습니다.');
   } catch(e) {
     alert('저장 실패: ' + e.message);
   }

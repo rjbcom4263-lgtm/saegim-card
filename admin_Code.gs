@@ -422,7 +422,9 @@ function updateQrStatus(code, status) {
   const masterSheet = ss.getSheetByName(MASTER_SHEET_NAME);
   const okMaster    = masterSheet ? updateStatusInSheet_(masterSheet, code, status) : false;
 
-  if (okProduct && okMaster) tryBackupToFirestore_(code);
+  if (okProduct && okMaster) {
+    backupOneQrCodeToFirestoreV1_(code);
+  }
 
   return {
     success:       okProduct,
@@ -1180,11 +1182,17 @@ function doPost(e) {
     assertAdminApiKey_(payload.admin_key);
 
     if (action === 'createQrInventoryFromAdmin') {
-      const result = createQrInventory(payload);
+      const form = payload.form || payload;
+      const result = createQrInventory(form);
       return adminJsonResponse_(result);
-    }
 
-    return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
+    } else if (action === 'updateQrStatusFromAdmin') {
+      const result = updateQrStatusFromAdmin(payload.code, payload.status);
+      return adminJsonResponse_(result);
+
+    } else {
+      return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
+    }
   } catch (err) {
     return adminJsonResponse_({ success: false, message: err.message });
   }
@@ -1210,6 +1218,21 @@ function adminJsonResponse_(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function updateQrStatusFromAdmin(code, status) {
+  code   = String(code   || '').trim().toUpperCase();
+  status = String(status || '').trim();
+
+  if (!code)   throw new Error('코드가 없습니다.');
+  if (!status) throw new Error('상태값이 없습니다.');
+
+  const allowed = ['미등록', '판매완료', '사용중', '중지', '분실'];
+  if (allowed.indexOf(status) < 0) {
+    throw new Error('허용되지 않은 상태값입니다: ' + status);
+  }
+
+  return updateQrStatus(code, status);
 }
 
 // 에디터에서 직접 실행 — ADMIN_ACCESS_KEY 설정 여부 확인
