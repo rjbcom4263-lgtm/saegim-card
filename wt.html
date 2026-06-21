@@ -438,7 +438,6 @@ function renderWishTag(data){
       <div class="wt-sub">${lbl[1]}</div>
       ${meta?'<div class="wt-sub" style="font-size:13px;color:var(--gold);margin-top:-10px">'+esc(meta)+'</div>':''}
       <div class="wt-card">
-        <div style="text-align:center;color:var(--muted);font-size:12px;margin-bottom:14px">${lbl[3]} · ${todayKey()}</div>
         <div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div>
       </div>
       <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
