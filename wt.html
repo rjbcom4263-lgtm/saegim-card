@@ -435,6 +435,7 @@ function renderWishTag(data){
         <div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div>
       </div>
       <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
+      <button class="lang-btn" style="display:block;margin:14px auto 0;padding:10px 18px" onclick="renderWtSettings()">${getRegLabels().settingsBtn}</button>
     </div>
     <div class="footer">SAEGIM WT</div>`;
 }
@@ -486,6 +487,88 @@ function renderRegister(){
     '</div>'+
     '<div class="footer">SAEGIM WT</div>';
 }
+function renderWtSettings(){
+  const l=getRegLabels();
+  const data=WT_DATA||{};
+  const lang=data.wt_lang||currentLang||'ko';
+  const theme=data.wt_theme||'general';
+  const birth=data.wt_birth_date||'';
+  app.innerHTML=
+    brand()+
+    '<div class="wt-wrap">'+
+      '<div class="wt-label">'+l.settingsTitle+'</div>'+
+      '<div class="wt-sub">'+l.settingsSubtitle+'</div>'+
+      '<label class="form-label">'+l.lang+'</label>'+
+      '<select id="wt_edit_lang" class="form-select" onchange="setSettingsLang(this.value)">'+
+        '<option value="ko" '+(lang==='ko'?'selected':'')+'>한국어</option>'+
+        '<option value="en" '+(lang==='en'?'selected':'')+'>English</option>'+
+        '<option value="ja" '+(lang==='ja'?'selected':'')+'>日本語</option>'+
+        '<option value="zh" '+(lang==='zh'?'selected':'')+'>中文</option>'+
+      '</select>'+
+      '<label class="form-label">'+l.theme+'</label>'+
+      '<select id="wt_edit_theme" class="form-select">'+
+        '<option value="general" '+(theme==='general'?'selected':'')+'>'+l.themes.general+'</option>'+
+        '<option value="luck" '+(theme==='luck'?'selected':'')+'>'+l.themes.luck+'</option>'+
+        '<option value="health" '+(theme==='health'?'selected':'')+'>'+l.themes.health+'</option>'+
+        '<option value="money" '+(theme==='money'?'selected':'')+'>'+l.themes.money+'</option>'+
+        '<option value="exam" '+(theme==='exam'?'selected':'')+'>'+l.themes.exam+'</option>'+
+        '<option value="love" '+(theme==='love'?'selected':'')+'>'+l.themes.love+'</option>'+
+      '</select>'+
+      '<label class="form-label">'+l.birth+'</label>'+
+      '<div class="date-row">'+
+        '<input id="wt_edit_birth" type="date" class="form-input" value="'+esc(birth)+'">'+
+        '<button type="button" class="date-btn" onclick="openEditBirthPicker()">'+l.pickDate+'</button>'+
+      '</div>'+
+      '<label class="form-label">'+l.passwordCheck+'</label>'+
+      '<input id="wt_edit_pw" type="password" class="form-input" placeholder="'+l.password+'">'+
+      '<button class="wt-again" onclick="wtSaveSettings()">'+l.saveSettings+'</button>'+
+      '<button class="lang-btn" style="display:block;margin:14px auto 0;padding:10px 18px" onclick="renderWishTag(WT_DATA)">'+l.cancel+'</button>'+
+    '</div>'+
+    '<div class="footer">SAEGIM WT</div>';
+}
+function setSettingsLang(lang){
+  currentLang=lang;
+  localStorage.setItem('saegim_lang',lang);
+  if(!WT_DATA)WT_DATA={};
+  const birth=document.getElementById('wt_edit_birth')?.value||'';
+  const theme=document.getElementById('wt_edit_theme')?.value||'general';
+  WT_DATA.wt_lang=lang;
+  WT_DATA.wt_birth_date=birth;
+  WT_DATA.wt_theme=theme;
+  renderWtSettings();
+}
+function openEditBirthPicker(){
+  const el=document.getElementById('wt_edit_birth');
+  if(!el)return;
+  if(typeof el.showPicker==='function'){el.showPicker();}else{el.focus();el.click();}
+}
+async function wtSaveSettings(){
+  const l=getRegLabels();
+  const pw=document.getElementById('wt_edit_pw').value.trim();
+  const lang=document.getElementById('wt_edit_lang').value;
+  const theme=document.getElementById('wt_edit_theme').value;
+  const birth=document.getElementById('wt_edit_birth').value;
+  if(!pw){alert(l.passwordCheck);return;}
+  try{
+    const r=await fetch(API_URL,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'updateCustomerData',code:CODE,password:pw,wt_lang:lang,wt_theme:theme,wt_birth_date:birth}),
+      redirect:'follow'
+    });
+    const d=await r.json();
+    if(!d.success){alert(d.message||l.fail);return;}
+    currentLang=lang;
+    localStorage.setItem('saegim_lang',lang);
+    if(!WT_DATA)WT_DATA={};
+    WT_DATA.wt_lang=lang;
+    WT_DATA.wt_theme=theme;
+    WT_DATA.wt_birth_date=birth;
+    alert(l.done);
+    location.href='?code='+encodeURIComponent(CODE)+'&v='+Date.now();
+  }catch(e){alert(l.error+e.message);}
+}
+
 function setRegisterLang(lang){
   currentLang=lang;
   localStorage.setItem('saegim_lang',lang);
