@@ -24,11 +24,14 @@ body{margin:0;background:radial-gradient(circle at top,#222 0,#111 42%,#0b0b0b 1
 .wt-sentence{text-align:center;font-size:18px;line-height:1.8;font-weight:500;color:var(--text);white-space:pre-line;letter-spacing:.03em}
 .wt-sentence.fade{opacity:0;transform:translateY(6px);transition:opacity .3s,transform .3s}
 .wt-again{display:block;width:100%;margin-top:0;padding:18px;border-radius:18px;text-align:center;color:#111;background:linear-gradient(135deg,#f0d9a4,#c79a4f);font-weight:800;border:0;font-size:16px;cursor:pointer}
+.wt-form{width:100%;max-width:360px;margin:0 auto}
 .form-label{display:block;color:var(--gold);font-size:13px;margin-top:10px;margin-bottom:7px}
-.form-input,.form-select{width:100%;margin:0 0 13px;padding:14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px}
+.form-input,.form-select{display:block;width:100%;height:46px;margin:0 0 13px;padding:0 14px;border-radius:14px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:15px;outline:none}
+.form-input:focus,.form-select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(230,200,143,.12)}
 .date-row{display:flex;gap:8px;align-items:center;margin-bottom:13px}
-.date-row .form-input{margin:0;flex:1}
-.date-btn{white-space:nowrap;padding:14px 12px;border-radius:14px;border:1px solid var(--line);background:#151515;color:var(--gold);cursor:pointer}
+.date-row .form-input{margin:0;flex:1;min-width:0}
+.date-btn{height:46px;white-space:nowrap;padding:0 12px;border-radius:14px;border:1px solid var(--line);background:#151515;color:var(--gold);cursor:pointer;font-size:13px}
+.wt-sub-btn{display:block;margin:14px auto 0;padding:10px 18px;border-radius:18px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
 input[type="date"]{color-scheme:dark}
 </style>
 </head>
@@ -347,12 +350,16 @@ const WT_SENTENCES={
   zh:['慢一点也没关系。\n你的路不会消失。','与其寻找答案，\n不如带着问题一起前行。','今天的犹豫，\n也许是你内心在保护自己。','此刻需要的，\n也许不是更快的脚步，而是片刻的停留。','你比自己想象的，\n做得更好。','不是所有的花\n都在同一个季节盛开。','小小的勇气，\n可以带来巨大的改变。','今天的担忧，\n有时会成为明天的答案。','试着相信\n心中指向的方向。','一步踏出，\n胜过万全的准备。','不要怀疑\n自己的节奏。','绕路而行，\n也是一条路。','今天需要的是信任，\n而不是焦急。','没有人能\n一直不动摇。','今天，\n对自己多一点温柔。','焦虑常常出现\n在新开始之前。','你的努力在积累，\n即使暂时看不见。','有些答案，\n来得慢一些。','今天的烦恼，\n是你认真在乎的证明。','明天的你，\n也会为今天的选择加油。','不要错过\n身边小小的幸福。','此刻，\n本身就充满意义。','每一次相遇，\n都有它的理由。','你所期待的，\n比你想的更近。','即使感到迷路，\n你仍在路上。','今天的沉默，\n也是必要的时间。','不要\n对自己太苛刻。','你已经\n完成了很多事情。','觉得太晚的那一刻，\n也许正是开始。','今天慢慢走\n也没关系。','试着听一听\n内心的声音。','休息，\n不代表落后。','小小的选择，\n造就大大的方向。','你\n并不孤单。','此刻的时光，\n终将成为回忆。','今天不必\n找到所有的答案。','等待，\n也是旅途的一部分。','你是\n足够珍贵的人。','今天的错误，\n是明天的积累。','不完美\n也没关系。']
 };
 const WT_REGISTER_LABELS={
-  ko:{title:'새김 바램태그 설정',subtitle:'처음 사용 시 기본 정보를 설정해주세요.',lang:'언어 설정',theme:'바램 테마',birth:'생년월일 (선택)',pickDate:'달력 선택',password:'사용할 비밀번호 (4자 이상)',submit:'등록 완료',themes:{general:'일반',luck:'행운',health:'건강',money:'재물',exam:'합격',love:'사랑'},pwAlert:'비밀번호를 4자 이상 입력해주세요.',fail:'등록 실패',done:'등록되었습니다!',error:'오류: '},
-  en:{title:'SAEGIM Wish Tag Setup',subtitle:'Please set your basic information for first use.',lang:'Language',theme:'Wish Theme',birth:'Birth Date (optional)',pickDate:'Pick Date',password:'Password to use (at least 4 characters)',submit:'Complete Registration',themes:{general:'General',luck:'Luck',health:'Health',money:'Wealth',exam:'Success',love:'Love'},pwAlert:'Please enter a password with at least 4 characters.',fail:'Registration failed',done:'Registration completed!',error:'Error: '},
-  ja:{title:'SAEGIM 願いタグ設定',subtitle:'初回使用時に基本情報を設定してください。',lang:'言語設定',theme:'願いのテーマ',birth:'生年月日（任意）',pickDate:'日付を選択',password:'使用するパスワード（4文字以上）',submit:'登録完了',themes:{general:'一般',luck:'幸運',health:'健康',money:'金運',exam:'合格',love:'愛'},pwAlert:'パスワードを4文字以上入力してください。',fail:'登録に失敗しました',done:'登録されました！',error:'エラー: '},
-  zh:{title:'SAEGIM 心愿标签设置',subtitle:'首次使用时，请设置基本信息。',lang:'语言设置',theme:'心愿主题',birth:'出生日期（可选）',pickDate:'选择日期',password:'请输入密码（至少4个字符）',submit:'完成注册',themes:{general:'普通',luck:'幸运',health:'健康',money:'财运',exam:'成功',love:'爱情'},pwAlert:'请输入至少4个字符的密码。',fail:'注册失败',done:'注册完成！',error:'错误: '}
+  ko:{title:'새김 바램태그 설정',subtitle:'처음 사용 시 기본 정보를 설정해주세요.',lang:'언어 설정',theme:'바램 테마',birth:'생년월일 (선택)',pickDate:'달력 선택',password:'사용할 비밀번호 (4자 이상)',submit:'등록 완료',themes:{general:'일반',luck:'행운',health:'건강',money:'재물',exam:'합격',love:'사랑'},pwAlert:'비밀번호를 4자 이상 입력해주세요.',fail:'등록 실패',done:'등록되었습니다!',error:'오류: ',settingsBtn:'설정 변경',settingsTitle:'바램태그 설정 변경',settingsSubtitle:'비밀번호 확인 후 설정을 변경할 수 있습니다.',saveSettings:'설정 저장',cancel:'취소',passwordCheck:'비밀번호 확인',editPasswordPlaceholder:'현재 비밀번호 또는 관리자 비밀번호'},
+  en:{title:'SAEGIM Wish Tag Setup',subtitle:'Please set your basic information for first use.',lang:'Language',theme:'Wish Theme',birth:'Birth Date (optional)',pickDate:'Pick Date',password:'Password to use (at least 4 characters)',submit:'Complete Registration',themes:{general:'General',luck:'Luck',health:'Health',money:'Wealth',exam:'Success',love:'Love'},pwAlert:'Please enter a password with at least 4 characters.',fail:'Registration failed',done:'Registration completed!',error:'Error: ',settingsBtn:'Change Settings',settingsTitle:'Change Wish Tag Settings',settingsSubtitle:'Enter your password to update your settings.',saveSettings:'Save Settings',cancel:'Cancel',passwordCheck:'Password',editPasswordPlaceholder:'Current password or admin password'},
+  ja:{title:'SAEGIM 願いタグ設定',subtitle:'初回使用時に基本情報を設定してください。',lang:'言語設定',theme:'願いのテーマ',birth:'生年月日（任意）',pickDate:'日付を選択',password:'使用するパスワード（4文字以上）',submit:'登録完了',themes:{general:'一般',luck:'幸運',health:'健康',money:'金運',exam:'合格',love:'愛'},pwAlert:'パスワードを4文字以上入力してください。',fail:'登録に失敗しました',done:'登録されました！',error:'エラー: ',settingsBtn:'設定変更',settingsTitle:'願いタグ設定変更',settingsSubtitle:'パスワード確認後、設定を変更できます。',saveSettings:'設定を保存',cancel:'キャンセル',passwordCheck:'パスワード確認',editPasswordPlaceholder:'現在のパスワードまたは管理者パスワード'},
+  zh:{title:'SAEGIM 心愿标签设置',subtitle:'首次使用时，请设置基本信息。',lang:'语言设置',theme:'心愿主题',birth:'出生日期（可选）',pickDate:'选择日期',password:'请输入密码（至少4个字符）',submit:'完成注册',themes:{general:'普通',luck:'幸运',health:'健康',money:'财运',exam:'成功',love:'爱情'},pwAlert:'请输入至少4个字符的密码。',fail:'注册失败',done:'注册完成！',error:'错误: ',settingsBtn:'更改设置',settingsTitle:'更改心愿标签设置',settingsSubtitle:'请输入密码后更改设置。',saveSettings:'保存设置',cancel:'取消',passwordCheck:'密码确认',editPasswordPlaceholder:'当前密码或管理员密码'}
 };
-function getRegLabels(){return WT_REGISTER_LABELS[currentLang]||WT_REGISTER_LABELS.ko;}
+function getRegLabels(){
+  const base=WT_REGISTER_LABELS.ko||{};
+  const cur=WT_REGISTER_LABELS[currentLang]||{};
+  return {...base,...cur,themes:{...(base.themes||{}),...(cur.themes||{})}};
+}
 let _wtLastIdx=-1;
 let currentLang=localStorage.getItem('saegim_lang')||'ko';
 let WT_DATA=null;
@@ -435,7 +442,7 @@ function renderWishTag(data){
         <div class="wt-sentence" id="wtSentence">${esc(sentence).replace(/\n/g,'<br>')}</div>
       </div>
       <button class="wt-again" onclick="wtAgain()">${lbl[2]}</button>
-      <button class="lang-btn" style="display:block;margin:14px auto 0;padding:10px 18px" onclick="renderWtSettings()">${getRegLabels().settingsBtn}</button>
+      <button class="wt-sub-btn" onclick="renderWtSettings()">${getRegLabels().settingsBtn}</button>
     </div>
     <div class="footer">SAEGIM WT</div>`;
 }
@@ -498,6 +505,7 @@ function renderWtSettings(){
     '<div class="wt-wrap">'+
       '<div class="wt-label">'+l.settingsTitle+'</div>'+
       '<div class="wt-sub">'+l.settingsSubtitle+'</div>'+
+      '<div class="wt-form">'+
       '<label class="form-label">'+l.lang+'</label>'+
       '<select id="wt_edit_lang" class="form-select" onchange="setSettingsLang(this.value)">'+
         '<option value="ko" '+(lang==='ko'?'selected':'')+'>한국어</option>'+
@@ -520,9 +528,10 @@ function renderWtSettings(){
         '<button type="button" class="date-btn" onclick="openEditBirthPicker()">'+l.pickDate+'</button>'+
       '</div>'+
       '<label class="form-label">'+l.passwordCheck+'</label>'+
-      '<input id="wt_edit_pw" type="password" class="form-input" placeholder="'+l.password+'">'+
+      '<input id="wt_edit_pw" type="password" class="form-input" placeholder="'+l.editPasswordPlaceholder+'">'+
       '<button class="wt-again" onclick="wtSaveSettings()">'+l.saveSettings+'</button>'+
-      '<button class="lang-btn" style="display:block;margin:14px auto 0;padding:10px 18px" onclick="renderWishTag(WT_DATA)">'+l.cancel+'</button>'+
+      '<button class="wt-sub-btn" onclick="renderWishTag(WT_DATA)">'+l.cancel+'</button>'+
+      '</div>'+
     '</div>'+
     '<div class="footer">SAEGIM WT</div>';
 }
