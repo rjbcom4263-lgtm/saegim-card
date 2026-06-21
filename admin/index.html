@@ -156,7 +156,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
         </div>
       </div>
 
-      <!-- QR 생성 (Apps Script 연동 — 추후 구현) -->
+      <!-- QR 생성 -->
       <div class="page" id="page-create">
         <h2>QR 생성</h2>
         <div class="card">
@@ -424,6 +424,67 @@ window.normalizeFirestoreCards = async function() {
     await loadDashboard();
   } catch(e) {
     alert('Firestore 데이터 보정 실패: ' + e.message);
+  }
+};
+
+// ── QR 생성 (Apps Script API 연동) ────────────────────
+// admin_Code.gs 새 버전 배포 후 실제 URL로 교체
+const ADMIN_APPS_SCRIPT_URL = '';
+
+function getAdminApiKey() {
+  let key = sessionStorage.getItem('admin_api_key');
+  if (!key) {
+    key = prompt('Apps Script 관리자 API 키를 입력하세요:');
+    if (!key) return null;
+    sessionStorage.setItem('admin_api_key', key.trim());
+  }
+  return key;
+}
+
+window.resetAdminApiKey = function() {
+  sessionStorage.removeItem('admin_api_key');
+  alert('API 키가 초기화되었습니다. 다음 생성 시 다시 입력하세요.');
+};
+
+window.createQrCardsViaApi = async function() {
+  const type    = document.getElementById('createType').value;
+  const qty     = Number(document.getElementById('createQty').value);
+  const resultEl = document.getElementById('createResult');
+
+  if (!type) { alert('제품을 선택하세요.'); return; }
+  if (!qty || qty < 1 || qty > 20) { alert('수량은 1~20 사이로 입력하세요.'); return; }
+
+  if (!ADMIN_APPS_SCRIPT_URL) {
+    resultEl.innerHTML = '<span style="color:var(--red)">❌ ADMIN_APPS_SCRIPT_URL이 설정되지 않았습니다.<br>admin/index.html의 ADMIN_APPS_SCRIPT_URL 상수를 채워주세요.</span>';
+    return;
+  }
+
+  const key = getAdminApiKey();
+  if (!key) return;
+
+  resultEl.innerHTML = '<span style="color:var(--muted)">생성 중... (약 10~30초 소요)</span>';
+
+  try {
+    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+      method:   'POST',
+      headers:  { 'Content-Type': 'text/plain' },
+      body:     JSON.stringify({ action: 'createQrInventoryFromAdmin', admin_key: key, product_type: type, quantity: qty }),
+      redirect: 'follow'
+    });
+    const data = await res.json();
+    if (data.success) {
+      resultEl.innerHTML = '<span style="color:var(--green)">✅ ' + data.message + '</span>'
+        + '<br><a href="' + data.folderUrl + '" target="_blank" style="color:var(--gold)">Google Drive 폴더 열기</a>';
+      await loadInventory();
+      await loadDashboard();
+    } else {
+      if (data.message && data.message.indexOf('관리자 키') > -1) {
+        sessionStorage.removeItem('admin_api_key');
+      }
+      resultEl.innerHTML = '<span style="color:var(--red)">❌ ' + data.message + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:var(--red)">오류: ' + e.message + '</span>';
   }
 };
 

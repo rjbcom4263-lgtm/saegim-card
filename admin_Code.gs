@@ -347,7 +347,7 @@ function createQrInventory(form) {
     .getRange(masterSheet.getLastRow() + 1, 1, rows.length, QR_HEADERS.length)
     .setValues(rows);
 
-  createdCodes.forEach(function(c) { tryBackupToFirestore_(c); });
+  createdCodes.forEach(function(c) { backupOneQrCodeToFirestoreV1_(c); });
 
   return {
     success:   true,
@@ -1137,6 +1137,90 @@ function toFirestoreFields_(data) {
     }
   });
   return fields;
+}
+
+// ─────────────────────────────────────────────
+// QR 생성 시 Firestore V1 분리 백업 (공개 + 비공개)
+// ─────────────────────────────────────────────
+
+function backupOneQrCodeToFirestoreV1_(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) return;
+
+  try {
+    const sheet   = getMasterSheet_();
+    const data    = sheet.getDataRange().getValues();
+    const headers = data[0].map(function(h) { return String(h || '').trim(); });
+    const codeCol = headers.indexOf('code');
+    if (codeCol < 0) return;
+
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][codeCol] || '').trim().toUpperCase() !== code) continue;
+      const rowData = {};
+      headers.forEach(function(h, j) { if (h) rowData[h] = data[i][j]; });
+      const token = getFirestoreToken_();
+      migrateOneQrRowV1_(token, rowData);
+      return;
+    }
+  } catch (e) {
+    console.error('[Firestore V1 백업 실패] ' + code + ': ' + e.message);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Admin REST API — doPost
+// Firebase /admin 화면에서 POST 요청을 받아 처리
+// ─────────────────────────────────────────────
+
+function doPost(e) {
+  try {
+    const payload = parseAdminPostPayload_(e);
+    const action  = String(payload.action || '').trim();
+
+    assertAdminApiKey_(payload.admin_key);
+
+    if (action === 'createQrInventoryFromAdmin') {
+      const result = createQrInventory(payload);
+      return adminJsonResponse_(result);
+    }
+
+    return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
+  } catch (err) {
+    return adminJsonResponse_({ success: false, message: err.message });
+  }
+}
+
+function parseAdminPostPayload_(e) {
+  try {
+    const body = e && e.postData ? e.postData.contents : '{}';
+    return JSON.parse(body);
+  } catch (err) {
+    throw new Error('POST body 파싱 실패: ' + err.message);
+  }
+}
+
+function assertAdminApiKey_(key) {
+  const props    = PropertiesService.getScriptProperties();
+  const expected = props.getProperty('ADMIN_ACCESS_KEY');
+  if (!expected) throw new Error('ADMIN_ACCESS_KEY가 Script Properties에 없습니다.');
+  if (String(key || '').trim() !== expected) throw new Error('관리자 키가 올바르지 않습니다.');
+}
+
+function adminJsonResponse_(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// 에디터에서 직접 실행 — ADMIN_ACCESS_KEY 설정 여부 확인
+function checkAdminApiKeySetting() {
+  const props = PropertiesService.getScriptProperties();
+  const key   = props.getProperty('ADMIN_ACCESS_KEY');
+  if (!key) {
+    Logger.log('❌ ADMIN_ACCESS_KEY 없음 — Script Properties에 추가 필요');
+  } else {
+    Logger.log('✅ ADMIN_ACCESS_KEY 설정됨 (길이: ' + key.length + ')');
+  }
 }
 
 // ─────────────────────────────────────────────
