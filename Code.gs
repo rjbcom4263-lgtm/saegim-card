@@ -115,6 +115,98 @@ function getRowObject_(row) {
   return obj;
 }
 
+// ─── 제품별 시트 동기화 헬퍼 ──────────────────────────────
+
+function getHeaderMapFromSheet_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach(function(h, i) {
+    if (h) map[String(h).trim()] = i + 1;
+  });
+  return map;
+}
+
+function getProductTypeFromCode_(code) {
+  return String(code || '').trim().split('-')[0].toUpperCase();
+}
+
+function getProductSheetByCode_(code) {
+  const productType = getProductTypeFromCode_(code);
+  if (!productType) return null;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  return ss.getSheetByName(productType);
+}
+
+function findQrRowInSheet_(sheet, code) {
+  if (!sheet) return -1;
+  const headers = getHeaderMapFromSheet_(sheet);
+  const codeCol = headers.code || 1;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  const values = sheet.getRange(2, codeCol, lastRow - 1, 1).getValues();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim() === String(code || '').trim()) {
+      return i + 2;
+    }
+  }
+  return -1;
+}
+
+function syncQrDbRowToProductSheet_(code) {
+  code = String(code || '').trim();
+  if (!code) return false;
+
+  const masterRow = findQrRow_(code);
+  if (masterRow === -1) return false;
+
+  const productSheet = getProductSheetByCode_(code);
+  if (!productSheet) {
+    console.warn('[제품별 시트 동기화 건너뜀] 시트 없음: ' + code);
+    return false;
+  }
+
+  const masterData = getRowObject_(masterRow);
+  const productHeaders = getHeaderMapFromSheet_(productSheet);
+
+  let productRow = findQrRowInSheet_(productSheet, code);
+  if (productRow === -1) {
+    productRow = productSheet.getLastRow() + 1;
+  }
+
+  const lastCol = productSheet.getLastColumn();
+  let rowValues = new Array(lastCol).fill('');
+
+  if (productRow <= productSheet.getLastRow()) {
+    rowValues = productSheet.getRange(productRow, 1, 1, lastCol).getValues()[0];
+  }
+
+  Object.keys(masterData).forEach(function(key) {
+    const col = productHeaders[key];
+    if (col) rowValues[col - 1] = masterData[key];
+  });
+
+  productSheet.getRange(productRow, 1, 1, lastCol).setValues([rowValues]);
+  return true;
+}
+
+function updateProductSheetField_(code, key, value) {
+  code = String(code || '').trim();
+  if (!code || !key) return false;
+
+  const productSheet = getProductSheetByCode_(code);
+  if (!productSheet) return false;
+
+  const row = findQrRowInSheet_(productSheet, code);
+  if (row === -1) return false;
+
+  const headers = getHeaderMapFromSheet_(productSheet);
+  const col = headers[key];
+  if (!col) return false;
+
+  productSheet.getRange(row, col).setValue(value);
+  return true;
+}
+
 function getQrData(code) {
   try {
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
@@ -125,8 +217,7 @@ function getQrData(code) {
     const data = getRowObject_(row);
 
     if (data.status === '사용중' || data.status === '분실') {
-      increaseScanCount_(row);
-      data.scan_count = Number(data.scan_count || 0) + 1;
+      data.scan_count = increaseScanCount_(row);
     }
 
     return {
@@ -234,6 +325,8 @@ function registerSoldQr(form) {
     setByHeader_(sheet, headers, row, 'registered_at', nowText_());
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
+    syncQrDbRowToProductSheet_(form.code);
+
     return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
@@ -273,6 +366,8 @@ function updateCustomerData(form) {
     saveLinks_(sheet, headers, row, form.links);
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
+    syncQrDbRowToProductSheet_(form.code);
+
     return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
@@ -296,6 +391,8 @@ function changeStatus(code, password, newStatus) {
     const headers = getHeaderMap_();
     setByHeader_(sheet, headers, row, 'status', newStatus);
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
+
+    syncQrDbRowToProductSheet_(code);
 
     return { success: true };
   } catch (err) {
@@ -395,10 +492,23 @@ function setByHeader_(sheet, headers, row, key, value) {
 function increaseScanCount_(row) {
   const sheet = getSheet_();
   const headers = getHeaderMap_();
-  if (!headers.scan_count) return;
+
+  if (!headers.scan_count) return 0;
+
+  const codeCol = headers.code || 1;
+  const code = String(sheet.getRange(row, codeCol).getValue() || '').trim();
+
   const cell = sheet.getRange(row, headers.scan_count);
   const current = Number(cell.getValue()) || 0;
-  cell.setValue(current + 1);
+  const next = current + 1;
+
+  cell.setValue(next);
+
+  if (code) {
+    updateProductSheetField_(code, 'scan_count', next);
+  }
+
+  return next;
 }
 
 function nowText_() {
@@ -475,6 +585,9 @@ function savePushToken(params) {
     const sheet = getSheet_();
     const headers = getHeaderMap_();
     setByHeader_(sheet, headers, row, 'push_token', token);
+
+    syncQrDbRowToProductSheet_(code);
+
     return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
