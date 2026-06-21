@@ -606,7 +606,7 @@ function renderWishTag(data){
     '<div style="display:flex;gap:7px;justify-content:center;margin-top:26px">'+
       ['ko','en','ja','zh'].map(l=>{
         const active=l===currentLang;
-        return '<button onclick="setLang(''+l+'')" style="padding:8px 15px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid '+(active?pal.accent:pal.pillBorder)+';color:'+(active?pal.accent:pal.muted)+';background:'+(active?pal.accentSoft:'rgba(0,0,0,0)')+';transition:all .4s;font-family:inherit">'+
+        return '<button onclick="setLang(\''+l+'\')" style="padding:8px 15px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid '+(active?pal.accent:pal.pillBorder)+';color:'+(active?pal.accent:pal.muted)+';background:'+(active?pal.accentSoft:'rgba(0,0,0,0)')+';transition:all .4s;font-family:inherit">'+
           (l==='ko'?'한국어':l==='en'?'EN':l==='ja'?'日本語':'中文')+'</button>';
       }).join('')+
     '</div>'+
