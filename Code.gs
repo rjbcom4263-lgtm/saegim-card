@@ -53,6 +53,9 @@ function handleApi_(params) {
       case 'savePushToken':
         result = savePushToken(params);
         break;
+      case 'recordScan':
+        result = recordScan(params.code);
+        break;
       case 'sendOwnerPushAlert':
         result = sendOwnerPushAlert(params);
         break;
@@ -214,6 +217,8 @@ function getQrData(code) {
 
     if (data.status === '사용중' || data.status === '분실') {
       data.scan_count = increaseScanCount_(row);
+      syncQrDbRowToProductSheet_(code);
+      backupCustomerQrToFirestoreV1_(code);
     }
 
     return {
@@ -249,8 +254,8 @@ function getQrData(code) {
       lost_contact_type: data.lost_contact_type || '',
       lost_contact_label: data.lost_contact_label || '',
       lost_contact_url: data.lost_contact_url || '',
-      owner_email: data.owner_email || '',
-      push_token: data.push_token || '',
+      has_owner_email: !!String(data.owner_email || '').trim(),
+      has_push_token: !!String(data.push_token || '').trim(),
       lost_message_ko: data.lost_message_ko || '',
       lost_message_en: data.lost_message_en || '',
       lost_message_ja: data.lost_message_ja || '',
@@ -322,6 +327,7 @@ function registerSoldQr(form) {
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
     syncQrDbRowToProductSheet_(form.code);
+    backupCustomerQrToFirestoreV1_(form.code);
 
     return { success: true };
   } catch (err) {
@@ -363,6 +369,7 @@ function updateCustomerData(form) {
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
     syncQrDbRowToProductSheet_(form.code);
+    backupCustomerQrToFirestoreV1_(form.code);
 
     return { success: true };
   } catch (err) {
@@ -389,6 +396,7 @@ function changeStatus(code, password, newStatus) {
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
     syncQrDbRowToProductSheet_(code);
+    backupCustomerQrToFirestoreV1_(code);
 
     return { success: true };
   } catch (err) {
@@ -410,6 +418,7 @@ function changeLostMode(code, password, lostMode) {
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
     syncQrDbRowToProductSheet_(code);
+    backupCustomerQrToFirestoreV1_(code);
 
     return { success: true };
   } catch (err) {
@@ -518,6 +527,196 @@ function nowText_() {
   );
 }
 
+// ─── Firestore V1 백업 (고객용) ───────────────────────────────────────────────
+
+const FIRESTORE_PROJECT_ID = 'saegim-memory';
+const FIRESTORE_PUBLIC_COLLECTION = 'qr_cards';
+const FIRESTORE_PRIVATE_COLLECTION = 'qr_card_private';
+
+const FIRESTORE_PUBLIC_FIELDS = [
+  'code', 'product', 'product_type', 'owner', 'status', 'qr_file',
+  'link1_type', 'link1_label', 'link1_url',
+  'link2_type', 'link2_label', 'link2_url',
+  'link3_type', 'link3_label', 'link3_url',
+  'link4_type', 'link4_label', 'link4_url',
+  'link5_type', 'link5_label', 'link5_url',
+  'child_name', 'guardian_name', 'guardian_phone',
+  'child_allergy', 'blood_type', 'child_note', 'child_message',
+  'scan_count', 'sold_at', 'registered_at', 'updated_at',
+  'bmt_photo1', 'bmt_photo2', 'bmt_photo3', 'bmt_photo4', 'bmt_photo5',
+  'bmt_travel_memo', 'bmt_places', 'bmt_voice', 'bmt_visit_date',
+  'bmt_photo_fit', 'bmt_photo_position',
+  'lost_mode', 'lost_contact_type', 'lost_contact_label', 'lost_contact_url',
+  'lost_message_ko', 'lost_message_en', 'lost_message_ja', 'lost_message_zh',
+  'gt_garden_name', 'gt_growth_point', 'gt_stage', 'gt_slots', 'gt_inventory',
+  'wt_birth_date', 'wt_theme', 'wt_last_message_id', 'wt_lang',
+  'gm_default_area', 'gm_enabled_categories',
+  'firestore_backup_at'
+];
+
+const FIRESTORE_PRIVATE_FIELDS = [
+  'code', 'password', 'admin_password', 'owner_email', 'push_token', 'memo',
+  'firestore_backup_at'
+];
+
+function getFirestoreToken_() {
+  const props = PropertiesService.getScriptProperties();
+  const clientEmail = props.getProperty('FIREBASE_CLIENT_EMAIL');
+  const rawPrivateKey = props.getProperty('FIREBASE_PRIVATE_KEY');
+  if (!clientEmail || !rawPrivateKey) {
+    throw new Error('Script Properties에 FIREBASE_CLIENT_EMAIL / FIREBASE_PRIVATE_KEY가 없습니다.');
+  }
+  const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
+  const now = Math.floor(Date.now() / 1000);
+  const toB64 = function(s) {
+    return Utilities.base64EncodeWebSafe(s).replace(/=+$/, '');
+  };
+  const header = toB64(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const payload = toB64(JSON.stringify({
+    iss: clientEmail,
+    scope: 'https://www.googleapis.com/auth/datastore',
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600
+  }));
+  const sigInput = header + '.' + payload;
+  const signature = Utilities.base64EncodeWebSafe(
+    Utilities.computeRsaSha256Signature(sigInput, privateKey)
+  ).replace(/=+$/, '');
+  const assertion = sigInput + '.' + signature;
+  const res = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+    method: 'post',
+    contentType: 'application/x-www-form-urlencoded',
+    payload: 'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + encodeURIComponent(assertion),
+    muteHttpExceptions: true
+  });
+  const json = JSON.parse(res.getContentText());
+  if (!json.access_token) {
+    throw new Error('Firestore 토큰 발급 실패: ' + res.getContentText());
+  }
+  return json.access_token;
+}
+
+function pickFirestoreFields_(rowData, fields) {
+  const obj = {};
+  fields.forEach(function(key) {
+    obj[key] = rowData[key] === undefined ? '' : rowData[key];
+  });
+  return obj;
+}
+
+function toFirestoreFields_(data) {
+  const fields = {};
+  Object.keys(data).forEach(function(key) {
+    const val = data[key];
+    if (val === undefined || val === null || val === '') {
+      fields[key] = { nullValue: null };
+      return;
+    }
+    if (key === 'scan_count' || key === 'gt_growth_point' || key === 'gt_stage') {
+      fields[key] = { integerValue: String(Number(val) || 0) };
+      return;
+    }
+    fields[key] = { stringValue: String(val) };
+  });
+  return fields;
+}
+
+function writeFirestoreDoc_(token, collectionName, docId, data) {
+  const url =
+    'https://firestore.googleapis.com/v1/projects/' + FIRESTORE_PROJECT_ID +
+    '/databases/(default)/documents/' +
+    encodeURIComponent(collectionName) + '/' +
+    encodeURIComponent(docId);
+  const res = UrlFetchApp.fetch(url, {
+    method: 'patch',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + token },
+    payload: JSON.stringify({ fields: toFirestoreFields_(data) }),
+    muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200) {
+    throw new Error(
+      collectionName + '/' + docId + ' 저장 실패 (' +
+      res.getResponseCode() + '): ' + res.getContentText()
+    );
+  }
+}
+
+function backupCustomerQrToFirestoreV1_(code) {
+  try {
+    code = String(code || '').trim().toUpperCase();
+    if (!code) return false;
+    const row = findQrRow_(code);
+    if (row === -1) return false;
+    const rowData = getRowObject_(row);
+    const backupAt = nowText_();
+    rowData.code = code;
+    rowData.firestore_backup_at = backupAt;
+    const publicData = pickFirestoreFields_(rowData, FIRESTORE_PUBLIC_FIELDS);
+    const privateData = pickFirestoreFields_(rowData, FIRESTORE_PRIVATE_FIELDS);
+    const token = getFirestoreToken_();
+    writeFirestoreDoc_(token, FIRESTORE_PUBLIC_COLLECTION, code, publicData);
+    writeFirestoreDoc_(token, FIRESTORE_PRIVATE_COLLECTION, code, privateData);
+    const sheet = getSheet_();
+    const headers = getHeaderMap_();
+    const targetRow = findQrRow_(code);
+    if (targetRow !== -1) {
+      setByHeader_(sheet, headers, targetRow, 'firestore_backup_at', backupAt);
+    }
+    syncQrDbRowToProductSheet_(code);
+    return true;
+  } catch (e) {
+    console.error('[고객용 Firestore V1 백업 실패] ' + code + ': ' + e.message);
+    return false;
+  }
+}
+
+// ─── savePushToken ────────────────────────────────────────────────────────────
+
+function savePushToken(params) {
+  try {
+    const code = String(params.code || '').trim().toUpperCase();
+    const token = String(params.token || '').trim();
+    if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
+    if (!token) return { success: false, message: '토큰이 없습니다.' };
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+    const sheet = getSheet_();
+    const headers = getHeaderMap_();
+    setByHeader_(sheet, headers, row, 'push_token', token);
+    setByHeader_(sheet, headers, row, 'updated_at', nowText_());
+    syncQrDbRowToProductSheet_(code);
+    backupCustomerQrToFirestoreV1_(code);
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+// ─── recordScan ──────────────────────────────────────────────────────────────
+
+function recordScan(code) {
+  try {
+    code = String(code || '').trim();
+    if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+    const data = getRowObject_(row);
+    const status = String(data.status || '').trim();
+    if (status !== '사용중' && status !== '분실') {
+      return { success: true, counted: false, scan_count: Number(data.scan_count || 0) };
+    }
+    const next = increaseScanCount_(row);
+    syncQrDbRowToProductSheet_(code);
+    backupCustomerQrToFirestoreV1_(code);
+    return { success: true, counted: true, scan_count: next };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+// ─── OneSignal ───────────────────────────────────────────────────────────────
 function getOneSignalConfig_() {
   const props = PropertiesService.getScriptProperties();
   const appId = String(props.getProperty('ONESIGNAL_APP_ID') || '').trim();
@@ -529,8 +728,8 @@ function getOneSignalConfig_() {
 
 function checkOneSignalSettings() {
   const config = getOneSignalConfig_();
-  Logger.log('ONESIGNAL_APP_ID 설정 확인: ' + config.app_id);
-  Logger.log('ONESIGNAL_REST_API_KEY 설정 확인 완료');
+  Logger.log('ONESIGNAL_APP_ID: ' + config.app_id);
+  Logger.log('ONESIGNAL_REST_API_KEY 확인 완료');
 }
 
 function sendOwnerEmailAlert(params) {
@@ -538,53 +737,23 @@ function sendOwnerEmailAlert(params) {
     const code = String(params.code || '').trim();
     const nickname = String(params.nickname || '').trim() || '발견자';
     const message = String(params.message || '').trim();
-
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
     if (!message) return { success: false, message: '메시지가 없습니다.' };
-
     const row = findQrRow_(code);
     if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
-
     const data = getRowObject_(row);
     const ownerEmail = String(data.owner_email || '').trim();
-
     if (!ownerEmail) return { success: false, message: '알림 이메일이 등록되어 있지 않습니다.' };
-
     const productCode = code.split('-')[0].toUpperCase();
     const productNames = { BMT: '부산 메모리 태그', TT: '길동무 태그', CD: '어린이 안심 태그', GT: '가든 태그' };
     const productName = productNames[productCode] || '새김 태그';
-    const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
+    const pageUrl = 'https://saegim-memory.web.app/' + productCode.toLowerCase() + '.html?code=' + encodeURIComponent(code);
     const subject = '[새김] ' + code + ' 새 메시지가 도착했습니다.';
     const body =
       '새김 ' + productName + '에 새로운 메시지가 도착했습니다.\n\n' +
-      '태그번호: ' + code + '\n' +
-      '닉네임: ' + nickname + '\n\n' +
-      '메시지:\n' + message + '\n\n' +
-      '확인하기:\n' + pageUrl + '\n\n' +
-      'SAEGIM · MEMORY QR';
-
-    MailApp.sendEmail({ to: ownerEmail, subject: subject, body: body, name: 'SAEGIM' });
-
-    return { success: true };
-  } catch (err) {
-    return { success: false, message: String(err) };
-  }
-}
-
-function savePushToken(params) {
-  try {
-    const code = String(params.code || '').trim();
-    const token = String(params.token || '').trim();
-    if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
-    if (!token) return { success: false, message: '토큰이 없습니다.' };
-    const row = findQrRow_(code);
-    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
-    const sheet = getSheet_();
-    const headers = getHeaderMap_();
-    setByHeader_(sheet, headers, row, 'push_token', token);
-
-    syncQrDbRowToProductSheet_(code);
-
+      '태그번호: ' + code + '\n닉네임: ' + nickname + '\n\n메시지:\n' + message +
+      '\n\n확인하기: ' + pageUrl;
+    MailApp.sendEmail({ to: ownerEmail, subject: subject, body: body });
     return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
@@ -597,37 +766,28 @@ function sendOwnerPushAlert(params) {
     const nickname = String(params.nickname || '').trim() || '발견자';
     const message = String(params.message || '').trim();
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
-    if (!message) return { success: false, message: '메시지가 없습니다.' };
     const row = findQrRow_(code);
     if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
     const data = getRowObject_(row);
-    const playerId = String(data.push_token || '').trim();
-    if (!playerId) return { success: false, message: '푸시 토큰이 없습니다.' };
-
-    const oneSignal = getOneSignalConfig_();
-    const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
-    const payload = JSON.stringify({
-      app_id: oneSignal.app_id,
-      include_subscription_ids: [playerId],
-      headings: { en: '[SAEGIM] ' + code + ' New message', ko: '[새김] ' + code + ' 새 메시지' },
-      contents: { en: nickname + ': ' + message, ko: nickname + ': ' + message },
-      url: pageUrl
-    });
-    const response = UrlFetchApp.fetch('https://api.onesignal.com/notifications', {
+    const pushToken = String(data.push_token || '').trim();
+    if (!pushToken) return { success: false, message: '푸시 토큰이 없습니다.' };
+    const config = getOneSignalConfig_();
+    const payload = {
+      app_id: config.app_id,
+      include_subscription_ids: [pushToken],
+      headings: { en: '[새김] ' + code + ' 새 메시지', ko: '[새김] ' + code + ' 새 메시지' },
+      contents: { en: nickname + ': ' + message, ko: nickname + ': ' + message }
+    };
+    UrlFetchApp.fetch('https://onesignal.com/api/v1/notifications', {
       method: 'post',
       contentType: 'application/json',
-      headers: { Authorization: 'Key ' + oneSignal.rest_api_key },
-      payload: payload,
+      headers: { Authorization: 'Basic ' + config.rest_api_key },
+      payload: JSON.stringify(payload),
       muteHttpExceptions: true
     });
-    const text = response.getContentText();
-    const result = text ? JSON.parse(text) : {};
-    if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) {
-      return { success: false, message: 'OneSignal 전송 실패: ' + text };
-    }
-    if (result.errors) return { success: false, message: JSON.stringify(result.errors) };
-    return { success: true, message: '푸시 알림 전송 완료' };
+    return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
   }
 }
+

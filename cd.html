@@ -102,9 +102,23 @@ async function loadData() {
 
     if (MODE === 'edit') { renderPassword(); return; }
     renderView(d);
+    recordScanCount(CODE);
 
   } catch(e) {
     renderError('데이터를 불러오지 못했습니다: ' + e.message);
+  }
+}
+
+async function recordScanCount(code) {
+  try {
+    await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'recordScan', code: code }),
+      redirect: 'follow'
+    });
+  } catch (e) {
+    console.warn('scan count 기록 실패:', e);
   }
 }
 
