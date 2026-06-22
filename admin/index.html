@@ -45,6 +45,7 @@ h2{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:20px}
 .search-bar input,.search-bar select{padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:#111;color:var(--text);font-size:14px}
 .search-bar input{flex:1;min-width:180px}
 #filterType{min-width:190px}
+#sortType{min-width:150px}
 
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 12px;color:var(--muted);border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
@@ -175,6 +176,13 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <option value="GT">GT · 가든 태그</option>
             <option value="WT">WT · 바램태그</option>
             <option value="TT">TT · 길동무 태그</option>
+          </select>
+          <select id="sortType" onchange="filterTable()">
+            <option value="updated_desc">최신 수정순</option>
+            <option value="code_asc">코드순</option>
+            <option value="scan_desc">조회수 많은순</option>
+            <option value="registered_desc">등록일 최신순</option>
+            <option value="status_asc">상태순</option>
           </select>
         </div>
         <div style="margin-bottom:16px">
@@ -332,7 +340,7 @@ async function loadInventory() {
   try {
     const snap = await getDocs(collection(db, 'qr_cards'));
     allItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTable(allItems);
+    renderTable(sortInventoryItems(allItems));
   } catch(e) {
     document.getElementById('inventoryBody').innerHTML =
       '<tr><td colspan="8" class="error-msg">로드 실패: ' + e.message + '</td></tr>';
@@ -465,6 +473,34 @@ function renderTable(items) {
   }).join('');
 }
 
+function getDateValue(v) {
+  if (!v) return 0;
+  if (typeof v === 'object' && v.seconds) return v.seconds * 1000;
+  const t = new Date(String(v).trim().replace(' ','T')).getTime();
+  return isNaN(t) ? 0 : t;
+}
+
+function sortInventoryItems(items) {
+  const el = document.getElementById('sortType');
+  const sort = el ? el.value : 'updated_desc';
+  const statusOrder = {'미등록':1,'판매완료':2,'사용중':3,'중지':4,'분실':5};
+  return items.slice().sort(function(a,b) {
+    const ca = String(a.code||a.id||''), cb = String(b.code||b.id||'');
+    if (sort === 'code_asc') return ca.localeCompare(cb);
+    if (sort === 'scan_desc') return Number(b.scan_count||0) - Number(a.scan_count||0);
+    if (sort === 'registered_desc')
+      return getDateValue(b.registered_at||b.sold_at||b.created_at)
+           - getDateValue(a.registered_at||a.sold_at||a.created_at);
+    if (sort === 'status_asc') {
+      const sa = statusOrder[String(a.status||'').trim()]||99;
+      const sb = statusOrder[String(b.status||'').trim()]||99;
+      return sa !== sb ? sa - sb : ca.localeCompare(cb);
+    }
+    return getDateValue(b.updated_at||b.registered_at||b.sold_at||b.created_at)
+         - getDateValue(a.updated_at||a.registered_at||a.sold_at||a.created_at);
+  });
+}
+
 window.filterTable = function() {
   const code   = document.getElementById('searchCode').value.trim().toUpperCase();
   const status = document.getElementById('filterStatus').value;
@@ -480,7 +516,7 @@ window.filterTable = function() {
         && (!status || item.status === status)
         && (!type   || itemType === type);
   });
-  renderTable(filtered);
+  renderTable(sortInventoryItems(filtered));
 };
 
 // ── 상태 변경 ─────────────────────────────────────
