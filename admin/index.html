@@ -98,6 +98,9 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .product-stat-table td:first-child{text-align:left}
 .product-name-main{font-weight:800;color:var(--text)}
 .product-name-sub{display:block;margin-top:3px;color:var(--muted);font-size:12px}
+.inventory-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:12px 0 14px}
+.inventory-count{color:var(--muted);font-size:13px}
+@media(max-width:720px){.inventory-toolbar{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -184,6 +187,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <option value="registered_desc">등록일 최신순</option>
             <option value="status_asc">상태순</option>
           </select>
+        </div>
+        <div class="inventory-toolbar">
+          <div id="inventoryCount" class="inventory-count">전체 0개</div>
+          <button class="btn btn-ghost" onclick="refreshInventory()">새로고침</button>
         </div>
         <div style="margin-bottom:16px">
           <button class="btn btn-ghost" onclick="normalizeFirestoreCards()">Firestore 데이터 보정</button>
@@ -340,7 +347,9 @@ async function loadInventory() {
   try {
     const snap = await getDocs(collection(db, 'qr_cards'));
     allItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderTable(sortInventoryItems(allItems));
+    const sorted = sortInventoryItems(allItems);
+    renderTable(sorted);
+    updateInventoryCount(sorted.length, allItems.length);
   } catch(e) {
     document.getElementById('inventoryBody').innerHTML =
       '<tr><td colspan="8" class="error-msg">로드 실패: ' + e.message + '</td></tr>';
@@ -501,6 +510,26 @@ function sortInventoryItems(items) {
   });
 }
 
+function updateInventoryCount(shown, total) {
+  const el = document.getElementById('inventoryCount');
+  if (!el) return;
+  shown = Number(shown||0); total = Number(total||0);
+  el.textContent = shown === total
+    ? '전체 ' + total + '개'
+    : '전체 ' + total + '개 중 ' + shown + '개 표시';
+}
+
+window.refreshInventory = async function() {
+  const el = document.getElementById('inventoryCount');
+  if (el) el.textContent = '새로고침 중...';
+  try {
+    await loadInventory();
+    await loadDashboard();
+  } catch(e) {
+    alert('새로고침 실패: ' + e.message);
+  }
+};
+
 window.filterTable = function() {
   const code   = document.getElementById('searchCode').value.trim().toUpperCase();
   const status = document.getElementById('filterStatus').value;
@@ -516,7 +545,9 @@ window.filterTable = function() {
         && (!status || item.status === status)
         && (!type   || itemType === type);
   });
-  renderTable(sortInventoryItems(filtered));
+  const sorted = sortInventoryItems(filtered);
+  renderTable(sorted);
+  updateInventoryCount(sorted.length, allItems.length);
 };
 
 // ── 상태 변경 ─────────────────────────────────────
