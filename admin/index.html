@@ -478,6 +478,7 @@ window.openDetailModal = function(code){
   h+='<a class="btn btn-ghost" href="'+customerUrl+'" target="_blank">통합 고객화면</a>';
   h+='<a class="btn btn-ghost" href="'+directUrl+'" target="_blank">제품 직접화면</a>';
   if(qr!=='-') h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';
+  h+='<button class="btn btn-ghost" onclick="regenerateQrImage(\''+escHtml(code)+'\')">QR 재생성</button>';
   h+='<button class="btn btn-ghost" onclick="closeModal(\'detailModal\');openStatusModal(\''+escHtml(code)+'\',\''+escHtml(item.status||'')+'\')">상태변경</button>';
   h+='</div>';
   h+='<div class="detail-section-title">기본 정보</div><div class="detail-grid">';
@@ -653,6 +654,35 @@ window.saveStatus = async function() {
     alert(data.message || code + ' 상태를 [' + status + ']로 변경했습니다.');
   } catch(e) {
     alert('저장 실패: ' + e.message);
+  }
+}};
+
+window.regenerateQrImage = async function(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) { alert('QR 코드가 없습니다.'); return; }
+
+  if (!confirm(code + ' QR 이미지를 다시 생성할까요?\n기존 Drive QR 파일은 휴지통으로 이동되고 새 파일 링크로 갱신됩니다.')) return;
+
+  const adminKey = getAdminApiKey();
+  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
+
+  try {
+    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'regenerateQrImageFromAdmin', admin_key: adminKey, code: code }),
+      redirect: 'follow'
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'QR 재생성 실패');
+
+    alert(data.message || 'QR 이미지를 재생성했습니다.');
+    await loadInventory();
+    await loadDashboard();
+    if (typeof closeModal === 'function') closeModal('detailModal');
+  } catch(e) {
+    alert('QR 재생성 실패: ' + e.message);
   }
 };
 </script>

@@ -1190,6 +1190,10 @@ function doPost(e) {
       const result = updateQrStatusFromAdmin(payload.code, payload.status);
       return adminJsonResponse_(result);
 
+    } else if (action === 'regenerateQrImageFromAdmin') {
+      const result = regenerateQrImageFromAdmin(payload.code);
+      return adminJsonResponse_(result);
+
     } else {
       return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
     }
@@ -1233,6 +1237,109 @@ function updateQrStatusFromAdmin(code, status) {
   }
 
   return updateQrStatus(code, status);
+}
+
+function regenerateQrImageFromAdmin(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) throw new Error('QR 코드가 없습니다.');
+
+  const sheet = adminGetMasterSheetForRegen_();
+  const headers = adminGetHeaderMapForRegen_(sheet);
+  const row = adminFindQrRowForRegen_(sheet, code);
+  if (row === -1) throw new Error(code + ' 행을 QR_DB에서 찾을 수 없습니다.');
+
+  const pageUrl = 'https://saegim-memory.web.app/?code=' + encodeURIComponent(code);
+  const file = adminCreateQrPngFileForRegen_(code, pageUrl);
+  const fileUrl = file.getUrl();
+  const now = adminNowTextForRegen_();
+
+  adminSetByHeaderForRegen_(sheet, headers, row, 'qr_file', fileUrl);
+  adminSetByHeaderForRegen_(sheet, headers, row, 'updated_at', now);
+  adminUpdateProductSheetQrFileForRegen_(code, fileUrl, now);
+
+  if (typeof backupOneQrCodeToFirestoreV1_ === 'function') {
+    backupOneQrCodeToFirestoreV1_(code);
+  }
+
+  return {
+    success: true,
+    message: code + ' QR 이미지를 재생성했습니다.',
+    code: code,
+    qr_file: fileUrl
+  };
+}
+
+function adminGetMasterSheetForRegen_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('QR_DB');
+  if (!sheet) throw new Error('QR_DB 시트를 찾을 수 없습니다.');
+  return sheet;
+}
+
+function adminGetHeaderMapForRegen_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach(function(h, i) { if (h) map[String(h).trim()] = i + 1; });
+  return map;
+}
+
+function adminFindQrRowForRegen_(sheet, code) {
+  const headers = adminGetHeaderMapForRegen_(sheet);
+  const codeCol = headers.code || 1;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  const values = sheet.getRange(2, codeCol, lastRow - 1, 1).getValues();
+  const target = String(code || '').trim().toUpperCase();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim().toUpperCase() === target) return i + 2;
+  }
+  return -1;
+}
+
+function adminSetByHeaderForRegen_(sheet, headers, row, key, value) {
+  const col = headers[key];
+  if (!col) return;
+  sheet.getRange(row, col).setValue(value);
+}
+
+function adminGetQrImageFolderForRegen_() {
+  const props = PropertiesService.getScriptProperties();
+  const folderId = String(props.getProperty('QR_FOLDER_ID') || '').trim();
+  if (folderId) return DriveApp.getFolderById(folderId);
+  const name = 'SAEGIM_QR_IMAGES';
+  const folders = DriveApp.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(name);
+}
+
+function adminCreateQrPngFileForRegen_(code, pageUrl) {
+  const folder = adminGetQrImageFolderForRegen_();
+  const qrUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent(pageUrl) +
+    '&size=1000&margin=2&ecLevel=H&format=png';
+  const blob = UrlFetchApp.fetch(qrUrl).getBlob().setName(code + '.png');
+  const existing = folder.getFilesByName(code + '.png');
+  while (existing.hasNext()) existing.next().setTrashed(true);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return file;
+}
+
+function adminUpdateProductSheetQrFileForRegen_(code, fileUrl, now) {
+  const productType = String(code || '').split('-')[0].toUpperCase();
+  if (!productType) return false;
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(productType);
+  if (!sheet) return false;
+  const headers = adminGetHeaderMapForRegen_(sheet);
+  const row = adminFindQrRowForRegen_(sheet, code);
+  if (row === -1) return false;
+  adminSetByHeaderForRegen_(sheet, headers, row, 'qr_file', fileUrl);
+  adminSetByHeaderForRegen_(sheet, headers, row, 'updated_at', now);
+  return true;
+}
+
+function adminNowTextForRegen_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
 }
 
 // 에디터에서 직접 실행 — ADMIN_ACCESS_KEY 설정 여부 확인
