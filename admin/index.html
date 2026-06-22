@@ -75,6 +75,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .field-row input,.field-row select,.field-row textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:14px}
 .field-row textarea{min-height:70px;resize:vertical}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.backup-badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid rgba(255,255,255,.12)}
+.backup-ok{color:#8ff0a4;background:rgba(40,180,90,.16);border-color:rgba(40,180,90,.45)}
+.backup-warn{color:#ffd36b;background:rgba(255,190,70,.14);border-color:rgba(255,190,70,.45)}
+.backup-bad{color:#ff8f8f;background:rgba(255,80,80,.14);border-color:rgba(255,80,80,.45)}
 .detail-grid{display:grid;grid-template-columns:140px 1fr;gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:14px}
 .detail-label,.detail-value{padding:12px 14px;border-bottom:1px solid rgba(122,96,64,.35);font-size:13px}
 .detail-label{color:var(--gold);background:rgba(230,200,143,.05);font-weight:700}
@@ -156,10 +160,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <thead>
               <tr>
                 <th>코드</th><th>제품</th><th>상태</th><th>소유자</th>
-                <th>스캔</th><th>등록일</th><th>관리</th>
+                <th>스캔</th><th>등록일</th><th>백업</th><th>관리</th>
               </tr>
             </thead>
-            <tbody id="inventoryBody"><tr><td colspan="7" class="loading-msg">로딩 중...</td></tr></tbody>
+            <tbody id="inventoryBody"><tr><td colspan="8" class="loading-msg">로딩 중...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -306,7 +310,7 @@ async function loadInventory() {
     renderTable(allItems);
   } catch(e) {
     document.getElementById('inventoryBody').innerHTML =
-      '<tr><td colspan="7" class="error-msg">로드 실패: ' + e.message + '</td></tr>';
+      '<tr><td colspan="8" class="error-msg">로드 실패: ' + e.message + '</td></tr>';
   }
 }
 
@@ -378,7 +382,7 @@ function getProductLabel(item) {
 function renderTable(items) {
   const tbody = document.getElementById('inventoryBody');
   if (!items.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="loading-msg">항목 없음</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading-msg">항목 없음</td></tr>';
     return;
   }
   tbody.innerHTML = items.map(item => {
@@ -391,6 +395,7 @@ function renderTable(items) {
       + '<td>' + (item.owner||item.child_name||'-') + '</td>'
       + '<td style="text-align:center">' + (item.scan_count||0) + '</td>'
       + '<td style="color:var(--muted)">' + (item.registered_at||item.sold_at||item.updated_at||'-') + '</td>'
+      + '<td>' + renderBackupBadge(item) + '</td>'
       + '<td>'
       + '<button class="btn btn-ghost" onclick="openDetailModal(\'' + code + '\')" style="margin-right:4px">상세</button>'
       + '<button class="btn btn-ghost" onclick="openStatusModal(\'' + code + '\',\'' + status + '\')">상태변경</button>'
@@ -428,6 +433,18 @@ window.closeModal = function(id) {
   document.getElementById(id).classList.remove('open');
 };
 
+function getBackupStatus(item){
+  const hasQr=!!String(item.qr_file||'').trim();
+  const hasAt=!!String(item.firestore_backup_at||'').trim();
+  if(hasQr&&hasAt) return{label:'정상',className:'backup-ok'};
+  if(!hasQr&&!hasAt) return{label:'점검필요',className:'backup-bad'};
+  if(!hasQr) return{label:'QR 없음',className:'backup-warn'};
+  return{label:'백업시간 없음',className:'backup-warn'};
+}
+function renderBackupBadge(item){
+  const s=getBackupStatus(item);
+  return '<span class="backup-badge '+s.className+'">'+s.label+'</span>';
+}
 function safeText(v){
   if(v===undefined||v===null||v==='') return '-';
   if(typeof v==='object'){
@@ -474,6 +491,8 @@ window.openDetailModal = function(code){
   h+=makeDetailRow('판매일',item.sold_at);
   h+=makeDetailRow('등록일',item.registered_at||item.created_at);
   h+=makeDetailRow('수정일',item.updated_at);
+  h+=makeDetailRow('Firestore 백업',item.firestore_backup_at);
+  h+=makeDetailRow('백업 상태',getBackupStatus(item).label);
   h+='</div>';
   if(type==='CD'){
     h+='<div class="detail-section-title">안심태그 정보</div><div class="detail-grid">';
