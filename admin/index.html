@@ -75,6 +75,14 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .field-row input,.field-row select,.field-row textarea{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0d0d0d;color:var(--text);font-size:14px}
 .field-row textarea{min-height:70px;resize:vertical}
 .modal-actions{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+.detail-grid{display:grid;grid-template-columns:140px 1fr;gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:14px}
+.detail-label,.detail-value{padding:12px 14px;border-bottom:1px solid rgba(122,96,64,.35);font-size:13px}
+.detail-label{color:var(--gold);background:rgba(230,200,143,.05);font-weight:700}
+.detail-value{color:var(--text);word-break:break-all}
+.detail-grid .detail-label:nth-last-child(2),.detail-grid .detail-value:last-child{border-bottom:0}
+.detail-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.detail-actions a,.detail-actions button{text-decoration:none}
+.detail-section-title{margin-top:22px;margin-bottom:8px;color:var(--gold);font-size:14px;font-weight:800}
 
 .loading-msg{color:var(--muted);text-align:center;padding:40px;font-size:14px}
 .error-msg{color:var(--red);text-align:center;padding:40px;font-size:14px}
@@ -188,6 +196,17 @@ tr:hover td{background:rgba(255,255,255,.03)}
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- 상세 정보 모달 -->
+<div class="modal-bg" id="detailModal">
+  <div class="modal" style="max-width:620px">
+    <h3 id="detailTitle">QR 상세 정보</h3>
+    <div id="detailContent"><div class="loading-msg">불러오는 중...</div></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('detailModal')">닫기</button>
     </div>
   </div>
 </div>
@@ -374,7 +393,8 @@ function renderTable(items) {
       + '<td style="text-align:center">' + (item.scan_count||0) + '</td>'
       + '<td style="color:var(--muted)">' + (item.registered_at||item.sold_at||item.updated_at||'-') + '</td>'
       + '<td>'
-      + '<a class="btn btn-ghost" href="' + viewUrl + '" target="_blank" style="text-decoration:none;margin-right:6px">보기</a>'
+      + '<button class="btn btn-ghost" onclick="openDetailModal(\'' + code + '\')" style="margin-right:4px">상세</button>'
+      + '<a class="btn btn-ghost" href="' + viewUrl + '" target="_blank" style="text-decoration:none;margin-right:4px">보기</a>'
       + '<button class="btn btn-ghost" onclick="openStatusModal(\'' + code + '\',\'' + status + '\')">상태변경</button>'
       + '</td>'
       + '</tr>';
@@ -408,6 +428,83 @@ window.openStatusModal = function(code, currentStatus) {
 
 window.closeModal = function(id) {
   document.getElementById(id).classList.remove('open');
+};
+
+function safeText(v){
+  if(v===undefined||v===null||v==='') return '-';
+  if(typeof v==='object'){
+    if(v.seconds){try{return new Date(v.seconds*1000).toLocaleString('ko-KR');}catch(e){return '-';}}
+    try{return JSON.stringify(v);}catch(e){return String(v);}
+  }
+  return String(v);
+}
+function escHtml(v){
+  return safeText(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function makeDetailRow(label,val){
+  return '<div class="detail-label">'+escHtml(label)+'</div><div class="detail-value">'+escHtml(val)+'</div>';
+}
+function getDirectPageUrl(code){
+  const type=String(code||'').split('-')[0].toLowerCase();
+  const map={cd:'cd.html',bmt:'bmt.html',gt:'gt.html',wt:'wt.html',tt:'tt.html'};
+  const page=map[type];
+  return page?'https://saegim-memory.web.app/'+page+'?code='+encodeURIComponent(code)
+             :'https://saegim-memory.web.app/?code='+encodeURIComponent(code);
+}
+window.openDetailModal = function(code){
+  const item=allItems.find(function(i){return String(i.code||i.id||'').trim().toUpperCase()===String(code||'').trim().toUpperCase();});
+  if(!item){alert('상세 정보를 찾을 수 없습니다: '+code);return;}
+  document.getElementById('detailTitle').textContent=code+' 상세 정보';
+  const type=String(code).split('-')[0].toUpperCase();
+  const customerUrl='https://saegim-memory.web.app/?code='+encodeURIComponent(code);
+  const directUrl=getDirectPageUrl(code);
+  const qr=safeText(item.qr_file);
+  let h='<div class="detail-actions">';
+  h+='<a class="btn btn-ghost" href="'+customerUrl+'" target="_blank">통합 고객화면</a>';
+  h+='<a class="btn btn-ghost" href="'+directUrl+'" target="_blank">제품 직접화면</a>';
+  if(qr!=='-') h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';
+  h+='<button class="btn btn-ghost" onclick="closeModal(\'detailModal\');openStatusModal(\''+escHtml(code)+'\',\''+escHtml(item.status||'')+'\')">상태변경</button>';
+  h+='</div>';
+  h+='<div class="detail-section-title">기본 정보</div><div class="detail-grid">';
+  h+=makeDetailRow('코드',item.code||item.id);
+  h+=makeDetailRow('제품군',type);
+  h+=makeDetailRow('제품명',getProductLabel(item));
+  h+=makeDetailRow('상태',item.status);
+  h+=makeDetailRow('소유자',item.owner||item.child_name);
+  h+=makeDetailRow('조회수',item.scan_count||0);
+  h+=makeDetailRow('QR 이미지',item.qr_file);
+  h+=makeDetailRow('판매일',item.sold_at);
+  h+=makeDetailRow('등록일',item.registered_at||item.created_at);
+  h+=makeDetailRow('수정일',item.updated_at);
+  h+='</div>';
+  if(type==='CD'){
+    h+='<div class="detail-section-title">안심태그 정보</div><div class="detail-grid">';
+    h+=makeDetailRow('이름',item.child_name);h+=makeDetailRow('보호자',item.guardian_name);
+    h+=makeDetailRow('보호자 연락처',item.guardian_phone);h+=makeDetailRow('알레르기·질환',item.child_allergy);
+    h+=makeDetailRow('혈액형',item.blood_type);h+=makeDetailRow('특이사항',item.child_note);
+    h+=makeDetailRow('안내 메시지',item.child_message);h+='</div>';
+  }
+  if(type==='BMT'){
+    h+='<div class="detail-section-title">부산 메모리 태그 정보</div><div class="detail-grid">';
+    h+=makeDetailRow('여행 메모',item.bmt_travel_memo);h+=makeDetailRow('방문 장소',item.bmt_places);
+    h+=makeDetailRow('방문 날짜',item.bmt_visit_date);h+='</div>';
+  }
+  if(type==='WT'){
+    h+='<div class="detail-section-title">바램태그 정보</div><div class="detail-grid">';
+    h+=makeDetailRow('언어',item.wt_lang);h+=makeDetailRow('테마',item.wt_theme);
+    h+=makeDetailRow('생년월일',item.wt_birth_date);h+=makeDetailRow('최근 문장 ID',item.wt_last_message_id);h+='</div>';
+  }
+  if(type==='GT'){
+    h+='<div class="detail-section-title">가든태그 정보</div><div class="detail-grid">';
+    h+=makeDetailRow('정원 이름',item.gt_garden_name);h+=makeDetailRow('성장 포인트',item.gt_growth_point||0);
+    h+=makeDetailRow('단계',item.gt_stage);h+='</div>';
+  }
+  h+='<div class="detail-section-title">분실 / 연락 정보</div><div class="detail-grid">';
+  h+=makeDetailRow('분실 모드',item.lost_mode);h+=makeDetailRow('연락 유형',item.lost_contact_type);
+  h+=makeDetailRow('연락 라벨',item.lost_contact_label);h+=makeDetailRow('연락 URL',item.lost_contact_url);
+  h+='</div>';
+  document.getElementById('detailContent').innerHTML=h;
+  document.getElementById('detailModal').classList.add('open');
 };
 
 function getDefaultProductName(type) {
