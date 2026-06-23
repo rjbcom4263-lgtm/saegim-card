@@ -598,7 +598,31 @@ function safeText(v){
   return String(v);
 }
 function escHtml(v){
-  return safeText(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');\n}\nfunction makeDetailRow(label,val){\n  return '<div class="detail-label">'+escHtml(label)+'</div><div class="detail-value">'+escHtml(val)+'</div>';\n}\nfunction getDirectPageUrl(code){\n  const type=String(code||'').split('-')[0].toLowerCase();\n  const map={cd:'cd.html',bmt:'bmt.html',gt:'gt.html',wt:'wt.html',tt:'tt.html'};\n  const page=map[type];\n  return page?'https://saegim-memory.web.app/'+page+'?code='+encodeURIComponent(code)\n             :'https://saegim-memory.web.app/?code='+encodeURIComponent(code);\n}\nwindow.openDetailModal = function(code){\n  const item=allItems.find(function(i){return String(i.code||i.id||'').trim().toUpperCase()===String(code||'').trim().toUpperCase();});\n  if(!item){alert('상세 정보를 찾을 수 없습니다: '+code);return;}\n  document.getElementById('detailTitle').textContent=code+' 상세 정보';\n  const type=String(code).split('-')[0].toUpperCase();\n  const customerUrl='https://saegim-memory.web.app/?code='+encodeURIComponent(code);\n  const directUrl=getDirectPageUrl(code);\n  const qr=safeText(item.qr_file);\n  let h='<div class="detail-actions">';\n  h+='<a class="btn btn-ghost" href="'+customerUrl+'" target="_blank">통합 고객화면</a>';\n  h+='<a class="btn btn-ghost" href="'+directUrl+'" target="_blank">제품 직접화면</a>';\n  if(qr!=='-') h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';\n  h+='<button class="btn btn-ghost" onclick="regenerateQrImage(\''+escHtml(code)+'\')">QR 재생성</button>';
+  return safeText(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+function makeDetailRow(label,val){
+  return '<div class="detail-label">'+escHtml(label)+'</div><div class="detail-value">'+escHtml(val)+'</div>';
+}
+function getDirectPageUrl(code){
+  const type=String(code||'').split('-')[0].toLowerCase();
+  const map={cd:'cd.html',bmt:'bmt.html',gt:'gt.html',wt:'wt.html',tt:'tt.html'};
+  const page=map[type];
+  return page?'https://saegim-memory.web.app/'+page+'?code='+encodeURIComponent(code)
+             :'https://saegim-memory.web.app/?code='+encodeURIComponent(code);
+}
+window.openDetailModal = function(code){
+  const item=allItems.find(function(i){return String(i.code||i.id||'').trim().toUpperCase()===String(code||'').trim().toUpperCase();});
+  if(!item){alert('상세 정보를 찾을 수 없습니다: '+code);return;}
+  document.getElementById('detailTitle').textContent=code+' 상세 정보';
+  const type=String(code).split('-')[0].toUpperCase();
+  const customerUrl='https://saegim-memory.web.app/?code='+encodeURIComponent(code);
+  const directUrl=getDirectPageUrl(code);
+  const qr=safeText(item.qr_file);
+  let h='<div class="detail-actions">';
+  h+='<a class="btn btn-ghost" href="'+customerUrl+'" target="_blank">통합 고객화면</a>';
+  h+='<a class="btn btn-ghost" href="'+directUrl+'" target="_blank">제품 직접화면</a>';
+  if(qr!=='-') h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';
+  h+='<button class="btn btn-ghost" onclick="regenerateQrImage(\''+escHtml(code)+'\')">QR 재생성</button>';
   h+='<button class="btn btn-ghost" onclick="closeModal(\'detailModal\');openStatusModal(\''+escHtml(code)+'\',\''+escHtml(item.status||'')+'\')">상태변경</button>';
   h+='</div>';
   h+='<div class="detail-section-title">기본 정보</div><div class="detail-grid">';
