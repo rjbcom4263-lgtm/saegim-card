@@ -177,7 +177,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
       <div class="page" id="page-inventory">
         <h2>QR 재고</h2>
         <div class="search-bar">
-          <input id="searchCode" placeholder="코드 검색 (예: CD-0024)" oninput="filterTable()">
+          <input id="searchCode" placeholder="코드 검색 (예: CD-0024)" oninput="filterTable()" onkeydown="handleSearchKey(event)">
           <select id="filterStatus" onchange="filterTable()">
             <option value="">전체 상태</option>
             <option>미등록</option>
@@ -212,6 +212,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
         <div class="inventory-toolbar">
           <div id="inventoryCount" class="inventory-count">전체 0개</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="resetInventoryFilters()">필터 초기화</button>
+            <button class="btn btn-ghost" onclick="clearSelection()">선택 해제</button>
             <button class="btn btn-ghost" onclick="refreshInventory()">새로고침</button>
             <button class="btn btn-ghost" onclick="regenerateMissingQrImages()">QR 없음 일괄 재생성</button>
           </div>
@@ -582,6 +584,29 @@ window.refreshInventory = async function() {
   } catch(e) {
     alert('새로고침 실패: ' + e.message);
   }
+};
+
+window.resetInventoryFilters = function() {
+  const searchCode   = document.getElementById('searchCode');
+  const filterStatus = document.getElementById('filterStatus');
+  const filterType   = document.getElementById('filterType');
+  const filterBackup = document.getElementById('filterBackup');
+  const sortType     = document.getElementById('sortType');
+  const bulkStatus   = document.getElementById('bulkStatus');
+  const selectAllBox = document.getElementById('selectAllBox');
+  if (searchCode)   searchCode.value   = '';
+  if (filterStatus) filterStatus.value = '';
+  if (filterType)   filterType.value   = '';
+  if (filterBackup) filterBackup.value = '';
+  if (sortType)     sortType.value     = 'updated_desc';
+  if (bulkStatus)   bulkStatus.value   = '';
+  if (selectAllBox) selectAllBox.checked = false;
+  if (typeof selectedCodes !== 'undefined') selectedCodes.clear();
+  filterTable();
+};
+
+window.handleSearchKey = function(event) {
+  if (event.key === 'Escape') resetInventoryFilters();
 };
 
 window.filterTable = function() {
