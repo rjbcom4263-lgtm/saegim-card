@@ -46,6 +46,7 @@ h2{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:20px}
 .search-bar input{flex:1;min-width:180px}
 #filterType{min-width:190px}
 #sortType{min-width:150px}
+#filterBackup{min-width:150px}
 
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:10px 12px;color:var(--muted);border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
@@ -186,6 +187,13 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <option value="scan_desc">조회수 많은순</option>
             <option value="registered_desc">등록일 최신순</option>
             <option value="status_asc">상태순</option>
+          </select>
+          <select id="filterBackup" onchange="filterTable()">
+            <option value="">전체 백업상태</option>
+            <option value="정상">정상</option>
+            <option value="QR 없음">QR 없음</option>
+            <option value="백업시간 없음">백업시간 없음</option>
+            <option value="점검필요">점검필요</option>
           </select>
         </div>
         <div class="inventory-toolbar">
@@ -534,16 +542,19 @@ window.filterTable = function() {
   const code   = document.getElementById('searchCode').value.trim().toUpperCase();
   const status = document.getElementById('filterStatus').value;
   const type   = document.getElementById('filterType').value;
+  const backup = document.getElementById('filterBackup') ? document.getElementById('filterBackup').value : '';
 
   const filtered = allItems.filter(function(item) {
     const itemCode = String(item.code || item.id || '').toUpperCase();
     const itemType = getItemType(item);
     const owner    = String(item.owner || item.child_name || '').toUpperCase();
     const product  = String(item.product || getProductNameByType(itemType) || '').toUpperCase();
+    const backupStatus = getBackupStatus(item).label;
 
     return (!code   || itemCode.includes(code) || owner.includes(code) || product.includes(code))
         && (!status || item.status === status)
-        && (!type   || itemType === type);
+        && (!type   || itemType === type)
+        && (!backup || backupStatus === backup);
   });
   const sorted = sortInventoryItems(filtered);
   renderTable(sorted);
