@@ -198,7 +198,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
         </div>
         <div class="inventory-toolbar">
           <div id="inventoryCount" class="inventory-count">전체 0개</div>
-          <button class="btn btn-ghost" onclick="refreshInventory()">새로고침</button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="refreshInventory()">새로고침</button>
+            <button class="btn btn-ghost" onclick="regenerateMissingQrImages()">QR 없음 일괄 재생성</button>
+          </div>
         </div>
         <div style="margin-bottom:16px">
           <button class="btn btn-ghost" onclick="normalizeFirestoreCards()">Firestore 데이터 보정</button>
@@ -311,6 +314,7 @@ const auth = getAuth(app);
 const db   = getFirestore(app);
 
 let allItems = [];
+let currentShownItems = [];
 
 // ── 인증 ──────────────────────────────────────────
 window.signInWithGoogle = async function() {
@@ -466,6 +470,7 @@ function getProductLabel(item) {
 }
 
 function renderTable(items) {
+  currentShownItems = items || [];
   const tbody = document.getElementById('inventoryBody');
   if (!items.length) {
     tbody.innerHTML = '<tr><td colspan="8" class="loading-msg">항목 없음</td></tr>';
@@ -824,6 +829,70 @@ window.regenerateQrImage = async function(code) {
     alert('QR 재생성 실패: ' + e.message);
   }
 };
+
+window.regenerateMissingQrImages = async function() {
+  const targets = (currentShownItems || []).filter(function(item) {
+    const label = getBackupStatus(item).label;
+    return label === 'QR 없음' || label === '점검필요';
+  });
+
+  if (!targets.length) {
+    alert('현재 표시 목록에 QR 재생성이 필요한 항목이 없습니다.');
+    return;
+  }
+
+  if (targets.length > 20) {
+    alert('한 번에 최대 20개까지만 재생성하세요.
+현재 대상: ' + targets.length + '개');
+    return;
+  }
+
+  const codes = targets.map(function(item) {
+    return String(item.code || item.id || '').trim().toUpperCase();
+  }).filter(Boolean);
+
+  if (!codes.length) { alert('재생성할 QR 코드가 없습니다.'); return; }
+
+  if (!confirm('현재 표시 목록 중 QR 이미지가 없는 항목 ' + codes.length + '개를 재생성할까요?
+
+' + codes.join(', '))) return;
+
+  const adminKey = getAdminApiKey();
+  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
+
+  let successCount = 0;
+  const failList = [];
+
+  for (let i = 0; i < codes.length; i++) {
+    const code = codes[i];
+    try {
+      const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'regenerateQrImageFromAdmin', admin_key: adminKey, code: code }),
+        redirect: 'follow'
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'QR 재생성 실패');
+      successCount++;
+    } catch(e) {
+      failList.push(code + ': ' + e.message);
+    }
+  }
+
+  await loadInventory();
+  await loadDashboard();
+
+  let msg = 'QR 일괄 재생성 완료
+성공: ' + successCount + '개';
+  if (failList.length) msg += '
+실패: ' + failList.length + '개
+
+' + failList.join('
+');
+  alert(msg);
+};
 </script>
 </body>
 </html>
+
