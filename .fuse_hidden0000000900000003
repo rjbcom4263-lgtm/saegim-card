@@ -1,0 +1,27 @@
+[debug] [2026-06-21T06:35:56.391Z] ----------------------------------------------------------------------
+[debug] [2026-06-21T06:35:56.393Z] Command:       /usr/bin/node /tmp/fb/node_modules/.bin/firebase deploy --only hosting --project saegim-memory
+[debug] [2026-06-21T06:35:56.394Z] CLI Version:   15.22.0
+[debug] [2026-06-21T06:35:56.394Z] Platform:      linux
+[debug] [2026-06-21T06:35:56.394Z] Node Version:  v22.22.3
+[debug] [2026-06-21T06:35:56.394Z] Detected Agent: unknown
+[debug] [2026-06-21T06:35:56.394Z] Time:          Sun Jun 21 2026 06:35:56 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-06-21T06:35:56.394Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-06-21T06:35:56.396Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-06-21T06:35:57.196Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-06-21T06:35:57.219Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 403
+[debug] [2026-06-21T06:35:57.220Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json "Connection blocked by network allowlist"
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-06-21T06:35:57.220Z] Failed to fetch MOTD FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token 'C', "Connection"... is not valid JSON
+[debug] [2026-06-21T06:35:57.223Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/tmp/fb/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/tmp/fb/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/tmp/fb/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/tmp/fb/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/tmp/fb/node_modules/firebase-tools/lib/requireAuth.js:28:19)
+    at async requireAuth (/tmp/fb/node_modules/firebase-tools/lib/requireAuth.js:90:20)
+    at async requirePermissions (/tmp/fb/node_modules/firebase-tools/lib/requirePermissions.js:17:5)
+    at async /tmp/fb/node_modules/firebase-tools/lib/command.js:278:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?

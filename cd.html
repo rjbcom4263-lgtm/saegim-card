@@ -273,6 +273,7 @@ window.checkPassword = async function() {
   try {
     var r = await apiGet('verifyPassword', {code: CODE, password: password});
     if (!r.success) { alert(r.message || '비밀번호가 일치하지 않습니다.'); setLoading(btn, false); return; }
+    if (r.owner_email) QR_DATA.owner_email = r.owner_email;
     renderCdEditForm(password);
   } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
 };
@@ -437,14 +438,24 @@ function maskEmail(email) {
   return masked + '@' + p[1];
 }
 
-window.renderForgotPassword = function renderForgotPassword() {
+window.renderForgotPassword = async function renderForgotPassword() {
+  // 먼저 로딩 화면 표시
+  app.innerHTML = brand() + '<div class="main-title">비밀번호 찾기</div><div class="sub">이메일 확인 중...</div>';
+  // QR_DATA에 이메일이 없으면 API에서 직접 가져옴 (Firestore 독립)
   var regEmail = QR_DATA && QR_DATA.owner_email;
+  if (!regEmail) {
+    try {
+      var hint = await apiGet('getOwnerEmailHint', { code: CODE });
+      if (hint.success && hint.has_email) regEmail = hint.email_masked;
+    } catch(e) {}
+  }
   if (regEmail) {
+    var displayEmail = regEmail.indexOf('***') !== -1 ? regEmail : maskEmail(regEmail);
     app.innerHTML =
       brand() +
       '<div class="main-title">비밀번호 찾기</div>' +
       '<div class="sub" style="margin-bottom:8px">아래 이메일로 비밀번호를 전송합니다.</div>' +
-      '<div style="text-align:center;font-size:18px;font-weight:800;color:var(--gold);margin:16px 0">' + esc(maskEmail(regEmail)) + '</div>' +
+      '<div style="text-align:center;font-size:18px;font-weight:800;color:var(--gold);margin:16px 0">' + esc(displayEmail) + '</div>' +
       '<button class="btn" onclick="sendPasswordReset()">비밀번호 전송</button>' +
       '<button class="btn sub" onclick="renderPassword()">돌아가기</button>';
   } else {
@@ -459,12 +470,15 @@ window.renderForgotPassword = function renderForgotPassword() {
 }
 
 window.sendPasswordReset = async function() {
+  // QR_DATA에 실제 이메일이 있으면 사용, 없으면 사용자 입력 사용
   var email = (QR_DATA && QR_DATA.owner_email) || val('reset_email');
   if (!email) { alert('이메일 주소를 입력해주세요.'); return; }
   var btn = document.querySelector('#app .btn[onclick="sendPasswordReset()"]');
   setLoading(btn, true, '전송 중...');
   try {
-    var r = await apiPost({ action: 'resetPasswordByEmail', code: CODE, email: email });
+    // email이 마스킹된 힌트라면 빈 문자열로 보내 서버가 자동으로 찾도록
+    var sendEmail = (email.indexOf('***') !== -1) ? '' : email;
+    var r = await apiPost({ action: 'resetPasswordByEmail', code: CODE, email: sendEmail });
     if (!r.success) { alert(r.message || '전송 실패'); setLoading(btn, false); return; }
     alert('등록된 이메일로 비밀번호를 보냈습니다.\n메일함을 확인해주세요.');
     renderPassword();

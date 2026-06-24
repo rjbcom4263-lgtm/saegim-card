@@ -1,0 +1,23 @@
+[debug] [2026-06-21T06:35:22.284Z] ----------------------------------------------------------------------
+[debug] [2026-06-21T06:35:22.287Z] Command:       /usr/bin/node /tmp/fb/node_modules/.bin/firebase deploy --only hosting
+[debug] [2026-06-21T06:35:22.287Z] CLI Version:   15.22.0
+[debug] [2026-06-21T06:35:22.287Z] Platform:      linux
+[debug] [2026-06-21T06:35:22.287Z] Node Version:  v22.22.3
+[debug] [2026-06-21T06:35:22.287Z] Detected Agent: unknown
+[debug] [2026-06-21T06:35:22.288Z] Time:          Sun Jun 21 2026 06:35:22 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-06-21T06:35:22.288Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-06-21T06:35:22.290Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[error] 
+[error] Error: There was an error loading firebase.json:
+
+Parse Error in /sessions/elegant-happy-ptolemy/mnt/saegim-card/firebase.json:
+
+Unexpected end of input at 10:12
+      ".git
+           ^
+File: "/sessions/elegant-happy-ptolemy/mnt/saegim-card/firebase.json"
+[debug] [2026-06-21T06:35:23.037Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 403
+[debug] [2026-06-21T06:35:23.038Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json "Connection blocked by network allowlist"
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-06-21T06:35:23.038Z] Failed to fetch MOTD FirebaseError: Unable to parse JSON: SyntaxError: Unexpected token 'C', "Connection"... is not valid JSON

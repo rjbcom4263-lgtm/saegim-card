@@ -34,6 +34,9 @@ function handleApi_(params) {
       case 'resetPasswordByEmail':
         result = resetPasswordByEmail(params.code, params.email);
         break;
+      case 'getOwnerEmailHint':
+        result = getOwnerEmailHint(params.code);
+        break;
       case 'changePassword':
         result = changePassword(params.code, params.password, params.new_password);
         break;
@@ -353,7 +356,7 @@ function verifyPassword(code, password) {
     const adminPw = String(data.admin_password || '').trim();
 
     if (!input) return { success: false, message: '비밀번호를 입력해주세요.' };
-    if (input === customerPw || input === adminPw) return { success: true };
+    if (input === customerPw || input === adminPw) return { success: true, owner_email: String(data.owner_email || '').trim() };
     return { success: false, message: '비밀번호가 일치하지 않습니다.' };
   } catch (err) {
     return { success: false, message: String(err) };
@@ -383,16 +386,33 @@ function changePassword(code, currentPassword, newPassword) {
   }
 }
 
+function getOwnerEmailHint(code) {
+  try {
+    if (!code) return { success: false };
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false };
+    const data = getRowObject_(row);
+    const email = String(data.owner_email || '').trim();
+    if (!email) return { success: true, has_email: false };
+    const p = email.split('@');
+    const local = p[0];
+    const masked = local.length > 2 ? local[0] + '***' + local[local.length-1] : local[0] + '***';
+    return { success: true, has_email: true, email_masked: masked + '@' + p[1] };
+  } catch (err) {
+    return { success: false };
+  }
+}
+
 function resetPasswordByEmail(code, email) {
   try {
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
-    if (!email) return { success: false, message: '이메일을 입력해주세요.' };
     const row = findQrRow_(code);
     if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
     const data = getRowObject_(row);
     const registered = String(data.owner_email || '').trim().toLowerCase();
     if (!registered) return { success: false, message: '등록된 이메일이 없습니다.\n정보 수정 화면에서 이메일을 먼저 등록해주세요.' };
-    if (registered !== String(email || '').trim().toLowerCase()) {
+    // email이 빈 문자열이면 등록된 이메일로 직접 전송 (마스킹 힌트 표시 후 전송 경우)
+    if (email && String(email).trim() && registered !== String(email || '').trim().toLowerCase()) {
       return { success: false, message: '등록된 이메일과 일치하지 않습니다.' };
     }
     const pw = String(data.password || '').trim();
