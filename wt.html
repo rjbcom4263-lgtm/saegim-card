@@ -581,7 +581,7 @@ function renderWishTag(data){
   applyBg();
   const pal=getPal();
   applyFormVars(pal);
-  const sentence=wtDailySentence(data||WT_DATA);
+  const sentence=wtRandomSentence();
   const ui=getUI();
   const meta=wtMetaText(data||WT_DATA);
   const tm=themeMeta();
