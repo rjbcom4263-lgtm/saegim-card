@@ -616,6 +616,7 @@ const FIRESTORE_PUBLIC_FIELDS = [
   'lost_message_ko', 'lost_message_en', 'lost_message_ja', 'lost_message_zh',
   'gt_garden_name', 'gt_growth_point', 'gt_stage', 'gt_slots', 'gt_inventory',
   'wt_birth_date', 'wt_theme', 'wt_last_message_id', 'wt_lang',
+  'owner_email',
   'gm_default_area', 'gm_enabled_categories',
   'firestore_backup_at'
 ];
