@@ -345,7 +345,7 @@ function linkEditBox(l, i, total) {
     '<label>버튼 이름</label>' +
     '<input id="link' + i + '_label" value="' + esc(l.label || '') + '">' +
     '<label>연결 주소</label>' +
-    '<input id="link' + i + '_url" value="' + esc(String(l.url || '').replace(/^tel:/, '')) + '">' +
+    '<input id="link' + i + '_url" value="' + esc(fixPhone(String(l.url || '').replace(/^tel:/, ''))) + '">' +
     (total > 1 ? '<button class="btn sub" onclick="removeLinkItem(' + i + ')">항목 제거</button>' : '') +
     '</div>';
 }
