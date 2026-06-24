@@ -428,18 +428,38 @@ window.togglePw = function(id) {
   el.type = el.type === 'password' ? 'text' : 'password';
 };
 
+function maskEmail(email) {
+  if (!email) return '';
+  var p = email.split('@');
+  if (p.length !== 2) return '***';
+  var local = p[0];
+  var masked = local.length > 2 ? local[0] + '***' + local[local.length-1] : local[0] + '***';
+  return masked + '@' + p[1];
+}
+
 window.renderForgotPassword = function renderForgotPassword() {
-  app.innerHTML =
-    brand() +
-    '<div class="main-title">비밀번호 찾기</div>' +
-    '<div class="sub">등록하신 이메일로 비밀번호를 보내드립니다.</div>' +
-    '<input id="reset_email" type="email" placeholder="등록 이메일 주소">' +
-    '<button class="btn" onclick="sendPasswordReset()">비밀번호 전송</button>' +
-    '<button class="btn sub" onclick="renderPassword()">돌아가기</button>';
+  var regEmail = QR_DATA && QR_DATA.owner_email;
+  if (regEmail) {
+    app.innerHTML =
+      brand() +
+      '<div class="main-title">비밀번호 찾기</div>' +
+      '<div class="sub" style="margin-bottom:8px">아래 이메일로 비밀번호를 전송합니다.</div>' +
+      '<div style="text-align:center;font-size:18px;font-weight:800;color:var(--gold);margin:16px 0">' + esc(maskEmail(regEmail)) + '</div>' +
+      '<button class="btn" onclick="sendPasswordReset()">비밀번호 전송</button>' +
+      '<button class="btn sub" onclick="renderPassword()">돌아가기</button>';
+  } else {
+    app.innerHTML =
+      brand() +
+      '<div class="main-title">비밀번호 찾기</div>' +
+      '<div class="sub">등록하신 이메일로 비밀번호를 보내드립니다.</div>' +
+      '<input id="reset_email" type="email" placeholder="등록 이메일 주소">' +
+      '<button class="btn" onclick="sendPasswordReset()">비밀번호 전송</button>' +
+      '<button class="btn sub" onclick="renderPassword()">돌아가기</button>';
+  }
 }
 
 window.sendPasswordReset = async function() {
-  var email = val('reset_email');
+  var email = (QR_DATA && QR_DATA.owner_email) || val('reset_email');
   if (!email) { alert('이메일 주소를 입력해주세요.'); return; }
   var btn = document.querySelector('#app .btn[onclick="sendPasswordReset()"]');
   setLoading(btn, true, '전송 중...');
