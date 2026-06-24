@@ -31,6 +31,9 @@ function handleApi_(params) {
       case 'verifyPassword':
         result = verifyPassword(params.code, params.password);
         break;
+      case 'changePassword':
+        result = changePassword(params.code, params.password, params.new_password);
+        break;
       case 'changeStatus':
         result = changeStatus(params.code, params.password, params.status);
         break;
@@ -349,6 +352,29 @@ function verifyPassword(code, password) {
     if (!input) return { success: false, message: '비밀번호를 입력해주세요.' };
     if (input === customerPw || input === adminPw) return { success: true };
     return { success: false, message: '비밀번호가 일치하지 않습니다.' };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+function changePassword(code, currentPassword, newPassword) {
+  try {
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+
+    const pwCheck = verifyPassword(code, currentPassword);
+    if (!pwCheck.success) return { success: false, message: '현재 비밀번호가 일치하지 않습니다.' };
+
+    const newPw = String(newPassword || '').trim();
+    if (!newPw || newPw.length < 4) return { success: false, message: '새 비밀번호는 4자 이상이어야 합니다.' };
+
+    const sheet = getSheet_();
+    const headers = getHeaderMap_();
+    setByHeader_(sheet, headers, row, 'password', newPw);
+    setByHeader_(sheet, headers, row, 'updated_at', nowText_());
+
+    backupCustomerQrToFirestoreV1_(code);
+    return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };
   }

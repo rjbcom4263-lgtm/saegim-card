@@ -50,7 +50,7 @@ const FIREBASE_CONFIG = {
 const API_URL = 'https://script.google.com/macros/s/AKfycbz-upNw2e2XG7ZZDXa7KFuAXiQ7BXsLVnDrXVsg4qTOPUzuGSawCFoT4srdbQj1kDhooA/exec';
 
 const params = new URLSearchParams(location.search);
-const CODE   = params.get('code') || 'CD-0001';
+const CODE   = (params.get('code') || '').trim().toUpperCase();
 const MODE   = params.get('mode') || 'view';
 let QR_DATA  = null;
 const app    = document.getElementById('app');
@@ -77,6 +77,10 @@ async function apiPost(payload) {
 
 // ── Firestore 직접 조회 ────────────────────────────────────
 async function loadData() {
+  if (!CODE) {
+    renderError('QR 코드 정보가 없습니다.\n올바른 QR을 스캔해주세요.');
+    return;
+  }
   try {
     const snap = await getDoc(doc(db, 'qr_cards', CODE));
 
@@ -136,14 +140,35 @@ function thanks() {
 function editBtn() {
   return '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '&mode=edit">정보 수정하기</a>';
 }
+function sanitizeLink(type, url) {
+  if (!url) return '';
+  var u = String(url).trim();
+  // javascript: 차단
+  if (/^javascript:/i.test(u)) return '';
+  if (type === '전화') {
+    var digits = u.replace(/[^0-9+]/g, '');
+    return digits ? 'tel:' + digits : '';
+  }
+  if (type === '이메일') {
+    return u.startsWith('mailto:') ? u : 'mailto:' + u;
+  }
+  // 웹 링크: http(s) 없으면 자동 추가
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
+}
 function renderLinkButtons(links) {
   if (!links || !links.length) return '<div class="sub">등록된 연결 항목이 없습니다.</div>';
-  return links.map(function(l) {
+  var btns = links.map(function(l) {
     if (!l || !l.url) return '';
-    var href = l.url;
-    if (l.type === '전화' && !href.startsWith('tel:')) href = 'tel:' + href.replace(/[^0-9+]/g, '');
-    return '<a class="call-btn" href="' + esc(href) + '">' + esc(l.label || l.type || '연락하기') + '</a>';
+    var href = sanitizeLink(l.type, l.url);
+    if (!href) return '';
+    var isPhone  = l.type === '전화';
+    var isEmail  = l.type === '이메일';
+    var target   = (isPhone || isEmail) ? '' : ' target="_blank" rel="noopener noreferrer"';
+    return '<a class="call-btn" href="' + esc(href) + '"' + target + '>' +
+      esc(l.label || l.type || '연락하기') + '</a>';
   }).join('');
+  return btns || '<div class="sub">등록된 연결 항목이 없습니다.</div>';
 }
 
 // ── 라우팅 ─────────────────────────────────────────────────
@@ -234,9 +259,13 @@ function renderPassword() {
 window.checkPassword = async function() {
   var password = document.getElementById('pw').value.trim();
   if (!password) { alert('비밀번호를 입력해주세요.'); return; }
-  var r = await apiGet('verifyPassword', {code: CODE, password: password});
-  if (!r.success) { alert(r.message || '비밀번호가 일치하지 않습니다.'); return; }
-  renderCdEditForm(password);
+  var btn = document.querySelector('#app .btn');
+  setLoading(btn, true, '확인 중...');
+  try {
+    var r = await apiGet('verifyPassword', {code: CODE, password: password});
+    if (!r.success) { alert(r.message || '비밀번호가 일치하지 않습니다.'); setLoading(btn, false); return; }
+    renderCdEditForm(password);
+  } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
 };
 
 function renderCdEditForm(password) {
@@ -260,8 +289,28 @@ function renderCdEditForm(password) {
     '<div class="section-title">연결 항목</div>' +
     '<div id="linksEdit">' + editLinks(d.links || []) + '</div>' +
     '<button class="btn" onclick="saveEdit()">저장하기</button>' +
-    '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">취소</a>';
+    '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">취소</a>' +
+    '<div class="section-title" style="margin-top:28px">비밀번호 변경</div>' +
+    '<input id="new_pw1" type="password" placeholder="새 비밀번호 (4자 이상)">' +
+    '<input id="new_pw2" type="password" placeholder="새 비밀번호 확인" style="margin-top:0">' +
+    '<button class="btn sub" onclick="changePassword()" style="margin-top:8px">비밀번호 변경</button>';
 }
+
+window.changePassword = async function() {
+  var pw1 = (document.getElementById('new_pw1') || {}).value || '';
+  var pw2 = (document.getElementById('new_pw2') || {}).value || '';
+  if (!pw1 || pw1.length < 4) { alert('새 비밀번호를 4자 이상 입력해주세요.'); return; }
+  if (pw1 !== pw2) { alert('비밀번호가 일치하지 않습니다.'); return; }
+  var currentPw = val('password');
+  var btn = document.querySelector('#app .btn.sub[onclick="changePassword()"]');
+  setLoading(btn, true, '변경 중...');
+  try {
+    var r = await apiPost({ action: 'changePassword', code: CODE, password: currentPw, new_password: pw1 });
+    if (!r.success) { alert(r.message || '변경 실패'); setLoading(btn, false); return; }
+    alert('비밀번호가 변경되었습니다.');
+    location.href = '?code=' + encodeURIComponent(CODE);
+  } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
+};
 
 // ── 연결 항목 편집 ─────────────────────────────────────────
 var LINK_TYPES = ['전화','카카오','인스타그램','이메일','홈페이지','지도','왓츠앱','라인','텔레그램','기타'];
@@ -294,7 +343,7 @@ function collectLinksRaw() {
   });
 }
 function collectLinks() {
-  return collectLinksRaw().filter(function(l) { return l.url; }).map(function(l) {
+  return collectLinksRaw().filter(function(l) { return l.url && !/^javascript:/i.test(l.url); }).map(function(l) {
     if (l.type === '지도' && !l.url.startsWith('http'))
       return Object.assign({}, l, {label: l.label || l.url, url: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.url)});
     return l;
@@ -315,9 +364,11 @@ window.removeLinkItem = function(index) {
 
 // ── 등록 & 저장 ────────────────────────────────────────────
 window.registerFirst = async function() {
+  var pw = val('new_password');
+  if (!pw || pw.length < 4) { alert('비밀번호를 4자 이상 입력해주세요.'); return; }
+  var btn = document.querySelector('#app .btn[onclick="registerFirst()"]');
+  setLoading(btn, true, '등록 중...');
   try {
-    var pw = val('new_password');
-    if (!pw || pw.length < 4) { alert('비밀번호를 4자 이상 입력해주세요.'); return; }
     var links = collectLinks();
     var form = {
       action: 'registerSoldQr', code: CODE, password: pw,
@@ -328,29 +379,46 @@ window.registerFirst = async function() {
       child_message: val('child_message')
     };
     var r = await apiPost(form);
-    if (!r.success) { alert(r.message || '등록 실패'); return; }
+    if (!r.success) { alert(r.message || '등록 실패'); setLoading(btn, false); return; }
     alert('등록이 완료되었습니다!');
     location.href = '?code=' + encodeURIComponent(CODE);
-  } catch(e) { alert('오류: ' + e.message); }
+  } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
 };
 
 window.saveEdit = async function() {
-  var links = collectLinks();
-  var form = {
-    action: 'updateCustomerData', code: CODE, password: val('password'),
-    owner: val('owner'), links: JSON.stringify(links),
-    child_name: val('child_name'), guardian_name: val('guardian_name'),
-    guardian_phone: val('guardian_phone'), child_note: val('child_note'),
-    child_allergy: val('child_allergy'), blood_type: val('blood_type'),
-    child_message: val('child_message')
-  };
-  var r = await apiPost(form);
-  if (!r.success) { alert(r.message || '저장 실패'); return; }
-  alert('저장되었습니다.');
-  location.href = '?code=' + encodeURIComponent(CODE);
+  var btn = document.querySelector('#app .btn[onclick="saveEdit()"]');
+  setLoading(btn, true, '저장 중...');
+  try {
+    var links = collectLinks();
+    var form = {
+      action: 'updateCustomerData', code: CODE, password: val('password'),
+      owner: val('owner'), links: JSON.stringify(links),
+      child_name: val('child_name'), guardian_name: val('guardian_name'),
+      guardian_phone: val('guardian_phone'), child_note: val('child_note'),
+      child_allergy: val('child_allergy'), blood_type: val('blood_type'),
+      child_message: val('child_message')
+    };
+    var r = await apiPost(form);
+    if (!r.success) { alert(r.message || '저장 실패'); setLoading(btn, false); return; }
+    alert('저장되었습니다.');
+    location.href = '?code=' + encodeURIComponent(CODE);
+  } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
 };
 
 // ── 유틸 ───────────────────────────────────────────────────
+function setLoading(btnEl, loading, loadingText) {
+  if (!btnEl) return;
+  if (loading) {
+    btnEl.disabled = true;
+    btnEl._origText = btnEl.textContent;
+    btnEl.textContent = loadingText || '처리 중...';
+    btnEl.style.opacity = '0.6';
+  } else {
+    btnEl.disabled = false;
+    btnEl.textContent = btnEl._origText || btnEl.textContent;
+    btnEl.style.opacity = '';
+  }
+}
 function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
 function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 function renderError(msg) { app.innerHTML = '<div class="error">' + esc(msg) + '</div>'; }
