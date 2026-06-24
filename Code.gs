@@ -111,13 +111,26 @@ function findQrRow_(code) {
   return -1;
 }
 
+// 한국 전화번호처럼 앞자리 0이 필요한 필드 목록
+const PHONE_FIELDS_ = ['guardian_phone', 'link1_url', 'link2_url', 'link3_url', 'link4_url', 'link5_url'];
+
+function fixPhone_(key, val) {
+  if (!PHONE_FIELDS_.includes(key)) return val;
+  const s = String(val ?? '');
+  // 순수 숫자 9~10자리면 앞에 0 붙이기 (010으로 시작해야 할 번호)
+  if (/^\d{9,10}$/.test(s)) return '0' + s;
+  return s;
+}
+
 function getRowObject_(row) {
   const sheet = getSheet_();
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
   const obj = {};
   headers.forEach((key, i) => {
-    if (key) obj[String(key).trim()] = values[i];
+    if (!key) return;
+    const k = String(key).trim();
+    obj[k] = fixPhone_(k, values[i]);
   });
   return obj;
 }
