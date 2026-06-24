@@ -506,7 +506,7 @@ function saveCustomerFields_(sheet, headers, row, form) {
   setByHeader_(sheet, headers, row, 'child_photo', form.child_photo || '');
   setByHeader_(sheet, headers, row, 'child_name', form.child_name || '');
   setByHeader_(sheet, headers, row, 'guardian_name', form.guardian_name || '');
-  setByHeader_(sheet, headers, row, 'guardian_phone', form.guardian_phone || '');
+  setPhoneByHeader_(sheet, headers, row, 'guardian_phone', form.guardian_phone || '');
   setByHeader_(sheet, headers, row, 'child_allergy', form.child_allergy || '');
   setByHeader_(sheet, headers, row, 'blood_type', form.blood_type || '');
   setByHeader_(sheet, headers, row, 'child_note', form.child_note || '');
@@ -550,7 +550,7 @@ function saveLinks_(sheet, headers, row, links) {
     const link = parsed[i - 1] || {};
     setByHeader_(sheet, headers, row, 'link' + i + '_type', link.type || '');
     setByHeader_(sheet, headers, row, 'link' + i + '_label', link.label || '');
-    setByHeader_(sheet, headers, row, 'link' + i + '_url', link.url || '');
+    setPhoneByHeader_(sheet, headers, row, 'link' + i + '_url', link.url || '');
   }
 }
 
@@ -574,6 +574,14 @@ function parseLinks_(links) {
 function setByHeader_(sheet, headers, row, key, value) {
   if (!headers[key]) return;
   sheet.getRange(row, headers[key]).setValue(value);
+}
+
+// 전화번호처럼 앞자리 0이 있는 값은 텍스트 형식으로 강제 저장
+function setPhoneByHeader_(sheet, headers, row, key, value) {
+  if (!headers[key]) return;
+  const cell = sheet.getRange(row, headers[key]);
+  cell.setNumberFormat('@STRING@');
+  cell.setValue(String(value || ''));
 }
 
 function setIfProvided_(sheet, headers, row, key, form) {
