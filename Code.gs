@@ -579,9 +579,11 @@ function setByHeader_(sheet, headers, row, key, value) {
 // 전화번호처럼 앞자리 0이 있는 값은 텍스트 형식으로 강제 저장
 function setPhoneByHeader_(sheet, headers, row, key, value) {
   if (!headers[key]) return;
-  const cell = sheet.getRange(row, headers[key]);
-  cell.setNumberFormat('@');
-  cell.setValue(String(value || ''));
+  const col = headers[key];
+  // 컬럼 전체를 텍스트 형식으로 먼저 설정하고 flush로 반영 강제
+  sheet.getRange(1, col, Math.max(sheet.getLastRow(), row), 1).setNumberFormat('@');
+  SpreadsheetApp.flush();
+  sheet.getRange(row, col).setValue(String(value || ''));
 }
 
 function setIfProvided_(sheet, headers, row, key, form) {
