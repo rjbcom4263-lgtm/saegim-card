@@ -620,9 +620,9 @@ function renderWishTag(data){
 
     // 원형 + 문장
     '<div style="position:relative;flex:1;display:flex;align-items:center;justify-content:center;margin:8px 0">'+
-      '<div style="position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%)"></div>'+
-      '<div style="position:absolute;top:50%;left:50%;width:430px;height:430px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%);opacity:.6"></div>'+
-      '<div style="position:absolute;top:50%;left:50%;width:310px;height:310px;border-radius:50%;background:'+pal.wash+';animation:saegim-breathe 7s ease-in-out infinite"></div>'+
+      '<div style="position:absolute;top:50%;left:50%;width:300px;height:300px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%);pointer-events:none"></div>'+
+      '<div style="position:absolute;top:50%;left:50%;width:430px;height:430px;border-radius:50%;border:1px solid '+pal.ring+';transform:translate(-50%,-50%);opacity:.6;pointer-events:none"></div>'+
+      '<div style="position:absolute;top:50%;left:50%;width:310px;height:310px;border-radius:50%;background:'+pal.wash+';animation:saegim-breathe 7s ease-in-out infinite;pointer-events:none"></div>'+
       '<div id="wtSentence" style="position:relative;z-index:1;text-align:center;font-size:22px;line-height:2.05;font-weight:400;color:'+pal.text+';letter-spacing:.01em;white-space:pre-line;padding:0 6px;transition:opacity .35s ease">'+
         esc(sentence)+
       '</div>'+
