@@ -152,6 +152,8 @@ function sanitizeLink(type, url) {
   if (/^javascript:/i.test(u)) return '';
   if (type === '전화') {
     var digits = u.replace(/[^0-9+]/g, '');
+    // 한국 번호: 9~10자리면 앞에 0 추가 (Sheets 숫자 변환 보정)
+    if (/^\d{9,10}$/.test(digits)) digits = '0' + digits;
     return digits ? 'tel:' + digits : '';
   }
   if (type === '이메일') {
@@ -287,7 +289,7 @@ function renderCdEditForm(password) {
     '<div class="section-title">기본 정보</div>' +
     '<label>표시 이름</label><input id="owner" value="' + esc(d.owner || '') + '">' +
     '<label>이름</label><input id="child_name" value="' + esc(d.child_name || '') + '">' +
-    '<label>보호자 연락처</label><input id="guardian_phone" value="' + esc(d.guardian_phone || '') + '">' +
+    '<label>보호자 연락처</label><input id="guardian_phone" value="' + esc(fixPhone(String(d.guardian_phone || ''))) + '">' +
     '<label>알레르기·질환</label><textarea id="child_allergy" placeholder="예)&#10;땅콩 알레르기&#10;간질&#10;자폐 스펙트럼&#10;천식">' + esc(d.child_allergy || '') + '</textarea>' +
     '<label>혈액형</label><select id="blood_type">' +
       '<option value="">선택</option>' +
@@ -484,6 +486,11 @@ window.sendPasswordReset = async function() {
     renderPassword();
   } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
 };
+
+function fixPhone(s) {
+  // 9~10자리 숫자면 앞에 0 추가 (Sheets 숫자 변환 보정)
+  return /^\d{9,10}$/.test(s) ? '0' + s : s;
+}
 
 function setLoading(btnEl, loading, loadingText) {
   if (!btnEl) return;
