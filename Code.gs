@@ -580,7 +580,7 @@ function setByHeader_(sheet, headers, row, key, value) {
 function setPhoneByHeader_(sheet, headers, row, key, value) {
   if (!headers[key]) return;
   const cell = sheet.getRange(row, headers[key]);
-  cell.setNumberFormat('@STRING@');
+  cell.setNumberFormat('@');
   cell.setValue(String(value || ''));
 }
 
