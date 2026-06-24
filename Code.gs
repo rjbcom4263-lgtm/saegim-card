@@ -31,6 +31,9 @@ function handleApi_(params) {
       case 'verifyPassword':
         result = verifyPassword(params.code, params.password);
         break;
+      case 'resetPasswordByEmail':
+        result = resetPasswordByEmail(params.code, params.email);
+        break;
       case 'changePassword':
         result = changePassword(params.code, params.password, params.new_password);
         break;
@@ -374,6 +377,29 @@ function changePassword(code, currentPassword, newPassword) {
     setByHeader_(sheet, headers, row, 'updated_at', nowText_());
 
     backupCustomerQrToFirestoreV1_(code);
+    return { success: true };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+function resetPasswordByEmail(code, email) {
+  try {
+    if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
+    if (!email) return { success: false, message: '이메일을 입력해주세요.' };
+    const row = findQrRow_(code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+    const data = getRowObject_(row);
+    const registered = String(data.owner_email || '').trim().toLowerCase();
+    if (!registered) return { success: false, message: '등록된 이메일이 없습니다.\n정보 수정 화면에서 이메일을 먼저 등록해주세요.' };
+    if (registered !== String(email || '').trim().toLowerCase()) {
+      return { success: false, message: '등록된 이메일과 일치하지 않습니다.' };
+    }
+    const pw = String(data.password || '').trim();
+    if (!pw) return { success: false, message: '비밀번호 정보가 없습니다. 관리자에게 문의하세요.' };
+    const subject = '[새김] ' + code + ' 비밀번호 안내';
+    const body = '새김 안심태그 비밀번호 안내입니다.\n\n태그번호: ' + code + '\n비밀번호: ' + pw + '\n\n보안을 위해 확인 후 비밀번호를 변경해주세요.';
+    MailApp.sendEmail({ to: registered, subject: subject, body: body });
     return { success: true };
   } catch (err) {
     return { success: false, message: String(err) };

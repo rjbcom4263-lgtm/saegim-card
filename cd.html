@@ -28,6 +28,11 @@ textarea{min-height:86px;resize:vertical}label{display:block;color:var(--gold);f
 .lang-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
 .lang-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--line);background:#111;color:var(--muted);font-size:13px;cursor:pointer}
 .lang-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{padding-right:50px}
+.pw-eye{position:absolute;right:0;top:0;bottom:0;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:0 14px;width:auto;display:flex;align-items:center}
+.pw-eye:hover{color:var(--gold)}
+.btn-link{background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;text-decoration:underline;padding:4px 0}
 </style>
 </head>
 <body>
@@ -241,7 +246,10 @@ function renderRegister(data) {
     '<textarea id="child_message" class="input" placeholder="안녕하세요.&#10;보호 중인 아이입니다.&#10;QR을 스캔해 주셔서 감사합니다.&#10;아래 연락처로 연락 부탁드립니다.">' + esc(d.child_message || '') + '</textarea>' +
     '<div id="linksEdit">' + editLinks([{type:'전화',label:'',url:''}]) + '</div>' +
     '<hr>' +
-    '<input id="new_password" class="input" type="password" placeholder="사용할 비밀번호 설정 (4자 이상)">' +
+    '<label>비밀번호 찾기용 이메일 <span style="color:var(--muted);font-weight:400">(선택 · 분실 시 사용)</span></label>' +
+    '<input id="owner_email" type="email" placeholder="이메일 주소">' +
+    '<label>비밀번호 설정</label>' +
+    '<div class="pw-wrap"><input id="new_password" type="password" placeholder="비밀번호 (4자 이상)"><button type="button" class="pw-eye" onclick="togglePw(\'new_password\')">👁</button></div>' +
     '<button class="btn" onclick="registerFirst()">등록 완료</button>';
 }
 
@@ -251,8 +259,9 @@ function renderPassword() {
     brand() +
     '<div class="main-title">정보 수정하기</div>' +
     '<div class="sub">등록된 비밀번호를 입력해주세요.</div>' +
-    '<input id="pw" type="password" placeholder="비밀번호">' +
+    '<div class="pw-wrap"><input id="pw" type="password" placeholder="비밀번호"><button type="button" class="pw-eye" onclick="togglePw(\'pw\')">👁</button></div>' +
     '<button class="btn" onclick="checkPassword()">확인</button>' +
+    '<div style="text-align:center;margin-top:8px"><button type="button" class="btn-link" onclick="renderForgotPassword()">비밀번호를 잊으셨나요?</button></div>' +
     '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">돌아가기</a>';
 }
 
@@ -286,13 +295,14 @@ function renderCdEditForm(password) {
     '<label>특이사항</label><textarea id="child_note" placeholder="예)&#10;말을 잘 하지 못함&#10;큰 소리에 민감함&#10;낯선 사람을 무서워함">' + esc(d.child_note || '') + '</textarea>' +
     '<label>보호자</label><input id="guardian_name" value="' + esc(d.guardian_name || '') + '">' +
     '<label>안내 메시지</label><textarea id="child_message" placeholder="안녕하세요.&#10;보호 중인 아이입니다.">' + esc(d.child_message || '') + '</textarea>' +
+    '<label>비밀번호 찾기용 이메일</label><input id="owner_email" type="email" placeholder="이메일 주소" value="' + esc(d.owner_email || '') + '">' +
     '<div class="section-title">연결 항목</div>' +
     '<div id="linksEdit">' + editLinks(d.links || []) + '</div>' +
     '<button class="btn" onclick="saveEdit()">저장하기</button>' +
     '<a class="btn sub" href="?code=' + encodeURIComponent(CODE) + '">취소</a>' +
     '<div class="section-title" style="margin-top:28px">비밀번호 변경</div>' +
-    '<input id="new_pw1" type="password" placeholder="새 비밀번호 (4자 이상)">' +
-    '<input id="new_pw2" type="password" placeholder="새 비밀번호 확인" style="margin-top:0">' +
+    '<div class="pw-wrap"><input id="new_pw1" type="password" placeholder="새 비밀번호 (4자 이상)"><button type="button" class="pw-eye" onclick="togglePw(\'new_pw1\')">👁</button></div>' +
+    '<div class="pw-wrap"><input id="new_pw2" type="password" placeholder="새 비밀번호 확인"><button type="button" class="pw-eye" onclick="togglePw(\'new_pw2\')">👁</button></div>' +
     '<button class="btn sub" onclick="changePassword()" style="margin-top:8px">비밀번호 변경</button>';
 }
 
@@ -364,19 +374,25 @@ window.removeLinkItem = function(index) {
 
 // ── 등록 & 저장 ────────────────────────────────────────────
 window.registerFirst = async function() {
+  if (!val('child_name')) { alert('아이 이름을 입력해주세요.'); return; }
   var pw = val('new_password');
   if (!pw || pw.length < 4) { alert('비밀번호를 4자 이상 입력해주세요.'); return; }
   var btn = document.querySelector('#app .btn[onclick="registerFirst()"]');
   setLoading(btn, true, '등록 중...');
   try {
     var links = collectLinks();
+    var phone = val('guardian_phone');
+    if (!links.length && phone) {
+      links = [{ type: '전화', label: '보호자에게 전화', url: phone }];
+    }
+    if (!links.length) { setLoading(btn, false); alert('연락처 링크를 하나 이상 입력해주세요.'); return; }
     var form = {
       action: 'registerSoldQr', code: CODE, password: pw,
       owner: val('owner'), links: JSON.stringify(links),
       child_name: val('child_name'), guardian_name: val('guardian_name'),
       guardian_phone: val('guardian_phone'), child_note: val('child_note'),
       child_allergy: val('child_allergy'), blood_type: val('blood_type'),
-      child_message: val('child_message')
+      child_message: val('child_message'), owner_email: val('owner_email')
     };
     var r = await apiPost(form);
     if (!r.success) { alert(r.message || '등록 실패'); setLoading(btn, false); return; }
@@ -396,7 +412,7 @@ window.saveEdit = async function() {
       child_name: val('child_name'), guardian_name: val('guardian_name'),
       guardian_phone: val('guardian_phone'), child_note: val('child_note'),
       child_allergy: val('child_allergy'), blood_type: val('blood_type'),
-      child_message: val('child_message')
+      child_message: val('child_message'), owner_email: val('owner_email')
     };
     var r = await apiPost(form);
     if (!r.success) { alert(r.message || '저장 실패'); setLoading(btn, false); return; }
@@ -406,6 +422,35 @@ window.saveEdit = async function() {
 };
 
 // ── 유틸 ───────────────────────────────────────────────────
+window.togglePw = function(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+};
+
+function renderForgotPassword() {
+  app.innerHTML =
+    brand() +
+    '<div class="main-title">비밀번호 찾기</div>' +
+    '<div class="sub">등록하신 이메일로 비밀번호를 보내드립니다.</div>' +
+    '<input id="reset_email" type="email" placeholder="등록 이메일 주소">' +
+    '<button class="btn" onclick="sendPasswordReset()">비밀번호 전송</button>' +
+    '<button class="btn sub" onclick="renderPassword()">돌아가기</button>';
+}
+
+window.sendPasswordReset = async function() {
+  var email = val('reset_email');
+  if (!email) { alert('이메일 주소를 입력해주세요.'); return; }
+  var btn = document.querySelector('#app .btn[onclick="sendPasswordReset()"]');
+  setLoading(btn, true, '전송 중...');
+  try {
+    var r = await apiPost({ action: 'resetPasswordByEmail', code: CODE, email: email });
+    if (!r.success) { alert(r.message || '전송 실패'); setLoading(btn, false); return; }
+    alert('등록된 이메일로 비밀번호를 보냈습니다.\n메일함을 확인해주세요.');
+    renderPassword();
+  } catch(e) { alert('오류: ' + e.message); setLoading(btn, false); }
+};
+
 function setLoading(btnEl, loading, loadingText) {
   if (!btnEl) return;
   if (loading) {
