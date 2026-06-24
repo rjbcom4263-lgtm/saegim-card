@@ -254,7 +254,7 @@ function renderRegister(data) {
 }
 
 // ── 비밀번호 확인 & 수정 ───────────────────────────────────
-function renderPassword() {
+window.renderPassword = function renderPassword() {
   app.innerHTML =
     brand() +
     '<div class="main-title">정보 수정하기</div>' +
@@ -428,7 +428,7 @@ window.togglePw = function(id) {
   el.type = el.type === 'password' ? 'text' : 'password';
 };
 
-function renderForgotPassword() {
+window.renderForgotPassword = function renderForgotPassword() {
   app.innerHTML =
     brand() +
     '<div class="main-title">비밀번호 찾기</div>' +
