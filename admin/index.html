@@ -107,6 +107,15 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .collapsible-card.collapsed #productStatsContent{display:none}
 .collapsible-card.collapsed{padding-bottom:18px}
 @media(max-width:720px){.collapsible-head{align-items:flex-start}}
+
+.quick-edit-box{margin-top:18px;padding:16px;border:1px solid rgba(122,96,64,.55);border-radius:16px;background:rgba(255,255,255,.025)}
+.quick-edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.quick-field-wrap label{display:block;margin-bottom:6px;color:var(--gold);font-size:12px;font-weight:700}
+.quick-field,.quick-textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:#0d0d0d;color:var(--text);padding:10px 12px;font-size:13px;outline:none}
+.quick-textarea{min-height:74px;resize:vertical}
+.quick-field:focus,.quick-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(230,200,143,.12)}
+.quick-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+@media(max-width:720px){.quick-edit-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -212,6 +221,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
         <div class="inventory-toolbar">
           <div id="inventoryCount" class="inventory-count">전체 0개</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost" onclick="checkAdminFeatureReady()">기능 점검</button>
             <button class="btn btn-ghost" onclick="resetInventoryFilters()">필터 초기화</button>
             <button class="btn btn-ghost" onclick="clearSelection()">선택 해제</button>
             <button class="btn btn-ghost" onclick="refreshInventory()">새로고침</button>
@@ -687,7 +697,11 @@ window.openDetailModal = function(code){
   let h='<div class="detail-actions">';
   h+='<a class="btn btn-ghost" href="'+customerUrl+'" target="_blank">통합 고객화면</a>';
   h+='<a class="btn btn-ghost" href="'+directUrl+'" target="_blank">제품 직접화면</a>';
-  if(qr!=='-') h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';
+  if(qr!=='-'){
+    const dlUrl=getQrDownloadUrl(qr);
+    h+='<a class="btn btn-ghost" href="'+qr+'" target="_blank">QR 이미지 열기</a>';
+    h+='<a class="btn btn-ghost" href="'+dlUrl+'" target="_blank">QR 다운로드</a>';
+  }
   h+='<button class="btn btn-ghost" onclick="regenerateQrImage(\''+escHtml(code)+'\')">QR 재생성</button>';
   h+='<button class="btn btn-ghost" onclick="closeModal(\'detailModal\');openStatusModal(\''+escHtml(code)+'\',\''+escHtml(item.status||'')+'\')">상태변경</button>';
   h+='</div>';
@@ -731,8 +745,168 @@ window.openDetailModal = function(code){
   h+=makeDetailRow('분실 모드',item.lost_mode);h+=makeDetailRow('연락 유형',item.lost_contact_type);
   h+=makeDetailRow('연락 라벨',item.lost_contact_label);h+=makeDetailRow('연락 URL',item.lost_contact_url);
   h+='</div>';
+  h+=renderQuickEditSection(item,type,code);
   document.getElementById('detailContent').innerHTML=h;
   document.getElementById('detailModal').classList.add('open');
+};
+
+// ── 기능 점검 ──────────────────────────────────────────
+window.checkAdminFeatureReady = function() {
+  const checks = [
+    ['검색창', !!document.getElementById('searchCode')],
+    ['상태 필터', !!document.getElementById('filterStatus')],
+    ['제품 필터', !!document.getElementById('filterType')],
+    ['백업상태 필터', !!document.getElementById('filterBackup')],
+    ['정렬 필터', !!document.getElementById('sortType')],
+    ['표시 개수', !!document.getElementById('inventoryCount')],
+    ['선택 목록', typeof selectedCodes !== 'undefined'],
+    ['현재 표시 목록', typeof currentShownItems !== 'undefined'],
+    ['백업상태 함수', typeof getBackupStatus === 'function'],
+    ['QR 재생성 함수', typeof regenerateQrImage === 'function'],
+    ['QR 없음 일괄 재생성', typeof regenerateMissingQrImages === 'function'],
+    ['일괄 상태변경', typeof bulkChangeStatus === 'function'],
+    ['필터 초기화', typeof resetInventoryFilters === 'function'],
+    ['상세 모달', typeof openDetailModal === 'function']
+  ];
+  const failed = checks.filter(function(r){return !r[1];}).map(function(r){return r[0];});
+  if (!failed.length) {
+    alert('관리자 기능 점검 완료\n필터 / 정렬 / 상세 / QR 재생성 / 일괄 기능이 준비되어 있습니다.');
+    return;
+  }
+  alert('점검 필요 항목:\n\n' + failed.join('\n'));
+};
+
+// ── QR 다운로드 URL ────────────────────────────────────
+function getQrDownloadUrl(qrFile) {
+  qrFile = String(qrFile || '').trim();
+  if (!qrFile || qrFile === '-') return '';
+  let match = qrFile.match(/\/d\/([^/]+)/);
+  if (!match) match = qrFile.match(/[?&]id=([^&]+)/);
+  if (!match) match = qrFile.match(/open\?id=([^&]+)/);
+  if (match && match[1]) return 'https://drive.google.com/uc?export=download&id=' + encodeURIComponent(match[1]);
+  return qrFile;
+}
+
+// ── 빠른 수정 섹션 HTML 생성 ──────────────────────────
+function escapeAttr(v) { return escHtml(v); }
+
+function quickInput(label, field, value) {
+  return '<div class="quick-field-wrap">'
+    + '<label>' + escHtml(label) + '</label>'
+    + '<input class="quick-field" data-field="' + escapeAttr(field) + '" value="' + escapeAttr(value) + '">'
+    + '</div>';
+}
+
+function quickTextarea(label, field, value) {
+  return '<div class="quick-field-wrap" style="grid-column:1/-1">'
+    + '<label>' + escHtml(label) + '</label>'
+    + '<textarea class="quick-textarea" data-field="' + escapeAttr(field) + '">' + escHtml(value) + '</textarea>'
+    + '</div>';
+}
+
+function quickSelect(label, field, value, options) {
+  let html = '<div class="quick-field-wrap">'
+    + '<label>' + escHtml(label) + '</label>'
+    + '<select class="quick-field" data-field="' + escapeAttr(field) + '">';
+  options.forEach(function(opt) {
+    const sel = String(value || '') === String(opt.value || '') ? ' selected' : '';
+    html += '<option value="' + escapeAttr(opt.value) + '"' + sel + '>' + escHtml(opt.label) + '</option>';
+  });
+  html += '</select></div>';
+  return html;
+}
+
+function renderQuickEditSection(item, type, code) {
+  let html = '';
+  html += '<div class="quick-edit-box">';
+  html += '<div class="detail-section-title" style="margin-top:0">빠른 수정</div>';
+  html += '<div class="quick-edit-grid">';
+
+  html += quickInput('소유자', 'owner', item.owner || '');
+  html += quickInput('메모', 'memo', item.memo || '');
+
+  if (type === 'CD') {
+    html += quickInput('이름', 'child_name', item.child_name || '');
+    html += quickInput('보호자', 'guardian_name', item.guardian_name || '');
+    html += quickInput('보호자 연락처', 'guardian_phone', item.guardian_phone || '');
+    html += quickInput('혈액형', 'blood_type', item.blood_type || '');
+    html += quickTextarea('알레르기·질환', 'child_allergy', item.child_allergy || '');
+    html += quickTextarea('특이사항', 'child_note', item.child_note || '');
+    html += quickTextarea('안내 메시지', 'child_message', item.child_message || '');
+  }
+  if (type === 'BMT') {
+    html += quickInput('방문 장소', 'bmt_places', item.bmt_places || '');
+    html += quickInput('방문 날짜', 'bmt_visit_date', item.bmt_visit_date || '');
+    html += quickInput('음성 URL', 'bmt_voice', item.bmt_voice || '');
+    html += quickTextarea('여행 메모', 'bmt_travel_memo', item.bmt_travel_memo || '');
+  }
+  if (type === 'WT') {
+    html += quickSelect('언어', 'wt_lang', item.wt_lang || 'ko', [
+      {value:'ko',label:'한국어'},{value:'en',label:'English'},
+      {value:'ja',label:'日本語'},{value:'zh',label:'中文'}
+    ]);
+    html += quickSelect('테마', 'wt_theme', item.wt_theme || 'general', [
+      {value:'general',label:'일반'},{value:'luck',label:'행운'},
+      {value:'health',label:'건강'},{value:'money',label:'재물'},
+      {value:'exam',label:'합격'},{value:'love',label:'사랑'}
+    ]);
+    html += quickInput('생년월일', 'wt_birth_date', item.wt_birth_date || '');
+  }
+  if (type === 'GT') {
+    html += quickInput('정원 이름', 'gt_garden_name', item.gt_garden_name || '');
+  }
+
+  html += quickSelect('분실 모드', 'lost_mode', item.lost_mode || '', [
+    {value:'',label:'꺼짐'},{value:'on',label:'켜짐'}
+  ]);
+  html += quickInput('연락 유형', 'lost_contact_type', item.lost_contact_type || '');
+  html += quickInput('연락 라벨', 'lost_contact_label', item.lost_contact_label || '');
+  html += quickInput('연락 URL', 'lost_contact_url', item.lost_contact_url || '');
+
+  html += '</div>';
+  html += '<div class="quick-edit-actions">';
+  html += '<button class="btn btn-ghost" onclick="saveQuickEdit(\'' + escapeAttr(code) + '\')">빠른 수정 저장</button>';
+  html += '<button class="btn btn-ghost" onclick="openDetailModal(\'' + escapeAttr(code) + '\')">되돌리기</button>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// ── 빠른 수정 저장 ─────────────────────────────────────
+window.saveQuickEdit = async function(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) { alert('QR 코드가 없습니다.'); return; }
+
+  const modal = document.getElementById('detailModal');
+  if (!modal) { alert('상세 모달을 찾을 수 없습니다.'); return; }
+
+  const fields = {};
+  modal.querySelectorAll('[data-field]').forEach(function(el) {
+    const key = el.getAttribute('data-field');
+    if (key) fields[key] = el.value || '';
+  });
+
+  if (!confirm(code + ' 정보를 빠른 수정으로 저장할까요?')) return;
+
+  const adminKey = getAdminApiKey();
+  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
+
+  try {
+    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'updateQrQuickFieldsFromAdmin', admin_key: adminKey, code: code, fields: fields }),
+      redirect: 'follow'
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || '빠른 수정 실패');
+    alert(data.message || '빠른 수정 완료');
+    await loadInventory();
+    await loadDashboard();
+    openDetailModal(code);
+  } catch(e) {
+    alert('빠른 수정 실패: ' + e.message);
+  }
 };
 
 function getDefaultProductName(type) {

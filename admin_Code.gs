@@ -1194,6 +1194,10 @@ function doPost(e) {
       const result = regenerateQrImageFromAdmin(payload.code);
       return adminJsonResponse_(result);
 
+    } else if (action === 'updateQrQuickFieldsFromAdmin') {
+      const result = updateQrQuickFieldsFromAdmin(payload.code, payload.fields || {});
+      return adminJsonResponse_(result);
+
     } else {
       return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
     }
@@ -1379,4 +1383,120 @@ function testMigrateSingle() {
   }
 
   throw new Error(code + ' 을 QR_DB에서 찾을 수 없습니다.');
+}
+
+// ── 빠른 수정 ────────────────────────────────────────────
+function updateQrQuickFieldsFromAdmin(code, fields) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) throw new Error('QR 코드가 없습니다.');
+  if (!fields || typeof fields !== 'object') throw new Error('수정할 fields 값이 없습니다.');
+
+  const allowedFields = [
+    'owner', 'memo', 'lost_mode', 'lost_contact_type', 'lost_contact_label', 'lost_contact_url',
+    'child_name', 'guardian_name', 'guardian_phone', 'child_allergy', 'blood_type', 'child_note', 'child_message',
+    'bmt_travel_memo', 'bmt_places', 'bmt_visit_date', 'bmt_voice',
+    'wt_lang', 'wt_theme', 'wt_birth_date',
+    'gt_garden_name'
+  ];
+
+  const sheet = adminQuickGetMasterSheet_();
+  const headers = adminQuickGetHeaderMap_(sheet);
+  const row = adminQuickFindQrRow_(sheet, code);
+  if (row === -1) throw new Error(code + ' 행을 QR_DB에서 찾을 수 없습니다.');
+
+  let changedCount = 0;
+  allowedFields.forEach(function(key) {
+    if (!Object.prototype.hasOwnProperty.call(fields, key)) return;
+    if (!headers[key]) return;
+    let value = fields[key];
+    if (value === undefined || value === null) value = '';
+    sheet.getRange(row, headers[key]).setValue(value);
+    changedCount++;
+  });
+
+  if (!changedCount) return { success: false, message: '수정할 수 있는 필드가 없습니다.' };
+
+  if (headers.updated_at) {
+    sheet.getRange(row, headers.updated_at).setValue(adminQuickNowText_());
+  }
+
+  adminQuickSyncQrDbRowToProductSheet_(code);
+
+  if (typeof backupOneQrCodeToFirestoreV1_ === 'function') {
+    backupOneQrCodeToFirestoreV1_(code);
+  }
+
+  return { success: true, message: code + ' 빠른 수정 완료', changed_count: changedCount };
+}
+
+function adminQuickGetMasterSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName('QR_DB');
+  if (!sheet) throw new Error('QR_DB 시트를 찾을 수 없습니다.');
+  return sheet;
+}
+
+function adminQuickGetHeaderMap_(sheet) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const map = {};
+  headers.forEach(function(h, i) { if (h) map[String(h).trim()] = i + 1; });
+  return map;
+}
+
+function adminQuickFindQrRow_(sheet, code) {
+  const headers = adminQuickGetHeaderMap_(sheet);
+  const codeCol = headers.code || 1;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return -1;
+  const values = sheet.getRange(2, codeCol, lastRow - 1, 1).getValues();
+  const target = String(code || '').trim().toUpperCase();
+  for (let i = 0; i < values.length; i++) {
+    if (String(values[i][0] || '').trim().toUpperCase() === target) return i + 2;
+  }
+  return -1;
+}
+
+function adminQuickGetRowObject_(sheet, row) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const obj = {};
+  headers.forEach(function(h, i) { if (h) obj[String(h).trim()] = values[i]; });
+  return obj;
+}
+
+function adminQuickSyncQrDbRowToProductSheet_(code) {
+  code = String(code || '').trim().toUpperCase();
+  if (!code) return false;
+
+  const masterSheet = adminQuickGetMasterSheet_();
+  const masterRow = adminQuickFindQrRow_(masterSheet, code);
+  if (masterRow === -1) return false;
+
+  const productType = code.split('-')[0];
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const productSheet = ss.getSheetByName(productType);
+  if (!productSheet) return false;
+
+  const masterData = adminQuickGetRowObject_(masterSheet, masterRow);
+  const productHeaders = adminQuickGetHeaderMap_(productSheet);
+  let productRow = adminQuickFindQrRow_(productSheet, code);
+  if (productRow === -1) productRow = productSheet.getLastRow() + 1;
+
+  const lastCol = productSheet.getLastColumn();
+  let rowValues = new Array(lastCol).fill('');
+  if (productRow <= productSheet.getLastRow()) {
+    rowValues = productSheet.getRange(productRow, 1, 1, lastCol).getValues()[0];
+  }
+
+  Object.keys(masterData).forEach(function(key) {
+    const col = productHeaders[key];
+    if (col) rowValues[col - 1] = masterData[key];
+  });
+
+  productSheet.getRange(productRow, 1, 1, lastCol).setValues([rowValues]);
+  return true;
+}
+
+function adminQuickNowText_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
 }
