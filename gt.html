@@ -80,6 +80,25 @@ label{display:block;color:var(--gold);font-size:13px;margin-top:5px}
 .gt-admin-growth{display:flex;justify-content:center;gap:8px;margin:10px 0 14px}
 .gt-admin-stage{width:34px;height:34px;border:1px solid rgba(230,200,143,.25);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;opacity:.45;background:rgba(255,255,255,.03)}
 .gt-admin-stage.active{opacity:1;border-color:var(--gold);background:rgba(230,200,143,.13);transform:scale(1.08)}
+
+/* 도감/씨앗 (MVP) */
+.gt-tabs{display:flex;gap:6px;justify-content:center;margin:6px 0 12px}
+.gt-tab{padding:7px 16px;border-radius:12px;border:1px solid rgba(230,200,143,.25);background:rgba(255,255,255,.03);color:var(--muted);font-size:13px;cursor:pointer;font-weight:700}
+.gt-tab.active{border-color:var(--gold);color:var(--gold);background:rgba(230,200,143,.1)}
+.gt-seed-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;min-height:52px}
+.gt-seed{position:relative;width:58px;padding:6px 2px;border:2px solid rgba(230,200,143,.25);border-radius:12px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer}
+.gt-seed.sel{border-color:var(--gold);background:rgba(230,200,143,.14)}
+.gt-seed .ico{font-size:22px}.gt-seed .nm{font-size:10px;color:var(--muted);margin-top:2px}
+.gt-seed .ct{position:absolute;top:-6px;right:-6px;background:var(--gold);color:#111;font-size:10px;font-weight:800;border-radius:999px;min-width:16px;padding:0 4px}
+.gt-seed-empty{color:var(--muted);font-size:12px;align-self:center;padding:14px}
+.gt-codex-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gt-cx{border:1px solid rgba(230,200,143,.2);border-radius:12px;background:rgba(255,255,255,.03);text-align:center;padding:8px 2px}
+.gt-cx img{width:46px;height:auto;display:block;margin:0 auto}
+.gt-cx.locked img{filter:brightness(0) invert(.18);opacity:.7}
+.gt-cx .nm{font-size:10px;margin-top:4px;color:var(--muted)}.gt-cx.owned .nm{color:var(--gold)}
+.gt-cx .rare{font-size:9px;color:#E2B6FF}
+.gt-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(20,20,20,.95);border:1px solid var(--gold2);color:var(--text);padding:11px 18px;border-radius:14px;font-size:13px;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;z-index:9}
+.gt-toast.on{opacity:1;transform:translateX(-50%) translateY(-6px)}
 </style>
 </head>
 <body>
@@ -131,6 +150,15 @@ let GT_EDIT_MODE=false;
 let GT_HOVER={i:-1,j:-1};
 let GT_LAST_GARDEN=null;
 let GT_SAVING=false;
+/* 도감 상태 */
+let GT_SEEDS={};
+let GT_GROWING={};
+let GT_CODEX=[];
+let GT_SEL_SEED=null;
+let GT_SEL_CELL=null;
+let GT_VIEW='garden';
+let GT_MAP_DIRTY=false;
+let GT_DAILY_SEED=null;
 
 const GT_TILES=[
   {cat:'🌿 땅',tiles:[
@@ -142,11 +170,6 @@ const GT_TILES=[
     {row:1,col:0,name:'연못'},{row:1,col:1,name:'강'},
     {row:1,col:4,name:'나무다리'},{row:1,col:5,name:'돌다리'},{row:1,col:6,name:'연꽃연못'},
   ]},
-  {cat:'🌳 식물',tiles:[
-    {row:2,col:0,name:'참나무'},{row:2,col:1,name:'자작나무'},{row:2,col:3,name:'사과나무'},
-    {row:2,col:4,name:'생울타리'},{row:2,col:5,name:'채소밭'},{row:2,col:6,name:'꽃나무'},
-    {row:2,col:7,name:'수양버들'},{row:2,col:9,name:'버섯밭'},
-  ]},
   {cat:'🏡 장식',tiles:[
     {row:4,col:4,name:'우물'},{row:4,col:5,name:'목책'},{row:4,col:7,name:'가로등'},
     {row:5,col:0,name:'문'},{row:5,col:2,name:'벤치'},{row:5,col:5,name:'모닥불'},{row:5,col:7,name:'피크닉'},
@@ -154,6 +177,22 @@ const GT_TILES=[
 ];
 
 function gtTilePath(row,col){return`/gt-tiles/shire/r${row}-c${col}.png`;}
+
+/* 도감 종 마스터 (식물은 씨앗으로만 획득) */
+const GT_SPECIES={
+  oak:    {name:'참나무',  tile:[2,0], rarity:'common', need:8,  ico:'🌰'},
+  birch:  {name:'자작나무', tile:[2,1], rarity:'common', need:8,  ico:'🌿'},
+  veggie: {name:'채소밭',  tile:[2,5], rarity:'common', need:8,  ico:'🥬'},
+  hedge:  {name:'생울타리', tile:[2,4], rarity:'common', need:8,  ico:'🌳'},
+  apple:  {name:'사과나무', tile:[2,3], rarity:'rare',   need:16, ico:'🍎'},
+  flower: {name:'꽃나무',  tile:[2,6], rarity:'rare',   need:16, ico:'🌸'},
+  willow: {name:'수양버들', tile:[2,7], rarity:'rare',   need:16, ico:'🌾'},
+  mush:   {name:'버섯밭',  tile:[2,9], rarity:'rare',   need:16, ico:'🍄'},
+};
+const GT_COMMON=Object.keys(GT_SPECIES).filter(k=>GT_SPECIES[k].rarity==='common');
+const GT_RARE=Object.keys(GT_SPECIES).filter(k=>GT_SPECIES[k].rarity==='rare');
+const GT_SPECIES_COUNT=Object.keys(GT_SPECIES).length;
+function gtSpeciesByTile(r,c){return Object.keys(GT_SPECIES).find(k=>GT_SPECIES[k].tile[0]===r&&GT_SPECIES[k].tile[1]===c);}
 
 function initGardenMap(flatArr){
   GT_MAP=Array.from({length:GT_GRID},(_,i)=>
@@ -168,6 +207,7 @@ async function loadTileImages(){
   const keys=new Set(['0-0']);
   if(GT_MAP)GT_MAP.forEach(row=>row.forEach(t=>keys.add(`${t[0]}-${t[1]}`)));
   GT_TILES.forEach(cat=>cat.tiles.forEach(t=>keys.add(`${t.row}-${t.col}`)));
+  Object.values(GT_SPECIES).forEach(s=>keys.add(`${s.tile[0]}-${s.tile[1]}`));
   await Promise.all([...keys].map(key=>new Promise(res=>{
     if(GT_TILE_CACHE[key]){res();return;}
     const[r,c]=key.split('-').map(Number);
@@ -193,6 +233,18 @@ function drawIsoMap(){
       const sx=GT_OX+(j-i)*(GT_TW/2);
       const sy=GT_OY+(i+j)*(GT_TH/2);
       ctx.drawImage(img,sx-GT_SW/2,sy-130,GT_SW,GT_SH);
+      const g=GT_GROWING[i+'-'+j];
+      if(g){
+        const pct=g.point/(GT_SPECIES[g.species]?GT_SPECIES[g.species].need:8);
+        const emoji=pct<0.25?'🌱':(pct<0.6?'🌿':'🌾');
+        ctx.font='36px serif';ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(emoji,sx,sy+GT_TH*0.3);
+      }
+      if(GT_SEL_CELL&&GT_SEL_CELL.i===i&&GT_SEL_CELL.j===j){
+        ctx.save();ctx.translate(sx,sy);ctx.beginPath();
+        ctx.moveTo(0,0);ctx.lineTo(GT_TW/2,GT_TH/2);ctx.lineTo(0,GT_TH);ctx.lineTo(-GT_TW/2,GT_TH/2);ctx.closePath();
+        ctx.strokeStyle='rgba(230,200,143,0.95)';ctx.lineWidth=3;ctx.stroke();ctx.restore();
+      }
     }
   }
   // hover diamond
@@ -240,9 +292,21 @@ function setupCanvasEvents(){
     const{i,j}=getGridPos(canvas,clientX,clientY);
     if(i>=0&&i<GT_GRID&&j>=0&&j<GT_GRID){
       GT_MAP[i][j]=[GT_ACTIVE_TILE.row,GT_ACTIVE_TILE.col];
+      GT_MAP_DIRTY=true;
       drawIsoMap();
     }
   }
+  function gardenTap(clientX,clientY){
+    const{i,j}=getGridPos(canvas,clientX,clientY);
+    if(i<0||i>=GT_GRID||j<0||j>=GT_GRID)return;
+    const key=i+'-'+j;
+    if(GT_GROWING[key]){GT_SEL_CELL={i,j};drawIsoMap();updateGrowthHud();gtHint('💧 이 새싹에 물·비료를 주세요');return;}
+    const[r,c]=GT_MAP[i][j]||[0,0];
+    if(gtSpeciesByTile(r,c)){gtHint('🌸 이미 다 자란 식물이에요');GT_SEL_CELL=null;drawIsoMap();return;}
+    if(!GT_SEL_SEED){gtHint('아래 보유 씨앗을 골라 빈 칸을 탭하세요');return;}
+    plantSeed(i,j);
+  }
+  function handleTap(x,y){ if(GT_EDIT_MODE)placeTile(x,y); else gardenTap(x,y); }
   function hoverUpdate(clientX,clientY){
     if(!GT_EDIT_MODE)return;
     const{i,j}=getGridPos(canvas,clientX,clientY);
@@ -252,17 +316,17 @@ function setupCanvasEvents(){
       if(GT_HOVER.i>=0){GT_HOVER={i:-1,j:-1};drawIsoMap();}
     }
   }
-  canvas.addEventListener('click',e=>{placeTile(e.clientX,e.clientY);});
+  canvas.addEventListener('click',e=>{handleTap(e.clientX,e.clientY);});
   canvas.addEventListener('mousemove',e=>{hoverUpdate(e.clientX,e.clientY);});
   canvas.addEventListener('mouseleave',()=>{if(GT_HOVER.i>=0){GT_HOVER={i:-1,j:-1};drawIsoMap();}});
-  // touch
   let touching=false;
-  canvas.addEventListener('touchstart',e=>{e.preventDefault();touching=true;const t=e.touches[0];placeTile(t.clientX,t.clientY);},{passive:false});
-  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(touching){const t=e.touches[0];placeTile(t.clientX,t.clientY);}},{passive:false});
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();touching=true;const t=e.touches[0];handleTap(t.clientX,t.clientY);},{passive:false});
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();if(touching&&GT_EDIT_MODE){const t=e.touches[0];placeTile(t.clientX,t.clientY);}},{passive:false});
   canvas.addEventListener('touchend',()=>{touching=false;});
 }
 
 function toggleEditMode(){
+  const wasEditing=GT_EDIT_MODE;
   GT_EDIT_MODE=!GT_EDIT_MODE;
   GT_HOVER={i:-1,j:-1};
   const btn=document.getElementById('gtEditBtn');
@@ -270,8 +334,16 @@ function toggleEditMode(){
   if(btn){btn.textContent=GT_EDIT_MODE?'✓ 완료':'✏️ 편집';btn.classList.toggle('active',GT_EDIT_MODE);}
   if(picker)picker.classList.toggle('on',GT_EDIT_MODE);
   drawIsoMap();
+  if(wasEditing&&!GT_EDIT_MODE&&GT_MAP_DIRTY){autoSaveMap();}
 }
 window.toggleEditMode=toggleEditMode;
+async function autoSaveMap(){
+  try{
+    const{doc,updateDoc}=window.firestoreApi;
+    await updateDoc(doc(window.firestoreDb,'garden_tags',CODE),{garden_map:GT_MAP.flat()});
+    GT_MAP_DIRTY=false; gtToast('✓ 정원이 저장됐어요');
+  }catch(e){gtToast('저장 실패: '+e.message);}
+}
 
 function setPickerTab(idx){
   document.querySelectorAll('.gt-picker-tab').forEach((el,i)=>el.classList.toggle('active',i===idx));
@@ -352,6 +424,8 @@ async function getOrCreateGardenData(){
     water_count:0,fertilizer_count:0,visit_count:1,
     inventory:{water:3,fertilizer:1},
     resource_date:now.slice(0,10),
+    seed_inventory:{oak:1,apple:1},
+    growing:{}, codex:[], seed_date:now.slice(0,10),
     created_at:now,last_visit_at:now
   };
   await setDoc(ref,initData);return initData;
@@ -372,10 +446,16 @@ async function applyDailyVisitBonus(garden){
   const ref=doc(window.firestoreDb,'garden_tags',CODE);
   const today=new Date().toISOString().slice(0,10);
   if((garden.last_visit_at||'').slice(0,10)===today)return garden;
+  const pool=Math.random()<0.3?GT_RARE:GT_COMMON;
+  const got=pool[Math.floor(Math.random()*pool.length)];
+  const sinv={...(garden.seed_inventory||{})};
+  sinv[got]=(sinv[got]||0)+1;
+  GT_DAILY_SEED=got;
   await updateDoc(ref,{
     visit_count:(garden.visit_count||0)+1,
     total_growth_point:(garden.total_growth_point||0)+1,
-    last_visit_at:new Date().toISOString()
+    last_visit_at:new Date().toISOString(),
+    seed_inventory:sinv, seed_date:today
   });
   const snap=await getDoc(ref);return snap.data();
 }
@@ -441,15 +521,13 @@ async function renderGardenTag(data){
 function renderGardenTagView(garden){
   GT_LAST_GARDEN=garden;
   initGardenMap(garden.garden_map);
+  GT_SEEDS={...(garden.seed_inventory||{})};
+  GT_GROWING={...(garden.growing||{})};
+  GT_CODEX=Array.isArray(garden.codex)?garden.codex.slice():[];
+  GT_VIEW='garden';
 
   const inv=garden.inventory||{water:0,fertilizer:0};
-  const gp=garden.total_growth_point||0;
-  const gpMax=200;
-  const gpPct=Math.min(100,Math.round(gp/gpMax*100));
   const gardenName=garden.garden_name||garden.owner||'나의';
-
-  function waterIcons(n){const cnt=Math.max(0,Math.min(5,Number(n)||0));if(cnt===0)return'💧 x0';if(cnt>3)return`💧 x${cnt}`;return'💧'.repeat(cnt);}
-  function fertIcons(n){const cnt=Math.max(0,Math.min(3,Number(n)||0));if(cnt===0)return'🌾 x0';if(cnt>2)return`🌾 x${cnt}`;return'🌾'.repeat(cnt);}
 
   app.innerHTML=`
     ${brand()}
@@ -458,16 +536,18 @@ function renderGardenTagView(garden){
       <div class="gt-garden-name">🌿 ${esc(gardenName)}의 정원</div>
     </div>
 
-    <div class="gt-resource-bar">
-      <div class="gt-resource">${waterIcons(inv.water)}<span class="gt-resource-label">오늘의 물</span></div>
-      <div class="gt-resource">${fertIcons(inv.fertilizer)}<span class="gt-resource-label">비료</span></div>
-      <div class="gt-resource">🌱 ${gp}<span class="gt-resource-label">성장 포인트</span></div>
+    <div class="gt-tabs">
+      <div class="gt-tab active" onclick="setGtView('garden')">🌱 정원</div>
+      <div class="gt-tab" onclick="setGtView('codex')">📖 도감 (${GT_CODEX.length}/${GT_SPECIES_COUNT})</div>
     </div>
 
-    <div class="gt-growth-bar-wrap">
-      <div class="gt-growth-label"><span>정원 성장도</span><span>${gp} / ${gpMax} pt</span></div>
-      <div class="gt-growth-bar"><div class="gt-growth-bar-fill" style="width:${gpPct}%"></div></div>
+    <div class="gt-resource-bar">
+      <div class="gt-resource"><span id="gtResWater">💧 ${inv.water||0}</span><span class="gt-resource-label">오늘의 물</span></div>
+      <div class="gt-resource"><span id="gtResFert">🌾 ${inv.fertilizer||0}</span><span class="gt-resource-label">비료</span></div>
+      <div class="gt-resource"><span id="gtResPoint">🌱 ${garden.total_growth_point||0}</span><span class="gt-resource-label">성장 포인트</span></div>
     </div>
+
+    <div id="gtGrowthHud" class="gt-growth-bar-wrap"></div>
 
     <div class="gt-canvas-wrap">
       <canvas id="gtCanvas" width="${GT_CW}" height="${GT_CH}"></canvas>
@@ -475,31 +555,149 @@ function renderGardenTagView(garden){
         <div class="gt-canvas-btn" id="gtEditBtn" onclick="toggleEditMode()">✏️ 편집</div>
       </div>
     </div>
+    <div id="gtHint" style="text-align:center;font-size:12px;color:var(--gold);min-height:18px;margin:8px 0"></div>
 
     ${pickerHtml()}
 
     <div class="gt-action-row">
-      <button class="btn" onclick="waterGarden()">💧 물주기 (+1)</button>
-      <button class="btn sub" onclick="fertilizeGarden()">🌾 비료주기 (+3)</button>
+      <button class="btn" id="gtWaterBtn" onclick="waterGarden()">💧 물주기 (+1)</button>
+      <button class="btn sub" id="gtFertBtn" onclick="fertilizeGarden()">🌾 비료주기 (+3)</button>
     </div>
 
+    <div class="section-title">보유 씨앗</div>
+    <div class="gt-seed-row" id="gtSeedRow"></div>
+
     <div class="gt-stats">
-      <div class="gt-stat"><div class="gt-stat-val">${garden.visit_count||0}</div><div class="gt-stat-lbl">총 방문</div></div>
-      <div class="gt-stat"><div class="gt-stat-val">${garden.water_count||0}</div><div class="gt-stat-lbl">물주기</div></div>
-      <div class="gt-stat"><div class="gt-stat-val">${garden.fertilizer_count||0}</div><div class="gt-stat-lbl">비료주기</div></div>
+      <div class="gt-stat"><div class="gt-stat-val" id="gtStatVisit">${garden.visit_count||0}</div><div class="gt-stat-lbl">총 방문</div></div>
+      <div class="gt-stat"><div class="gt-stat-val" id="gtStatWater">${garden.water_count||0}</div><div class="gt-stat-lbl">물주기</div></div>
+      <div class="gt-stat"><div class="gt-stat-val" id="gtStatFert">${garden.fertilizer_count||0}</div><div class="gt-stat-lbl">비료주기</div></div>
     </div>
 
     ${editBtn()}
     <div class="footer">SAEGIM · GARDEN TAG</div>`;
 
-  // 캔버스 초기화
-  loadTileImages().then(()=>{
-    drawIsoMap();
-    setupCanvasEvents();
-  });
-  // 피커 초기 렌더
+  loadTileImages().then(()=>{drawIsoMap();setupCanvasEvents();});
   renderPickerGrid(0);
+  renderSeeds();
+  updateGrowthHud();
+  updateResourceHud();
+  if(GT_DAILY_SEED){const s=GT_SPECIES[GT_DAILY_SEED];if(s)gtToast('☀️ 출석! '+s.name+' 씨앗을 받았어요'+(s.rarity==='rare'?' (희귀!)':''));GT_DAILY_SEED=null;}
 }
+
+/* 탭 전환 */
+function setGtView(v){GT_VIEW=v; if(v==='codex')renderCodexView(); else renderGardenTagView(GT_LAST_GARDEN);}
+window.setGtView=setGtView;
+
+function renderCodexView(){
+  app.innerHTML=`
+    ${brand()}
+    <div class="gt-header"><div class="gt-title">SAEGIM CODEX</div></div>
+    <div class="gt-tabs">
+      <div class="gt-tab" onclick="setGtView('garden')">🌱 정원</div>
+      <div class="gt-tab active" onclick="setGtView('codex')">📖 도감 (${GT_CODEX.length}/${GT_SPECIES_COUNT})</div>
+    </div>
+    <div class="sub">도감 완성도 <b style="color:var(--gold)">${GT_CODEX.length} / ${GT_SPECIES_COUNT}</b></div>
+    <div class="gt-codex-grid">
+      ${Object.keys(GT_SPECIES).map(k=>{const sp=GT_SPECIES[k];const owned=GT_CODEX.includes(k);
+        return `<div class="gt-cx ${owned?'owned':'locked'}">
+          <img src="${gtTilePath(sp.tile[0],sp.tile[1])}" alt="">
+          <div class="nm">${owned?esc(sp.name):'❓'}</div>
+          ${sp.rarity==='rare'?'<div class="rare">✦ 희귀</div>':''}</div>`;}).join('')}
+    </div>
+    <div class="sub" style="margin-top:14px">실루엣은 아직 못 키운 식물이에요.<br>씨앗을 심고 개화시키면 도감에 새겨집니다.</div>
+    <div class="footer">SAEGIM · GARDEN CODEX</div>`;
+}
+
+/* 씨앗 */
+function renderSeeds(){
+  const row=document.getElementById('gtSeedRow'); if(!row)return;
+  const keys=Object.keys(GT_SEEDS).filter(k=>GT_SEEDS[k]>0&&GT_SPECIES[k]);
+  if(!keys.length){row.innerHTML='<div class="gt-seed-empty">보유한 씨앗이 없어요 · 매일 방문(출석)하면 씨앗을 받아요 ☀️</div>';return;}
+  row.innerHTML=keys.map(k=>{const sp=GT_SPECIES[k];const sel=GT_SEL_SEED===k?'sel':'';
+    return `<div class="gt-seed ${sel}" onclick="pickSeed('${k}')"><div class="ico">${sp.ico}</div><div class="nm">${esc(sp.name)}</div><div class="ct">${GT_SEEDS[k]}</div></div>`;}).join('');
+}
+function pickSeed(k){GT_SEL_SEED=(GT_SEL_SEED===k)?null:k; renderSeeds(); gtHint(GT_SEL_SEED?'🌱 빈 칸을 탭해 심으세요':'');}
+window.pickSeed=pickSeed;
+
+function plantSeed(i,j){
+  if(!GT_SEL_SEED||!(GT_SEEDS[GT_SEL_SEED]>0))return;
+  const sp=GT_SPECIES[GT_SEL_SEED];
+  GT_GROWING[i+'-'+j]={species:GT_SEL_SEED,point:0};
+  GT_SEEDS[GT_SEL_SEED]--; if(GT_SEEDS[GT_SEL_SEED]<=0)delete GT_SEEDS[GT_SEL_SEED];
+  if(GT_LAST_GARDEN)GT_LAST_GARDEN.seed_inventory=GT_SEEDS;
+  gtToast('🌱 '+sp.name+' 씨앗을 심었어요');
+  GT_SEL_SEED=null; GT_SEL_CELL={i,j};
+  gtPersist({growing:GT_GROWING,seed_inventory:GT_SEEDS}).catch(e=>gtToast('저장 실패: '+e.message));
+  drawIsoMap(); renderSeeds(); updateGrowthHud(); gtHint('💧 이제 물·비료로 키워보세요');
+}
+
+/* 물주기 / 비료 → 선택한 식물 성장 */
+function waterGarden(){growSelected('water');}
+function fertilizeGarden(){growSelected('fert');}
+window.waterGarden=waterGarden; window.fertilizeGarden=fertilizeGarden;
+
+async function growSelected(kind){
+  const garden=GT_LAST_GARDEN; if(!garden)return;
+  if(!GT_SEL_CELL){gtHint('키울 새싹을 캔버스에서 먼저 탭하세요');return;}
+  const key=GT_SEL_CELL.i+'-'+GT_SEL_CELL.j; const g=GT_GROWING[key];
+  if(!g){gtHint('키울 새싹을 먼저 골라주세요 (씨앗을 심거나 새싹을 탭)');return;}
+  const inv={...(garden.inventory||{water:0,fertilizer:0})};
+  const amount=kind==='water'?1:3;
+  if(kind==='water'){if((inv.water||0)<=0){gtToast('오늘의 물을 다 썼어요 💧 (내일 충전)');return;}inv.water--;}
+  else{if((inv.fertilizer||0)<=0){gtToast('오늘의 비료를 다 썼어요 🌾 (내일 충전)');return;}inv.fertilizer--;}
+  g.point+=amount;
+  garden.inventory=inv;
+  garden.total_growth_point=(garden.total_growth_point||0)+amount;
+  if(kind==='water')garden.water_count=(garden.water_count||0)+1; else garden.fertilizer_count=(garden.fertilizer_count||0)+1;
+  const sp=GT_SPECIES[g.species]; let fields;
+  if(g.point>=sp.need){
+    GT_MAP[GT_SEL_CELL.i][GT_SEL_CELL.j]=[sp.tile[0],sp.tile[1]];
+    delete GT_GROWING[key];
+    const isNew=!GT_CODEX.includes(g.species); if(isNew)GT_CODEX.push(g.species);
+    GT_SEL_CELL=null;
+    gtToast((isNew?'✨ 도감 등록! ':'🌸 개화! ')+sp.name);
+    fields={inventory:inv,total_growth_point:garden.total_growth_point,water_count:garden.water_count,fertilizer_count:garden.fertilizer_count,growing:GT_GROWING,codex:GT_CODEX,garden_map:GT_MAP.flat()};
+    await ensureTile(sp.tile[0],sp.tile[1]);
+    updateTabCount();
+  }else{
+    gtToast((kind==='water'?'💧':'🌾')+' +'+amount+' 성장');
+    fields={inventory:inv,total_growth_point:garden.total_growth_point,water_count:garden.water_count,fertilizer_count:garden.fertilizer_count,growing:GT_GROWING};
+  }
+  gtPersist(fields).catch(e=>gtToast('저장 실패: '+e.message));
+  drawIsoMap(); updateResourceHud(); updateGrowthHud(); updateStatsHud();
+}
+
+function ensureTile(r,c){return new Promise(res=>{const k=r+'-'+c;if(GT_TILE_CACHE[k]){res();return;}const img=new Image();img.onload=()=>{GT_TILE_CACHE[k]=img;drawIsoMap();res();};img.onerror=res;img.src=gtTilePath(r,c);});}
+
+/* 부분 UI 갱신 (전체 리렌더 없이) */
+function updateResourceHud(){
+  const g=GT_LAST_GARDEN;if(!g)return;const inv=g.inventory||{water:0,fertilizer:0};
+  const w=document.getElementById('gtResWater'),f=document.getElementById('gtResFert'),p=document.getElementById('gtResPoint');
+  if(w)w.textContent='💧 '+(inv.water||0); if(f)f.textContent='🌾 '+(inv.fertilizer||0); if(p)p.textContent='🌱 '+(g.total_growth_point||0);
+  const wb=document.getElementById('gtWaterBtn'),fb=document.getElementById('gtFertBtn');
+  if(wb)wb.disabled=(inv.water||0)<=0; if(fb)fb.disabled=(inv.fertilizer||0)<=0;
+}
+function updateStatsHud(){
+  const g=GT_LAST_GARDEN;if(!g)return;
+  const v=document.getElementById('gtStatVisit'),w=document.getElementById('gtStatWater'),f=document.getElementById('gtStatFert');
+  if(v)v.textContent=g.visit_count||0; if(w)w.textContent=g.water_count||0; if(f)f.textContent=g.fertilizer_count||0;
+}
+function updateGrowthHud(){
+  const host=document.getElementById('gtGrowthHud'); if(!host)return;
+  const sel=GT_SEL_CELL&&GT_GROWING[GT_SEL_CELL.i+'-'+GT_SEL_CELL.j];
+  if(sel){const g=GT_GROWING[GT_SEL_CELL.i+'-'+GT_SEL_CELL.j];const sp=GT_SPECIES[g.species];
+    const pct=Math.min(100,Math.round(g.point/sp.need*100));
+    host.innerHTML=`<div class="gt-growth-label"><span>🌿 ${esc(sp.name)} 키우는 중</span><span>${g.point}/${sp.need}</span></div><div class="gt-growth-bar"><div class="gt-growth-bar-fill" style="width:${pct}%"></div></div>`;
+  }else{
+    const n=Object.keys(GT_GROWING).length;
+    host.innerHTML=`<div class="gt-growth-label"><span>📖 도감 ${GT_CODEX.length}/${GT_SPECIES_COUNT}</span><span>${n?('키우는 중 '+n+'개'):'씨앗을 심어보세요'}</span></div><div class="gt-growth-bar"><div class="gt-growth-bar-fill" style="width:${Math.round(GT_CODEX.length/GT_SPECIES_COUNT*100)}%"></div></div>`;
+  }
+}
+function updateTabCount(){document.querySelectorAll('.gt-tab').forEach(t=>{if(t.textContent.indexOf('도감')>=0)t.textContent='📖 도감 ('+GT_CODEX.length+'/'+GT_SPECIES_COUNT+')';});}
+function gtHint(msg){const el=document.getElementById('gtHint');if(el)el.textContent=msg||'';}
+let GT_TOAST_T;
+function gtToast(msg){let t=document.getElementById('gtToastEl');if(!t){t=document.createElement('div');t.id='gtToastEl';t.className='gt-toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('on');clearTimeout(GT_TOAST_T);GT_TOAST_T=setTimeout(()=>t.classList.remove('on'),1800);}
+async function gtPersist(fields){const{doc,updateDoc}=window.firestoreApi;await updateDoc(doc(window.firestoreDb,'garden_tags',CODE),fields);}
 
 /* ── 최초 등록 ── */
 function renderRegister(data){
@@ -561,11 +759,16 @@ async function renderGardenAdmin(){
       ${infoRow('오늘의 물',inv.water)}
       ${infoRow('오늘의 비료',inv.fertilizer)}
       ${infoRow('정원 이름',garden.garden_name||'-')}
+      ${infoRow('도감',(Array.isArray(garden.codex)?garden.codex.length:0)+' / '+GT_SPECIES_COUNT)}
+      ${infoRow('재배 중',Object.keys(garden.growing||{}).length+' 칸')}
+      ${infoRow('보유 씨앗',Object.values(garden.seed_inventory||{}).reduce((a,b)=>a+b,0)+' 개')}
       ${infoRow('생성일',garden.created_at?garden.created_at.slice(0,10):'-')}
     </div>
     <button class="btn sm" onclick="adminAddGrowth()">🌱 성장 포인트 +10</button>
+    <button class="btn sm" onclick="adminGiveSeed()">🌰 랜덤 씨앗 지급</button>
     <button class="btn sm" onclick="adminResetWater()">💧 오늘의 물 초기화</button>
     <button class="btn sm" onclick="adminClearMap()">🗺️ 정원 초기화</button>
+    <button class="btn sm danger" onclick="adminResetCodex()">📖 도감·재배 초기화</button>
     <a class="btn sub" href="?code=${encodeURIComponent(CODE)}">← 정원으로 돌아가기</a>`;
 }
 window.renderGardenAdmin=renderGardenAdmin;
@@ -595,6 +798,26 @@ async function adminClearMap(){
   alert('초기화 완료');renderGardenAdmin();
 }
 window.adminClearMap=adminClearMap;
+
+async function adminGiveSeed(){
+  const{doc,getDoc,updateDoc}=window.firestoreApi;
+  const ref=doc(window.firestoreDb,'garden_tags',CODE);
+  const g=(await getDoc(ref)).data();
+  const all=Object.keys(GT_SPECIES);
+  const got=all[Math.floor(Math.random()*all.length)];
+  const inv={...(g.seed_inventory||{})}; inv[got]=(inv[got]||0)+1;
+  await updateDoc(ref,{seed_inventory:inv});
+  alert('씨앗 지급: '+GT_SPECIES[got].name);renderGardenAdmin();
+}
+window.adminGiveSeed=adminGiveSeed;
+
+async function adminResetCodex(){
+  if(!confirm('도감과 재배 중인 식물을 모두 초기화할까요?'))return;
+  const{doc,updateDoc}=window.firestoreApi;
+  await updateDoc(doc(window.firestoreDb,'garden_tags',CODE),{codex:[],growing:{}});
+  alert('도감·재배 초기화 완료');renderGardenAdmin();
+}
+window.adminResetCodex=adminResetCodex;
 </script>
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
