@@ -172,8 +172,8 @@ var CONSENT_INFO = {
     return;
   }
 
-  // 이미 동의했으면 바로 이동
-  var key = 'saegim_consent_' + prefix + '_v1';
+  // 이미 동의했으면 바로 이동 (태그 코드별 1회)
+  var key = 'saegim_consent_' + code + '_v1';
   if (localStorage.getItem(key)) {
     location.replace(target + suffix);
     return;
