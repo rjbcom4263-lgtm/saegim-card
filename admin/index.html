@@ -120,6 +120,14 @@ tr:hover td{background:rgba(255,255,255,.03)}
 @media(max-width:720px){.quick-edit-grid{grid-template-columns:1fr}}
 
 /* ── 스티커 탭 ── */
+
+/* A4 미리보기 */
+.stk-a4-preview{background:#fff;box-shadow:0 4px 20px rgba(0,0,0,.5);position:relative;margin:0 auto;}
+.stk-a4-slot{position:absolute;border-radius:50%;overflow:hidden;background:#eee;}
+.stk-a4-slot img{width:100%;height:100%;object-fit:cover;display:block;}
+.stk-a4-page-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.stk-a4-page-num{font-size:11px;color:var(--muted);}
+
 .stk-layout{display:flex;gap:20px;align-items:flex-start}
 .stk-panel{width:250px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
 .stk-main{flex:1;min-width:0}
@@ -473,8 +481,12 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <div style="font-size:11px;color:var(--muted);margin-top:3px" id="sStatTxt"></div>
               <button class="stk-btn" id="sDlBtn" style="display:none;background:#C8964A;color:#fff;margin-top:4px" onclick="stkDl()">⬇ PDF 다운로드</button>
             </div>
-            <div class="stk-preview-area" id="sOutArea">
-              <div style="color:var(--muted);font-size:13px;text-align:center">📄<br>PDF 생성 후 여기에 표시</div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:80vh">
+              <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px">📄 A4 미리보기 — PDF 생성 전 확인</div>
+              <div id="sA4Preview" class="stk-a4-page-wrap"></div>
+              <div class="stk-preview-area" id="sOutArea" style="min-height:60px;margin-top:4px">
+                <div style="color:var(--muted);font-size:13px;text-align:center">PDF 생성 후 여기에 표시</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1828,9 +1840,54 @@ window.regenerateMissingQrImages = async function() {
     var imgs=window._cmpImgs||[],t=document.getElementById('sCmpThumbs'),c=document.getElementById('sCmpCnt');if(!t)return;t.innerHTML='';
     imgs.forEach(function(src){var img=document.createElement('img');img.src=src;img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line)';t.appendChild(img);});
     if(c)c.textContent=imgs.length+'개';
+    stkRenderA4Preview();
   };
+  function stkRenderA4Preview(){
+    var wrap=document.getElementById('sA4Preview');if(!wrap)return;wrap.innerHTML='';
+    var imgs=window._cmpImgs||[];if(!imgs.length)return;
+    var rpt=document.getElementById('sRpt')&&document.getElementById('sRpt').checked;
+    var sizeMmEl=document.getElementById('sSizeMm');
+    var dMm=sizeMmEl?Math.min(Number(sizeMmEl.value)||70,100):70;
+    var margin=5,pageW=210-margin*2,pageH=297-margin*2;
+    var gapX=pageW/layout.cols,gapY=pageH/layout.rows;
+    var dMmActual=Math.min(dMm,gapX*0.97,gapY*0.97);
+    var total=layout.cols*layout.rows;
+    // 슬롯 목록 (반복 채우기 포함)
+    var slotList=[];
+    for(var i=0;i<total;i++){
+      var src=(rpt||i<imgs.length)?imgs[i%imgs.length]:'';
+      slotList.push(src);
+    }
+    var pages=Math.ceil(slotList.length/total)||1;
+    // 스케일: 실제 A4를 화면에 맞게 축소 (A4 210mm → 표시 420px 기준)
+    var SCALE=1.6; // px/mm
+    var pxW=Math.round(210*SCALE),pxH=Math.round(297*SCALE);
+    var pxMargin=Math.round(margin*SCALE);
+    var pxGapX=Math.round(gapX*SCALE),pxGapY=Math.round(gapY*SCALE);
+    var pxD=Math.round(dMmActual*SCALE);
+    for(var pg=0;pg<pages;pg++){
+      var pageDiv=document.createElement('div');
+      pageDiv.className='stk-a4-preview';
+      pageDiv.style.width=pxW+'px';pageDiv.style.height=pxH+'px';
+      for(var si=0;si<total;si++){
+        var src2=slotList[pg*total+si]||'';
+        var col=si%layout.cols,row=Math.floor(si/layout.cols);
+        var x=pxMargin+Math.round(gapX*SCALE*(col+0.5))-Math.round(pxD/2);
+        var y=pxMargin+Math.round(gapY*SCALE*(row+0.5))-Math.round(pxD/2);
+        var slot=document.createElement('div');
+        slot.className='stk-a4-slot';
+        slot.style.left=x+'px';slot.style.top=y+'px';
+        slot.style.width=pxD+'px';slot.style.height=pxD+'px';
+        if(src2){var img=document.createElement('img');img.src=src2;slot.appendChild(img);}
+        else{slot.style.background='#f0f0f0';slot.style.border='1px dashed #ccc';}
+        pageDiv.appendChild(slot);
+      }
+      var lbl=document.createElement('div');lbl.className='stk-a4-page-num';lbl.textContent=(pg+1)+' / '+pages+' 페이지';
+      wrap.appendChild(pageDiv);wrap.appendChild(lbl);
+    }
+  }
 
-  window.stkSetL=function(el){document.querySelectorAll('.stk-opt-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');layout={cols:Number(el.dataset.cols),rows:Number(el.dataset.rows)};};
+  window.stkSetL=function(el){document.querySelectorAll('.stk-opt-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');layout={cols:Number(el.dataset.cols),rows:Number(el.dataset.rows)};stkRenderA4Preview();};
 
   window.stkGen=function(){
     var imgs=window._cmpImgs||[];if(!imgs.length){alert('합성된 스티커가 없습니다.');return;}
@@ -1841,15 +1898,17 @@ window.regenerateMissingQrImages = async function() {
     var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF){alert('jsPDF 로드 실패');if(btn)btn.disabled=false;return;}
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     var sizeMmEl=document.getElementById('sSizeMm');
-    var d=sizeMmEl?Math.min(Number(sizeMmEl.value)||58,100):58;
-    var gapX=210/layout.cols,gapY=297/layout.rows,idx=0;
-    // 크기가 셀보다 크면 자동 축소
-    d=Math.min(d,gapX*0.98,gapY*0.98);
+    var d=sizeMmEl?Math.min(Number(sizeMmEl.value)||70,100):70;
+    var margin=5; // 페이지 여백 mm
+    var pageW=210-margin*2, pageH=297-margin*2;
+    var gapX=pageW/layout.cols, gapY=pageH/layout.rows, idx=0;
+    // 스티커가 셀보다 크면 자동 축소
+    d=Math.min(d, gapX*0.97, gapY*0.97);
     function next(){
       if(idx>=slots2.length){if(stattxt)stattxt.textContent='완료!';if(prog)prog.style.display='none';if(btn)btn.disabled=false;pdfBlob=doc.output('blob');if(dl)dl.style.display='block';
         var out=document.getElementById('sOutArea');if(out)out.innerHTML='<div style="color:var(--green);font-size:20px;margin-bottom:8px">✅ PDF 준비 완료</div><div style="color:var(--muted);font-size:13px">'+total+'칸 / '+layout.cols+'×'+layout.rows+' 레이아웃</div>';return;}
       if(bar)bar.style.width=(idx/slots2.length*100)+'%';if(stattxt)stattxt.textContent=(idx+1)+'/'+slots2.length;
-      var s=slots2[idx];if(s){var col=idx%layout.cols,row=Math.floor(idx/layout.cols);doc.addImage(s,'PNG',gapX*(col+0.5)-d/2,gapY*(row+0.5)-d/2,d,d);}
+      var s=slots2[idx];if(s){var col=idx%layout.cols,row=Math.floor(idx/layout.cols);doc.addImage(s,'PNG',margin+gapX*(col+0.5)-d/2,margin+gapY*(row+0.5)-d/2,d,d);}
       idx++;setTimeout(next,0);
     }next();
   };
