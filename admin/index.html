@@ -1370,21 +1370,32 @@ window.regenerateMissingQrImages = async function() {
 
   function stkLoadDesignsFromStorage(){
     var st=stkGetSt(),rfn=stkGetRef();
-    if(!st||!rfn){console.warn('Storage not ready');stkRenderDThumbs();return;}
+    if(!st||!rfn){stkRenderDThumbs();return;}
     var folderRef=rfn(st,DESIGN_PATH);
     window._listAll(folderRef).then(function(res){
       if(!res.items.length){stkRenderDThumbs();return;}
-      var loaded=0,imgs=Array(res.items.length);
-      res.items.forEach(function(item,idx){
+      var loaded=0,total=res.items.length;
+      dPool=[];
+      res.items.forEach(function(item){
         window._getDownloadURL(item).then(function(url){
-          imgs[idx]={src:url,name:item.name,storagePath:item.fullPath};
+          // URL → fetch → Blob → data URL (CORS 완전 우회)
+          return fetch(url).then(function(r){return r.blob();}).then(function(blob){
+            return new Promise(function(resolve,reject){
+              var fr=new FileReader();
+              fr.onload=function(e){resolve(e.target.result);};
+              fr.onerror=reject;
+              fr.readAsDataURL(blob);
+            });
+          }).then(function(dataUrl){
+            dPool.push({src:dataUrl,name:item.name,storagePath:item.fullPath});
+            loaded++;
+            if(loaded===total) stkRenderDThumbs();
+          });
+        }).catch(function(e){
+          console.warn('도안 로드 실패:',item.name,e);
           loaded++;
-          if(loaded===res.items.length){
-            // URL 방식으로 dPool 저장
-            dPool=imgs.map(function(m){return m;});
-            stkRenderDThumbs();
-          }
-        }).catch(function(){loaded++;if(loaded===res.items.length){dPool=dPool.filter(Boolean);stkRenderDThumbs();}});
+          if(loaded===total) stkRenderDThumbs();
+        });
       });
     }).catch(function(e){console.error('listAll error',e);stkRenderDThumbs();});
   }
