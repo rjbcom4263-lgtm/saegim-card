@@ -552,6 +552,10 @@ const db   = getFirestore(app);
 const storage = getStorage(app);
 window._fbStorage = storage;
 window._fbStorageRef = ref;
+window._listAll = listAll;
+window._getDownloadURL = getDownloadURL;
+window._uploadString = uploadString;
+window._deleteObject = deleteObject;
 
 let allItems = [];
 let currentShownItems = [];
@@ -1365,11 +1369,11 @@ window.regenerateMissingQrImages = async function() {
     var st=stkGetSt(),rfn=stkGetRef();
     if(!st||!rfn){console.warn('Storage not ready');stkRenderDThumbs();return;}
     var folderRef=rfn(st,DESIGN_PATH);
-    listAll(folderRef).then(function(res){
+    window._listAll(folderRef).then(function(res){
       if(!res.items.length){stkRenderDThumbs();return;}
       var loaded=0,imgs=Array(res.items.length);
       res.items.forEach(function(item,idx){
-        getDownloadURL(item).then(function(url){
+        window._getDownloadURL(item).then(function(url){
           imgs[idx]={src:url,name:item.name,storagePath:item.fullPath};
           loaded++;
           if(loaded===res.items.length){
@@ -1390,7 +1394,7 @@ window.regenerateMissingQrImages = async function() {
     // base64 업로드
     var base64=dataUrl.split(',')[1];
     var mime=dataUrl.split(';')[0].split(':')[1]||'image/png';
-    uploadString(fileRef,base64,'base64',{contentType:mime}).then(function(){
+    window._uploadString(fileRef,base64,'base64',{contentType:mime}).then(function(){
       console.log('업로드 완료:',name);
       // 이미 dPool에 dataUrl로 추가됐으므로 storagePath만 보완
       // 나중에 reload 시 URL로 교체됨
@@ -1401,7 +1405,7 @@ window.regenerateMissingQrImages = async function() {
     var d=dPool[idx];
     if(d&&d.storagePath){
       var st=stkGetSt(),rfn=stkGetRef();
-      if(st&&rfn){var dr=rfn(st,d.storagePath);deleteObject(dr).catch(function(e){console.error('삭제 실패',e);});}
+      if(st&&rfn){var dr=rfn(st,d.storagePath);window._deleteObject(dr).catch(function(e){console.error('삭제 실패',e);});}
     }
     dPool.splice(idx,1);stkRenderDThumbs();
   }
