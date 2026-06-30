@@ -1435,7 +1435,7 @@ window.regenerateMissingQrImages = async function() {
   function stkGetSrc(d){return(typeof d==='string')?d:(d.src||'');}
   function stkRenderDThumbs(){
     var t=document.getElementById('stkDThumbs');if(!t)return;t.innerHTML='';
-    dPool.forEach(function(d,i){var img=document.createElement('img');img.src=stkGetSrc(d);img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.title='클릭시 삭제';img.onclick=function(){if(confirm('이 도안을 삭제할까요?'))stkDeleteDesign(i);};t.appendChild(img);});
+    dPool.forEach(function(d,i){var img=document.createElement('img');img.src=stkGetSrc(d);img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:grab';img.draggable=true;img.dataset.di=i;img.ondragstart=function(ev){ev.dataTransfer.setData('di',String(i));ev.dataTransfer.effectAllowed='copy';};img.title='클릭시 삭제';img.onclick=function(){if(confirm('이 도안을 삭제할까요?'))stkDeleteDesign(i);};t.appendChild(img);});
     var c=document.getElementById('stkDCnt');if(c)c.textContent='도안 '+dPool.length+'개';
   }
 
@@ -1490,6 +1490,17 @@ window.regenerateMissingQrImages = async function() {
         // 삭제 버튼
         var del=document.createElement('button');del.className='stk-slot-del';del.textContent='×';del.onclick=function(e){e.stopPropagation();slots[idx]=null;stkRenderGrid();};cell.appendChild(del);
         cell.onclick=function(){stkOpenSlot(idx);};
+        cell.ondragover=function(ev){ev.preventDefault();ev.dataTransfer.dropEffect='copy';cell.style.borderColor='var(--gold)';};
+        cell.ondragleave=function(){cell.style.borderColor='';};
+        cell.ondrop=function(ev){
+          ev.preventDefault();cell.style.borderColor='';
+          var di=Number(ev.dataTransfer.getData('di'));
+          if(!slots[idx])slots[idx]={design:null,qr:null};
+          slots[idx].design=dPool[di];
+          stkRenderGrid();
+          // QR 선택 모달 바로 열기
+          if(qrPool.length) stkOpenQrForSlot(idx);
+        };
         g.appendChild(cell);
       })(i);
     }
@@ -1510,9 +1521,9 @@ window.regenerateMissingQrImages = async function() {
       item.onclick=function(){document.querySelectorAll('.stk-pick-item').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
       pg.appendChild(item);
     });
-    document.getElementById('stkDModal').classList.add('active');
+    document.getElementById('stkDModal').classList.add('open');
   };
-  window.stkDMClose=function(){document.getElementById('stkDModal').classList.remove('active');};
+  window.stkDMClose=function(){document.getElementById('stkDModal').classList.remove('open');};
   window.stkDMOk=function(){
     var sel=document.querySelector('.stk-pick-item.sel');if(!sel){alert('도안을 선택하세요.');return;}
     var di=Number(sel.dataset.di);
@@ -1538,9 +1549,9 @@ window.regenerateMissingQrImages = async function() {
       item.onclick=function(){document.querySelectorAll('.stk-qr-pick-item').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
       pg.appendChild(item);
     });
-    document.getElementById('stkQModal').classList.add('active');
+    document.getElementById('stkQModal').classList.add('open');
   };
-  window.stkQMClose=function(){document.getElementById('stkQModal').classList.remove('active');stkRenderGrid();};
+  window.stkQMClose=function(){document.getElementById('stkQModal').classList.remove('open');stkRenderGrid();};
   window.stkQMOk=function(){
     var sel=document.querySelector('.stk-qr-pick-item.sel');
     if(sel&&slots[modalSlotIdx]){slots[modalSlotIdx].qr=qrPool[Number(sel.dataset.qi)];}
@@ -1568,7 +1579,7 @@ window.regenerateMissingQrImages = async function() {
     var lbl=document.getElementById('sDModalSlot');if(lbl)lbl.textContent='(빈 슬롯 '+n+'개에 추가)';
     modalSlotIdx=-99; // 다중 추가 모드 플래그
     window._multiN=n;window._multiEmpties=empties;
-    document.getElementById('stkDModal').classList.add('active');
+    document.getElementById('stkDModal').classList.add('open');
     // DM Ok 재정의
     var origOk=window.stkDMOk;
     window.stkDMOk=function(){
