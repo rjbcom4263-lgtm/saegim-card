@@ -123,14 +123,13 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .stk-layout{display:flex;gap:20px;align-items:flex-start}
 .stk-panel{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
 .stk-main{flex:1;min-width:0}
-.stk-sec{font-size:10.5px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
-.stk-dz{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted);transition:border-color .2s}
+.stk-sec{font-size:10.5px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-bottom:5px}
+.stk-dz{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}
 .stk-dz:hover{border-color:var(--gold2);color:var(--gold)}
 .stk-btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
 .stk-btn-g{background:linear-gradient(135deg,#f0d9a4,#c79a4f);color:#111}
 .stk-btn-g:disabled{background:#333;color:#666;cursor:not-allowed}
 .stk-btn-w{background:transparent;color:var(--gold);border:1px solid var(--line)}
-.stk-btn-w:hover{border-color:var(--gold2)}
 .stk-cnt{font-size:11px;color:var(--muted);margin-top:2px}
 .stk-field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
 .stk-field select{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#111;color:var(--text);font-size:12.5px;margin-bottom:6px}
@@ -144,9 +143,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .stk-qr-slot img{width:100%;height:100%;object-fit:contain}
 .stk-info{flex:1;min-width:0}
 .stk-info .dn{font-size:11.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stk-info .qn{font-size:10.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-info .qn{font-size:10.5px;color:var(--muted);margin-top:2px}
 .stk-info .spick{margin-top:5px;font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer}
-.stk-info .spick:hover{color:var(--gold);border-color:var(--gold2)}
 .stk-done-badge{position:absolute;top:5px;right:5px;width:15px;height:15px;background:var(--green);color:#111;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center}
 .stk-sl-row{display:flex;align-items:center;gap:8px}
 .stk-sl-row label{font-size:12px;color:var(--muted);width:30px;flex-shrink:0}
@@ -332,10 +330,6 @@ tr:hover td{background:rgba(255,255,255,.03)}
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
 
       <!-- 스티커 생성 -->
       <div class="page" id="page-sticker">
@@ -350,7 +344,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <div class="stk-panel">
               <div>
                 <div class="stk-sec">디자인 이미지</div>
-                <div class="stk-dz" id="stkDz" onclick="document.getElementById('stkFi').click()">🖼️ 원형 PNG 업로드<br><small style="font-size:10px">여러 개 가능</small></div>
+                <div class="stk-dz" onclick="document.getElementById('stkFi').click()">🖼️ 원형 PNG 업로드<br><small style="font-size:10px">여러 개 가능</small></div>
                 <input type="file" id="stkFi" multiple accept="image/*" style="display:none">
                 <div class="stk-thumb-row" id="stkDThumbs" style="margin-top:7px"></div>
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px">
@@ -391,7 +385,6 @@ tr:hover td{background:rgba(255,255,255,.03)}
                   <div class="stk-sl-row"><label>Y</label><input type="range" id="stkY" min="0" max="100" value="55" oninput="stkUpdPos();stkSavePos()"><span id="stkYv">55%</span></div>
                   <div class="stk-sl-row"><label>크기</label><input type="range" id="stkS" min="5" max="80" value="32" oninput="stkUpdPos();stkSavePos()"><span id="stkSv">32%</span></div>
                 </div>
-                <p style="font-size:11px;color:var(--muted);margin-top:5px">드래그 이동 · 핸들 크기</p>
               </div>
               <div><div class="stk-sec">미리보기</div><div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:5px"></div></div>
               <button class="stk-btn stk-btn-g" onclick="stkComposite()">합성 → ③ 출력</button>
@@ -426,11 +419,14 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <button class="stk-btn" id="sDlBtn" style="display:none;background:#C8964A;color:#fff" onclick="stkDl()">PDF 다운로드</button>
             </div>
             <div class="stk-preview-area" id="sOutArea">
-              <div class="stk-empty" id="sOutHint"><div class="big">📄</div><p>합성 완료 후 생성</p></div>
+              <div class="stk-empty"><div class="big">📄</div><p>합성 완료 후 생성</p></div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
 <!-- 스티커 QR 선택 모달 -->
 <div class="modal-bg" id="stkModal" onclick="if(event.target===this)stkCM()">
@@ -1292,25 +1288,14 @@ window.regenerateMissingQrImages = async function() {
 
 <script>
 (function(){
-  var dImgs=[],qrImgs=[],cmpImgs=[];
-  var layout={cols:3,rows:5};
-  var pdfBlob=null;
-  var modalTarget=-1;
-  var posIdx=0;
-  var DB=null;
+  var dImgs=[],qrImgs=[],cmpImgs=[],layout={cols:3,rows:5},pdfBlob=null,modalTarget=-1,posIdx=0,DB=null;
 
-  function openDB(cb){
-    if(DB){cb(DB);return;}
-    var req=indexedDB.open('stkDB',1);
-    req.onupgradeneeded=function(e){e.target.result.createObjectStore('imgs',{keyPath:'id'});};
-    req.onsuccess=function(e){DB=e.target.result;cb(DB);};
-    req.onerror=function(){cb(null);};
-  }
-  function dbSave(id,data){openDB(function(db){if(!db)return;db.transaction('imgs','readwrite').objectStore('imgs').put({id:id,data:data});});}
+  function openDB(cb){if(DB){cb(DB);return;}var r=indexedDB.open('stkDB',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('imgs',{keyPath:'id'});};r.onsuccess=function(e){DB=e.target.result;cb(DB);};r.onerror=function(){cb(null);};}
+  function dbSave(id,d){openDB(function(db){if(!db)return;db.transaction('imgs','readwrite').objectStore('imgs').put({id:id,data:d});});}
   function dbLoadAll(cb){openDB(function(db){if(!db){cb([]);return;}var r=db.transaction('imgs','readonly').objectStore('imgs').getAll();r.onsuccess=function(){cb(r.result||[]);};r.onerror=function(){cb([]);};});}
 
   window.stkTab=function(idx,el){
-    [0,1,2].forEach(function(i){document.getElementById('stkP'+i).style.display=i===idx?'':'none';});
+    [0,1,2].forEach(function(i){var p=document.getElementById('stkP'+i);if(p)p.style.display=i===idx?'block':'none';});
     document.querySelectorAll('.stk-tab').forEach(function(t){t.classList.remove('active');});
     if(el)el.classList.add('active');
     if(idx===1)stkRenderPos(0);
@@ -1319,121 +1304,82 @@ window.regenerateMissingQrImages = async function() {
 
   window.stkInit=function(){
     stkTab(0,document.querySelector('.stk-tab'));
-    dbLoadAll(function(rows){
-      dImgs=rows.map(function(r){return r.data;});
-      stkRenderDGrid();
-    });
+    dbLoadAll(function(rows){dImgs=rows.map(function(r){return r.data;});stkRenderDGrid();});
     var fi=document.getElementById('stkFi');
-    if(fi._stkBound)return;fi._stkBound=true;
-    fi.onchange=function(){
-      var files=Array.from(fi.files);
-      var loaded=0;
-      files.forEach(function(f){
-        var fr=new FileReader();
-        fr.onload=function(e){dImgs.push(e.target.result);loaded++;if(loaded===files.length)stkRenderDGrid();};
-        fr.readAsDataURL(f);
-      });
+    if(fi&&!fi._bound){fi._bound=true;fi.onchange=function(){
+      var files=Array.from(fi.files),loaded=0;
+      files.forEach(function(f){var fr=new FileReader();fr.onload=function(e){dImgs.push(e.target.result);loaded++;if(loaded===files.length)stkRenderDGrid();};fr.readAsDataURL(f);});
       fi.value='';
-    };
+    };}
   };
 
   function stkRenderDGrid(){
-    var thumbs=document.getElementById('stkDThumbs');
-    if(!thumbs)return;
-    thumbs.innerHTML='';
-    dImgs.forEach(function(src,i){
-      var img=document.createElement('img');
-      img.src=src;img.style.cssText='width:40px;height:40px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer;title="클릭시 삭제"';
-      img.onclick=function(){dImgs.splice(i,1);stkRenderDGrid();};
-      thumbs.appendChild(img);
-    });
-    var el=document.getElementById('stkDCnt');if(el)el.textContent=dImgs.length+'개';
+    var t=document.getElementById('stkDThumbs');if(!t)return;t.innerHTML='';
+    dImgs.forEach(function(src,i){var img=document.createElement('img');img.src=src;img.style.cssText='width:40px;height:40px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.onclick=function(){dImgs.splice(i,1);stkRenderDGrid();};t.appendChild(img);});
+    var c=document.getElementById('stkDCnt');if(c)c.textContent=dImgs.length+'개';
     stkRenderGrid();
   }
 
-  window.stkSaveD=function(){
-    dImgs.forEach(function(src,i){dbSave('d'+i,src);});
-    alert('저장 완료 ('+dImgs.length+'개)');
-  };
+  window.stkSaveD=function(){dImgs.forEach(function(s,i){dbSave('d'+i,s);});alert('저장 완료 ('+dImgs.length+'개)');};
 
   window.stkLoadQr=function(){
-    var items=window.allItems||[];
-    var prod=document.getElementById('stkProd').value;
-    var stat=document.getElementById('stkStat').value;
-    var filtered=items.filter(function(it){
-      if(prod&&(it.product_type||'')!==prod)return false;
-      if(stat&&(it.status||'')!==stat)return false;
-      return true;
-    });
-    var CARD_BASE='https://saegim-memory.web.app';
-    qrImgs=[];
-    var thumbs=document.getElementById('stkQThumbs');
-    var cnt=document.getElementById('stkQCnt');
-    thumbs.innerHTML='';cnt.textContent='생성 중...';
-    if(!filtered.length){cnt.textContent='QR 0개';return;}
+    var items=window.allItems||[],prod=document.getElementById('stkProd').value,stat=document.getElementById('stkStat').value;
+    var filtered=items.filter(function(it){return (!prod||(it.product_type||'')==prod)&&(!stat||(it.status||'')==stat);});
+    var BASE='https://saegim-memory.web.app';
+    qrImgs=[];var t=document.getElementById('stkQThumbs'),c=document.getElementById('stkQCnt');
+    t.innerHTML='';c.textContent='생성 중...';
+    if(!filtered.length){c.textContent='QR 0개';return;}
     var done=0;
     filtered.forEach(function(it){
-      var url=CARD_BASE+'/?code='+encodeURIComponent(String(it.code||it.id||''));
-      var wrap=document.createElement('div');wrap.style.cssText='position:absolute;left:-9999px';document.body.appendChild(wrap);
+      var url=BASE+'/?code='+encodeURIComponent(String(it.code||it.id||''));
+      var w=document.createElement('div');w.style.cssText='position:absolute;left:-9999px';document.body.appendChild(w);
       try{
-        new QRCode(wrap,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+        new QRCode(w,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
         setTimeout(function(){
-          var canvas=wrap.querySelector('canvas');
-          var dataUrl=canvas?canvas.toDataURL('image/png'):'';
-          if(dataUrl)qrImgs.push({src:dataUrl,url:url,code:String(it.code||it.id||''),name:it.product_name||it.product_type||''});
-          document.body.removeChild(wrap);
-          done++;
+          var cv=w.querySelector('canvas'),src=cv?cv.toDataURL('image/png'):'';
+          if(src)qrImgs.push({src:src,url:url,code:String(it.code||it.id||''),name:it.product_name||it.product_type||''});
+          document.body.removeChild(w);done++;
           if(done===filtered.length){
-            cnt.textContent='QR '+qrImgs.length+'개';
-            thumbs.innerHTML='';
-            qrImgs.slice(0,12).forEach(function(q){
-              var img=document.createElement('img');img.src=q.src;
-              img.style.cssText='width:34px;height:34px;border-radius:5px;object-fit:contain;border:1px solid var(--line)';
-              img.title=q.code;thumbs.appendChild(img);
-            });
-            if(qrImgs.length>12){var m=document.createElement('span');m.textContent='+'+(qrImgs.length-12);m.style.cssText='font-size:11px;color:var(--muted);line-height:34px';thumbs.appendChild(m);}
+            c.textContent='QR '+qrImgs.length+'개';t.innerHTML='';
+            qrImgs.slice(0,12).forEach(function(q){var img=document.createElement('img');img.src=q.src;img.style.cssText='width:34px;height:34px;border-radius:5px;border:1px solid var(--line)';img.title=q.code;t.appendChild(img);});
+            if(qrImgs.length>12){var m=document.createElement('span');m.textContent='+'+(qrImgs.length-12);m.style.cssText='font-size:11px;color:var(--muted);line-height:34px';t.appendChild(m);}
             stkRenderGrid();
           }
         },300);
-      }catch(ex){document.body.removeChild(wrap);done++;if(done===filtered.length)cnt.textContent='QR '+qrImgs.length+'개';}
+      }catch(ex){document.body.removeChild(w);done++;if(done===filtered.length)c.textContent='QR '+qrImgs.length+'개';}
     });
   };
 
   function stkRenderGrid(){
-    var grid=document.getElementById('stkGrid');var hint=document.getElementById('stkHint');
-    if(!grid)return;
-    if(!dImgs.length){grid.innerHTML='';if(hint)hint.style.display='';return;}
-    if(hint)hint.style.display='none';
-    grid.innerHTML='';
+    var g=document.getElementById('stkGrid'),h=document.getElementById('stkHint');if(!g)return;
+    if(!dImgs.length){g.innerHTML='';if(h)h.style.display='';return;}
+    if(h)h.style.display='none';g.innerHTML='';
     dImgs.forEach(function(src,di){
-      var matched=qrImgs[di]||null;
-      var card=document.createElement('div');card.className='stk-card';
+      var matched=qrImgs[di]||null,card=document.createElement('div');card.className='stk-card';
       var sn=document.createElement('div');sn.className='snum';sn.textContent=di+1;card.appendChild(sn);
-      var dImg=document.createElement('img');dImg.src=src;dImg.className='stk-d-thumb';card.appendChild(dImg);
-      var arrow=document.createElement('div');arrow.className='stk-arrow';arrow.textContent='→';card.appendChild(arrow);
-      var slot=document.createElement('div');slot.className='stk-qr-slot'+(matched?' filled':'');
-      if(matched){var qi=document.createElement('img');qi.src=matched.src;slot.appendChild(qi);}
-      else{slot.textContent='QR\n선택';}
-      slot.onclick=function(){stkOpenModal(di);};card.appendChild(slot);
+      var di2=document.createElement('img');di2.src=src;di2.className='stk-d-thumb';card.appendChild(di2);
+      var ar=document.createElement('div');ar.className='stk-arrow';ar.textContent='→';card.appendChild(ar);
+      var sl=document.createElement('div');sl.className='stk-qr-slot'+(matched?' filled':'');
+      if(matched){var qi=document.createElement('img');qi.src=matched.src;sl.appendChild(qi);}else{sl.textContent='QR 선택';}
+      sl.onclick=function(){stkOpenModal(di);};card.appendChild(sl);
       var info=document.createElement('div');info.className='stk-info';
       var dn=document.createElement('div');dn.className='dn';dn.textContent='디자인 '+(di+1);info.appendChild(dn);
       var qn=document.createElement('div');qn.className='qn';qn.textContent=matched?matched.code:'매칭 없음';info.appendChild(qn);
-      var spick=document.createElement('button');spick.className='spick';spick.textContent='QR 선택';spick.onclick=function(){stkOpenModal(di);};info.appendChild(spick);
+      var sp=document.createElement('button');sp.className='spick';sp.textContent='QR 선택';sp.onclick=function(){stkOpenModal(di);};info.appendChild(sp);
       card.appendChild(info);
-      if(matched){var badge=document.createElement('div');badge.className='stk-done-badge';badge.textContent='✓';card.appendChild(badge);}
-      grid.appendChild(card);
+      if(matched){var b=document.createElement('div');b.className='stk-done-badge';b.textContent='✓';card.appendChild(b);}
+      g.appendChild(card);
     });
   }
 
   window.stkOpenModal=function(di){
-    modalTarget=di;
-    var pg=document.getElementById('stkPG');pg.innerHTML='';
+    modalTarget=di;var pg=document.getElementById('stkPG');pg.innerHTML='';
     if(!qrImgs.length){alert('먼저 QR을 가져오세요.');return;}
     qrImgs.forEach(function(q,qi){
       var item=document.createElement('div');item.className='stk-qr-pi';item.dataset.qi=qi;
       var img=document.createElement('img');img.src=q.src;item.appendChild(img);
       var qn=document.createElement('div');qn.className='qn';qn.textContent=q.code;item.appendChild(qn);
-      item.onclick=function(){document.querySelectorAll('.stk-qr-pi').forEach(function(el){el.classList.remove('sel');});item.classList.add('sel');};
+      item.onclick=function(){document.querySelectorAll('.stk-qr-pi').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
       pg.appendChild(item);
     });
     document.getElementById('stkModal').classList.add('active');
@@ -1442,162 +1388,98 @@ window.regenerateMissingQrImages = async function() {
   window.stkOkM=function(){
     var sel=document.querySelector('.stk-qr-pi.sel');if(!sel){alert('QR을 선택하세요.');return;}
     var qi=Number(sel.dataset.qi);
-    if(modalTarget>=0&&modalTarget<dImgs.length){
-      while(qrImgs.length<=modalTarget)qrImgs.push(null);
-      qrImgs[modalTarget]=qrImgs[qi];
-    }
+    if(modalTarget>=0){while(qrImgs.length<=modalTarget)qrImgs.push(null);qrImgs[modalTarget]=qrImgs[qi];}
     stkCM();stkRenderGrid();
   };
 
   window.stkAutoMatch=function(){
     if(!dImgs.length){alert('디자인을 먼저 업로드하세요.');return;}
     if(!qrImgs.length){alert('QR을 먼저 가져오세요.');return;}
-    alert('자동 매칭 완료 ('+Math.min(dImgs.length,qrImgs.length)+'개)');
-    stkRenderGrid();
+    alert('자동 매칭 완료 ('+Math.min(dImgs.length,qrImgs.length)+'개)');stkRenderGrid();
   };
 
   window.stkGoPos=function(){
     var ready=dImgs.filter(function(_,i){return !!qrImgs[i];});
     if(!ready.length){alert('QR이 매칭된 디자인이 없습니다.');return;}
-    stkTab(1,document.querySelectorAll('.stk-tab')[1]);
-    stkRenderPos(0);
+    stkTab(1,document.querySelectorAll('.stk-tab')[1]);stkRenderPos(0);
   };
 
   function stkRenderPos(idx){
     var pairs=dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);
     if(!pairs.length)return;
     posIdx=Math.min(idx,pairs.length-1);
-    var wrap=document.getElementById('sCvWrap');var hint=document.getElementById('sPosHint');
+    var wrap=document.getElementById('sCvWrap'),hint=document.getElementById('sPosHint');
     if(wrap)wrap.style.display='flex';if(hint)hint.style.display='none';
-    var picks=document.getElementById('stkPPicks');if(picks){picks.innerHTML='';
-      pairs.forEach(function(p,i){
-        var img=document.createElement('img');img.src=p.d;
-        img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');
-        img.onclick=function(){stkRenderPos(i);};picks.appendChild(img);
-      });
-    }
+    var picks=document.getElementById('stkPPicks');
+    if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=p.d;img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){stkRenderPos(i);};picks.appendChild(img);});}
     stkDrawCanvas(pairs[posIdx].d,pairs[posIdx].q.src);
   }
 
   function stkDrawCanvas(dSrc,qSrc){
     var cv=document.getElementById('sCv');if(!cv)return;
-    var ctx=cv.getContext('2d');var W=cv.width,H=cv.height;
-    var xp=Number(document.getElementById('stkX').value)/100;
-    var yp=Number(document.getElementById('stkY').value)/100;
-    var sp=Number(document.getElementById('stkS').value)/100;
-    var xv=document.getElementById('stkXv');var yv=document.getElementById('stkYv');var sv=document.getElementById('stkSv');
+    var ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
+    var xp=Number(document.getElementById('stkX').value)/100,yp=Number(document.getElementById('stkY').value)/100,sp=Number(document.getElementById('stkS').value)/100;
+    var xv=document.getElementById('stkXv'),yv=document.getElementById('stkYv'),sv=document.getElementById('stkSv');
     if(xv)xv.textContent=Math.round(xp*100)+'%';if(yv)yv.textContent=Math.round(yp*100)+'%';if(sv)sv.textContent=Math.round(sp*100)+'%';
     ctx.clearRect(0,0,W,H);
     var di=new Image();di.crossOrigin='anonymous';
     di.onload=function(){
-      ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();
-      ctx.drawImage(di,0,0,W,H);ctx.restore();
-      var qi=new Image();qi.crossOrigin='anonymous';
-      qi.onload=function(){
-        var qs=Math.round(sp*W);ctx.drawImage(qi,Math.round(xp*W-qs/2),Math.round(yp*H-qs/2),qs,qs);
-      };qi.src=qSrc;
+      ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,W,H);ctx.restore();
+      var qi=new Image();qi.crossOrigin='anonymous';qi.onload=function(){var qs=Math.round(sp*W);ctx.drawImage(qi,Math.round(xp*W-qs/2),Math.round(yp*H-qs/2),qs,qs);};qi.src=qSrc;
     };di.src=dSrc;
   }
 
   window.stkUpdPos=function(){
     var pairs=dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);
-    if(!pairs.length||posIdx>=pairs.length)return;
-    stkDrawCanvas(pairs[posIdx].d,pairs[posIdx].q.src);
+    if(!pairs.length||posIdx>=pairs.length)return;stkDrawCanvas(pairs[posIdx].d,pairs[posIdx].q.src);
   };
-  window.stkSavePos=function(){
-    try{localStorage.setItem('stkPos',JSON.stringify({x:document.getElementById('stkX').value,y:document.getElementById('stkY').value,s:document.getElementById('stkS').value}));}catch(e){}
-  };
-  (function(){try{var p=localStorage.getItem('stkPos');if(!p)return;var v=JSON.parse(p);
-    var ex=document.getElementById('stkX');var ey=document.getElementById('stkY');var es=document.getElementById('stkS');
-    if(ex)ex.value=v.x||50;if(ey)ey.value=v.y||55;if(es)es.value=v.s||32;}catch(e){}})();
+  window.stkSavePos=function(){try{localStorage.setItem('stkPos',JSON.stringify({x:document.getElementById('stkX').value,y:document.getElementById('stkY').value,s:document.getElementById('stkS').value}));}catch(e){}};
+  (function(){try{var p=localStorage.getItem('stkPos');if(!p)return;var v=JSON.parse(p);var ex=document.getElementById('stkX'),ey=document.getElementById('stkY'),es=document.getElementById('stkS');if(ex)ex.value=v.x||50;if(ey)ey.value=v.y||55;if(es)es.value=v.s||32;}catch(e){}})();
 
   window.stkComposite=function(){
     var pairs=dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);
     if(!pairs.length){alert('매칭된 쌍이 없습니다.');return;}
-    var xp=Number(document.getElementById('stkX').value)/100;
-    var yp=Number(document.getElementById('stkY').value)/100;
-    var sp=Number(document.getElementById('stkS').value)/100;
+    var xp=Number(document.getElementById('stkX').value)/100,yp=Number(document.getElementById('stkY').value)/100,sp=Number(document.getElementById('stkS').value)/100;
     var SIZE=400;cmpImgs=[];var done=0;
     pairs.forEach(function(p){
-      var cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;
-      var ctx=cv.getContext('2d');
+      var cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;var ctx=cv.getContext('2d');
       var di=new Image();di.crossOrigin='anonymous';
       di.onload=function(){
-        ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();
-        ctx.drawImage(di,0,0,SIZE,SIZE);ctx.restore();
-        var qi=new Image();qi.crossOrigin='anonymous';
-        qi.onload=function(){
-          var qs=Math.round(sp*SIZE);ctx.drawImage(qi,Math.round(xp*SIZE-qs/2),Math.round(yp*SIZE-qs/2),qs,qs);
-          cmpImgs.push(cv.toDataURL('image/png'));
-          done++;if(done===pairs.length){stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}
-        };qi.src=p.q.src;
+        ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,SIZE,SIZE);ctx.restore();
+        var qi=new Image();qi.crossOrigin='anonymous';qi.onload=function(){var qs=Math.round(sp*SIZE);ctx.drawImage(qi,Math.round(xp*SIZE-qs/2),Math.round(yp*SIZE-qs/2),qs,qs);cmpImgs.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}};qi.src=p.q.src;
       };di.src=p.d;
     });
   };
 
   window.stkRenderCmp=function(){
-    var thumbs=document.getElementById('sCmpThumbs');var cnt=document.getElementById('sCmpCnt');
-    if(!thumbs)return;thumbs.innerHTML='';
-    cmpImgs.forEach(function(src){
-      var img=document.createElement('img');img.src=src;
-      img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line)';
-      thumbs.appendChild(img);
-    });
-    if(cnt)cnt.textContent=cmpImgs.length+'개';
+    var t=document.getElementById('sCmpThumbs'),c=document.getElementById('sCmpCnt');if(!t)return;t.innerHTML='';
+    cmpImgs.forEach(function(src){var img=document.createElement('img');img.src=src;img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line)';t.appendChild(img);});
+    if(c)c.textContent=cmpImgs.length+'개';
   };
 
-  window.stkSetL=function(el){
-    document.querySelectorAll('.stk-opt-btn').forEach(function(b){b.classList.remove('active');});
-    el.classList.add('active');layout={cols:Number(el.dataset.cols),rows:Number(el.dataset.rows)};
-  };
+  window.stkSetL=function(el){document.querySelectorAll('.stk-opt-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');layout={cols:Number(el.dataset.cols),rows:Number(el.dataset.rows)};};
 
   window.stkGen=function(){
     if(!cmpImgs.length){alert('합성된 스티커가 없습니다. ② 탭에서 합성하세요.');return;}
-    var repeat=document.getElementById('sRpt').checked;
-    var total=layout.cols*layout.rows;
-    var slots=[];
-    for(var i=0;i<total;i++){
-      slots.push((!repeat&&i>=cmpImgs.length)?null:cmpImgs[i%cmpImgs.length]);
-    }
-    var prog=document.getElementById('sProg');var progBar=document.getElementById('sProgB');
-    var statTxt=document.getElementById('sStatTxt');var genBtn=document.getElementById('sGenBtn');var dlBtn=document.getElementById('sDlBtn');
-    if(prog)prog.style.display='block';if(progBar)progBar.style.width='0';
-    if(genBtn)genBtn.disabled=true;if(dlBtn)dlBtn.style.display='none';
-    if(statTxt)statTxt.textContent='생성 중...';
-    var jsPDF=window.jspdf&&window.jspdf.jsPDF;
-    if(!jsPDF){alert('jsPDF 로드 실패. 잠시 후 다시 시도하세요.');if(genBtn)genBtn.disabled=false;return;}
+    var repeat=document.getElementById('sRpt').checked,total=layout.cols*layout.rows;
+    var slots=[];for(var i=0;i<total;i++)slots.push((!repeat&&i>=cmpImgs.length)?null:cmpImgs[i%cmpImgs.length]);
+    var prog=document.getElementById('sProg'),bar=document.getElementById('sProgB'),stat=document.getElementById('sStatTxt'),btn=document.getElementById('sGenBtn'),dl=document.getElementById('sDlBtn');
+    if(prog)prog.style.display='block';if(bar)bar.style.width='0';if(btn)btn.disabled=true;if(dl)dl.style.display='none';if(stat)stat.textContent='생성 중...';
+    var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF){alert('jsPDF 로드 실패');if(btn)btn.disabled=false;return;}
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    var A4W=210,A4H=297;
-    var gapX=A4W/layout.cols,gapY=A4H/layout.rows;
-    var d=Math.min(gapX,gapY)*0.88;
-    var idx=0;
-    function addNext(){
-      if(idx>=slots.length){
-        if(statTxt)statTxt.textContent='완료!';if(prog)prog.style.display='none';if(genBtn)genBtn.disabled=false;
-        pdfBlob=doc.output('blob');if(dlBtn)dlBtn.style.display='block';
-        var out=document.getElementById('sOutArea');
-        if(out)out.innerHTML='<div style="color:var(--green);font-size:22px;margin-bottom:8px">✅ PDF 준비 완료</div>'
-          +'<div style="color:var(--muted);font-size:13px">'+total+'칸 / '+layout.cols+'×'+layout.rows+' 레이아웃</div>';
-        return;
-      }
-      if(progBar)progBar.style.width=(idx/slots.length*100)+'%';
-      if(statTxt)statTxt.textContent=(idx+1)+' / '+slots.length;
+    var gapX=210/layout.cols,gapY=297/layout.rows,d=Math.min(gapX,gapY)*0.88,idx=0;
+    function next(){
+      if(idx>=slots.length){if(stat)stat.textContent='완료!';if(prog)prog.style.display='none';if(btn)btn.disabled=false;pdfBlob=doc.output('blob');if(dl)dl.style.display='block';
+        var out=document.getElementById('sOutArea');if(out)out.innerHTML='<div style="color:var(--green);font-size:22px;margin-bottom:8px">✅ PDF 준비 완료</div><div style="color:var(--muted);font-size:13px">'+total+'칸 / '+layout.cols+'×'+layout.rows+' 레이아웃</div>';return;}
+      if(bar)bar.style.width=(idx/slots.length*100)+'%';if(stat)stat.textContent=(idx+1)+'/'+slots.length;
       var s=slots[idx];
-      if(s){
-        var col=idx%layout.cols,row=Math.floor(idx/layout.cols);
-        doc.addImage(s,'PNG',gapX*(col+0.5)-d/2,gapY*(row+0.5)-d/2,d,d);
-      }
-      idx++;setTimeout(addNext,0);
+      if(s){var col=idx%layout.cols,row=Math.floor(idx/layout.cols);doc.addImage(s,'PNG',gapX*(col+0.5)-d/2,gapY*(row+0.5)-d/2,d,d);}
+      idx++;setTimeout(next,0);
     }
-    addNext();
+    next();
   };
 
-  window.stkDl=function(){
-    if(!pdfBlob){alert('먼저 PDF를 생성하세요.');return;}
-    var url=URL.createObjectURL(pdfBlob);
-    var a=document.createElement('a');a.href=url;a.download='saegim_stickers.pdf';a.click();
-    setTimeout(function(){URL.revokeObjectURL(url);},2000);
-  };
+  window.stkDl=function(){if(!pdfBlob){alert('먼저 PDF를 생성하세요.');return;}var url=URL.createObjectURL(pdfBlob);var a=document.createElement('a');a.href=url;a.download='saegim_stickers.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(url);},2000);};
 
 })();
 </script>
