@@ -383,9 +383,24 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <div>
                 <div class="stk-sec">QR 위치·크기</div>
                 <div class="stk-pos-box">
-                  <div class="stk-sl-row"><label>X</label><input type="range" id="stkX" min="0" max="100" value="50" oninput="stkUpdPos();stkSavePos()"><span id="stkXv">50%</span></div>
-                  <div class="stk-sl-row"><label>Y</label><input type="range" id="stkY" min="0" max="100" value="55" oninput="stkUpdPos();stkSavePos()"><span id="stkYv">55%</span></div>
-                  <div class="stk-sl-row"><label>크기</label><input type="range" id="stkS" min="5" max="80" value="32" oninput="stkUpdPos();stkSavePos()"><span id="stkSv">32%</span></div>
+                  <div class="stk-sl-row">
+                    <label>X</label>
+                    <input type="range" id="stkX" min="0" max="100" value="50" oninput="document.getElementById('stkXn').value=this.value;stkUpdPos();stkSavePos()">
+                    <input type="number" id="stkXn" min="0" max="100" value="50" style="width:52px;padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#0d0d0d;color:var(--gold);font-size:12px;text-align:center" oninput="document.getElementById('stkX').value=this.value;stkUpdPos();stkSavePos()">
+                    <span style="font-size:11px;color:var(--muted)">%</span>
+                  </div>
+                  <div class="stk-sl-row">
+                    <label>Y</label>
+                    <input type="range" id="stkY" min="0" max="100" value="55" oninput="document.getElementById('stkYn').value=this.value;stkUpdPos();stkSavePos()">
+                    <input type="number" id="stkYn" min="0" max="100" value="55" style="width:52px;padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#0d0d0d;color:var(--gold);font-size:12px;text-align:center" oninput="document.getElementById('stkY').value=this.value;stkUpdPos();stkSavePos()">
+                    <span style="font-size:11px;color:var(--muted)">%</span>
+                  </div>
+                  <div class="stk-sl-row">
+                    <label>크기</label>
+                    <input type="range" id="stkS" min="5" max="80" value="32" oninput="document.getElementById('stkSn').value=this.value;stkUpdPos();stkSavePos()">
+                    <input type="number" id="stkSn" min="5" max="80" value="32" style="width:52px;padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#0d0d0d;color:var(--gold);font-size:12px;text-align:center" oninput="document.getElementById('stkS').value=this.value;stkUpdPos();stkSavePos()">
+                    <span style="font-size:11px;color:var(--muted)">%</span>
+                  </div>
                 </div>
               </div>
               <div><div class="stk-sec">미리보기</div><div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:5px"></div></div>
@@ -1448,8 +1463,20 @@ window.regenerateMissingQrImages = async function() {
     var pairs=dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);
     if(!pairs.length||posIdx>=pairs.length)return;stkDrawCanvas(pairs[posIdx].d,pairs[posIdx].q.src);
   };
-  window.stkSavePos=function(){try{localStorage.setItem('stkPos',JSON.stringify({x:document.getElementById('stkX').value,y:document.getElementById('stkY').value,s:document.getElementById('stkS').value}));}catch(e){}};
-  (function(){try{var p=localStorage.getItem('stkPos');if(!p)return;var v=JSON.parse(p);var ex=document.getElementById('stkX'),ey=document.getElementById('stkY'),es=document.getElementById('stkS');if(ex)ex.value=v.x||50;if(ey)ey.value=v.y||55;if(es)es.value=v.s||32;}catch(e){}})();
+  window.stkSavePos=function(){
+    try{
+      localStorage.setItem('stkPos',JSON.stringify({x:document.getElementById('stkX').value,y:document.getElementById('stkY').value,s:document.getElementById('stkS').value}));
+    }catch(e){}
+  };
+  (function(){
+    try{
+      var p=localStorage.getItem('stkPos');if(!p)return;var v=JSON.parse(p);
+      var ex=document.getElementById('stkX'),ey=document.getElementById('stkY'),es=document.getElementById('stkS');
+      var exn=document.getElementById('stkXn'),eyn=document.getElementById('stkYn'),esn=document.getElementById('stkSn');
+      if(ex)ex.value=v.x||50;if(ey)ey.value=v.y||55;if(es)es.value=v.s||32;
+      if(exn)exn.value=v.x||50;if(eyn)eyn.value=v.y||55;if(esn)esn.value=v.s||32;
+    }catch(e){}
+  })();
 
   window.stkComposite=function(){
     var pairs=dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);
