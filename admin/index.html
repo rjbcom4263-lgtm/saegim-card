@@ -1508,7 +1508,35 @@ window.regenerateMissingQrImages = async function() {
   }
 
   /* ── 슬롯 클릭 → 도안 선택 모달 ── */
+  // 슬롯 클릭 분기: 빈 슬롯 → 도안+QR, 채워진 슬롯 → 선택 팝업
   window.stkOpenSlot=function(idx){
+    if(slots[idx]&&slots[idx].design){
+      // 이미 배정된 슬롯 → 도안/QR 개별 변경 팝업
+      stkShowSlotMenu(idx);
+    } else {
+      stkOpenDesignPicker(idx);
+    }
+  };
+
+  function stkShowSlotMenu(idx){
+    var menu=document.getElementById('stkSlotMenu');
+    if(!menu){
+      menu=document.createElement('div');menu.id='stkSlotMenu';
+      menu.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;z-index:9999;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5)';
+      document.body.appendChild(menu);
+    }
+    menu.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px">슬롯 '+(idx+1)+' 수정</div>'
+      +'<button onclick="stkOpenDesignPicker('+idx+');document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;margin-bottom:8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px">🖼️ 도안 변경</button>'
+      +'<button onclick="stkOpenQrForSlot('+idx+');document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;margin-bottom:8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px">📷 QR 변경</button>'
+      +'<button onclick="document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px">취소</button>';
+    menu.style.display='block';
+    // 바깥 클릭 닫기
+    setTimeout(function(){
+      document.addEventListener('click',function h(e){if(!menu.contains(e.target)){menu.style.display='none';}document.removeEventListener('click',h);},{once:true,capture:true});
+    },100);
+  }
+
+  function stkOpenDesignPicker(idx){
     if(!dPool.length){alert('먼저 도안을 업로드하세요.');return;}
     modalSlotIdx=idx;
     var lbl=document.getElementById('sDModalSlot');if(lbl)lbl.textContent=idx+1;
@@ -1527,11 +1555,13 @@ window.regenerateMissingQrImages = async function() {
   window.stkDMOk=function(){
     var sel=document.querySelector('.stk-pick-item.sel');if(!sel){alert('도안을 선택하세요.');return;}
     var di=Number(sel.dataset.di);
+    var wasEmpty=!slots[modalSlotIdx]||!slots[modalSlotIdx].design;
     if(!slots[modalSlotIdx])slots[modalSlotIdx]={design:null,qr:null};
     slots[modalSlotIdx].design=dPool[di];
     stkDMClose();
-    // 바로 QR 선택으로
-    stkOpenQrForSlot(modalSlotIdx);
+    // 빈 슬롯이었으면 자동으로 QR 선택, 도안만 변경이면 그냥 닫기
+    if(wasEmpty && qrPool.length) stkOpenQrForSlot(modalSlotIdx);
+    else stkRenderGrid();
   };
 
   /* ── QR 선택 모달 ── */
@@ -1620,7 +1650,7 @@ window.regenerateMissingQrImages = async function() {
     var pairs=getPairs();
     var wrap=document.getElementById('sCvWrap'),hint=document.getElementById('sPosHint');
     if(!pairs.length){if(wrap)wrap.style.display='none';if(hint)hint.style.display='';return;}
-    if(wrap)wrap.style.display='flex';if(hint)hint.style.display='none';
+    if(wrap){wrap.style.display='flex';wrap.style.flexDirection='column';wrap.style.alignItems='center';wrap.style.gap='8px';}if(hint)hint.style.display='none';
     posIdx=0;stkRenderPosNav();stkDrawCanvas();stkSyncNums();
     var cv=document.getElementById('sCv');
     cv.onmousedown=function(e){
@@ -1638,7 +1668,7 @@ window.regenerateMissingQrImages = async function() {
 
   function stkRenderPosNav(){
     var pairs=getPairs(),picks=document.getElementById('stkPPicks'),lbl=document.getElementById('sPosNavLabel');
-    if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=p.design;img.style.cssText='width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){posIdx=i;stkRenderPosNav();stkDrawCanvas();};picks.appendChild(img);});}
+    if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=stkGetSrc(p.design);img.style.cssText='width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){posIdx=i;stkRenderPosNav();stkDrawCanvas();};picks.appendChild(img);});}
     if(lbl)lbl.textContent=(posIdx+1)+' / '+pairs.length;
   }
   window.stkPosNav=function(dir){var pairs=getPairs();posIdx=Math.max(0,Math.min(pairs.length-1,posIdx+dir));stkRenderPosNav();stkDrawCanvas();};
@@ -1649,16 +1679,33 @@ window.regenerateMissingQrImages = async function() {
     var cv=document.getElementById('sCv');if(!cv)return;
     var ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
     ctx.clearRect(0,0,W,H);
-    var di=new Image();di.crossOrigin='anonymous';
+    var src=stkGetSrc(p.design);
+    if(!src)return;
+    var drawQrOn=function(){
+      if(!p.qr)return;
+      var qi=new Image();
+      qi.onload=function(){
+        var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);
+        ctx.drawImage(qi,qx,qy,qs,qs);
+        var h=document.getElementById('sResizeHandle');
+        if(h){h.style.left=(qx+qs-7)+'px';h.style.top=(qy+qs-7)+'px';h.style.right='auto';h.style.bottom='auto';}
+      };
+      qi.src=p.qr.src;
+    };
+    var di=new Image();
+    // data URL이면 crossOrigin 세팅 불필요 (오히려 문제 유발)
+    if(src.indexOf('data:')<0) di.crossOrigin='anonymous';
     di.onload=function(){
       ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,W,H);ctx.restore();
-      if(p.qr){
-        var qi=new Image();qi.crossOrigin='anonymous';
-        qi.onload=function(){var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);ctx.drawImage(qi,qx,qy,qs,qs);
-          var handle=document.getElementById('sResizeHandle');if(handle){handle.style.left=(qx+qs-7)+'px';handle.style.top=(qy+qs-7)+'px';handle.style.right='auto';handle.style.bottom='auto';}
-        };qi.src=p.qr.src;
-      }
-    };di.src=p.design;
+      drawQrOn();
+    };
+    di.onerror=function(){
+      // crossOrigin 없이 재시도 (Firebase Storage CORS 설정 전 fallback)
+      var di2=new Image();
+      di2.onload=function(){ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di2,0,0,W,H);ctx.restore();drawQrOn();};
+      di2.src=src;
+    };
+    di.src=src;
   }
 
   /* ── 합성 ── */
@@ -1674,7 +1721,7 @@ window.regenerateMissingQrImages = async function() {
           var qi=new Image();qi.crossOrigin='anonymous';
           qi.onload=function(){var qs=Math.round(qrSize*SIZE);ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}};qi.src=p.qr.src;
         }else{cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}}
-      };di.src=p.design;
+      };di.src=stkGetSrc(p.design);
     });
   };
 
