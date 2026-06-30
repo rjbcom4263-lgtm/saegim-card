@@ -1417,7 +1417,9 @@ window.regenerateMissingQrImages = async function() {
       // 상태 배지
       if(matched){var b=document.createElement('div');b.className='stk-done-badge';b.textContent='✓ '+matched.code;card.appendChild(b);}
       else{var b2=document.createElement('div');b2.style.cssText='font-size:10px;color:var(--muted)';b2.textContent='클릭하여 QR 선택';card.appendChild(b2);}
-      card.onclick=function(){stkOpenModal(di);};
+      // 빈 슬롯 또는 QR 이미지 클릭 시 선택
+      if(matched){qi.onclick=function(e){e.stopPropagation();stkOpenModal(di);};}
+      else{us.onclick=function(e){e.stopPropagation();stkOpenModal(di);};}
       g.appendChild(card);
     });
   }
@@ -1433,7 +1435,8 @@ window.regenerateMissingQrImages = async function() {
       var item=document.createElement('div');item.className='stk-qr-pi';item.dataset.qi=qi;
       if(qrImgs[modalTarget]&&qrImgs[modalTarget].code===q.code)item.classList.add('sel');
       var img=document.createElement('img');img.src=q.src;item.appendChild(img);
-      var qn=document.createElement('div');qn.className='qn';qn.textContent=q.code;item.appendChild(qn);
+      var qn=document.createElement('div');qn.className='qn';qn.textContent='QR '+(qi+1)+'번';item.appendChild(qn);
+      var qc=document.createElement('div');qc.style.cssText='font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';qc.textContent=q.code;item.appendChild(qc);
       item.onclick=function(){document.querySelectorAll('.stk-qr-pi').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
       pg.appendChild(item);
     });
