@@ -121,55 +121,67 @@ tr:hover td{background:rgba(255,255,255,.03)}
 
 /* ── 스티커 탭 ── */
 .stk-layout{display:flex;gap:20px;align-items:flex-start}
-.stk-panel{width:270px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
+.stk-panel{width:250px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
 .stk-main{flex:1;min-width:0}
-.stk-sec{font-size:10.5px;font-weight:700;color:var(--gold);letter-spacing:.08em;margin-bottom:5px}
-.stk-dz{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}
+.stk-sec{font-size:10.5px;font-weight:700;color:var(--gold);letter-spacing:.06em;margin-bottom:6px;text-transform:uppercase}
+.stk-dz{border:2px dashed var(--line);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:12px;color:var(--muted)}
 .stk-dz:hover{border-color:var(--gold2);color:var(--gold)}
-.stk-btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.stk-btn{width:100%;padding:9px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:4px}
 .stk-btn-g{background:linear-gradient(135deg,#f0d9a4,#c79a4f);color:#111}
 .stk-btn-g:disabled{background:#333;color:#666;cursor:not-allowed}
 .stk-btn-w{background:transparent;color:var(--gold);border:1px solid var(--line)}
 .stk-cnt{font-size:11px;color:var(--muted);margin-top:2px}
-.stk-field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
-.stk-field select,.stk-field input[type=number]{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#111;color:var(--text);font-size:12.5px;margin-bottom:6px}
-.stk-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px}
-.stk-card{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:border-color .2s}
-.stk-card:hover{border-color:var(--gold2)}
-.stk-card.matched{border-color:var(--gold)}
-.stk-d-thumb{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2px solid var(--line)}
-.stk-card-label{font-size:11px;color:var(--muted);text-align:center}
-.stk-qr-mini{width:50px;height:50px;border-radius:6px;object-fit:contain;border:1px solid var(--gold2)}
-.stk-match-row{display:flex;align-items:center;gap:6px}
-.stk-arrow{color:var(--line);font-size:16px}
-.stk-unset{width:50px;height:50px;border:1.5px dashed var(--line);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--muted);text-align:center;cursor:pointer}
-.stk-done-badge{font-size:9px;padding:2px 6px;border-radius:10px;background:var(--green);color:#111;font-weight:700}
-.stk-thumb-row{display:flex;flex-wrap:wrap;gap:5px}
-.stk-qr-pg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;max-height:340px;overflow-y:auto}
-.stk-qr-pi{border:2px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;text-align:center}
-.stk-qr-pi:hover{border-color:var(--gold2)}
-.stk-qr-pi.sel{border-color:var(--gold);background:rgba(230,200,143,.1)}
-.stk-qr-pi img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:4px;display:block}
-.stk-qr-pi .qn{font-size:9.5px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.stk-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:20px;gap:4px}
-.stk-tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
-.stk-tab.active{color:var(--gold);border-color:var(--gold)}
-.stk-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);padding:60px 20px;text-align:center}
-.stk-empty .big{font-size:40px}
-.stk-canvas-wrap{position:relative;display:inline-block;cursor:move;user-select:none}
-.stk-resize-handle{position:absolute;width:14px;height:14px;background:var(--gold);border-radius:3px;cursor:se-resize;right:0;bottom:0;border:2px solid #111}
-.stk-nav-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:10px}
+.stk-field label{font-size:11px;color:var(--muted);display:block;margin-bottom:3px}
+.stk-field select,.stk-field input[type=number]{width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:7px;background:#111;color:var(--text);font-size:12px;margin-bottom:5px}
+.stk-thumb-row{display:flex;flex-wrap:wrap;gap:4px;max-height:80px;overflow-y:auto}
+/* 15칸 슬롯 그리드 */
+.stk-slot-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.stk-slot{background:var(--card);border:2px dashed var(--line);border-radius:10px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:border-color .2s;overflow:hidden}
+.stk-slot:hover{border-color:var(--gold2)}
+.stk-slot.filled{border-style:solid;border-color:var(--gold2)}
+.stk-slot.filled:hover{border-color:var(--gold)}
+.stk-slot-num{position:absolute;top:3px;left:5px;font-size:9px;color:var(--muted);font-weight:700}
+.stk-slot-design{width:70%;aspect-ratio:1;border-radius:50%;object-fit:cover}
+.stk-slot-qr{position:absolute;bottom:4px;right:4px;width:28%;aspect-ratio:1;border-radius:3px;object-fit:contain;background:#fff;padding:1px}
+.stk-slot-empty{font-size:22px;color:var(--line)}
+.stk-slot-del{position:absolute;top:2px;right:4px;width:16px;height:16px;border-radius:50%;background:var(--red);color:#fff;font-size:10px;display:none;align-items:center;justify-content:center;cursor:pointer;border:none}
+.stk-slot:hover .stk-slot-del{display:flex}
+.stk-slot-code{position:absolute;bottom:3px;left:0;right:0;text-align:center;font-size:7.5px;color:var(--gold2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+/* 위치 조절 */
+.stk-canvas-wrap{position:relative;display:inline-block;user-select:none}
+.stk-resize-handle{position:absolute;width:14px;height:14px;background:var(--gold);border-radius:3px;cursor:se-resize;border:2px solid #111}
+.stk-nav-row{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
 .stk-nav-btn{padding:5px 14px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px}
-.stk-nav-btn:hover{border-color:var(--gold2);color:var(--gold)}
-.stk-pos-nums{display:flex;gap:8px;margin-top:10px;justify-content:center}
-.stk-pos-num{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--muted)}
-.stk-pos-num input{width:52px;padding:3px 5px;border:1px solid var(--line);border-radius:5px;background:#0d0d0d;color:var(--gold);font-size:12px;text-align:center}
-.stk-preview-area{flex:1;background:#111;border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:460px}
+.stk-nav-btn:hover{color:var(--gold);border-color:var(--gold2)}
+.stk-pos-nums{display:flex;gap:6px;margin-top:8px;justify-content:center;flex-wrap:wrap}
+.stk-pos-num{display:flex;align-items:center;gap:3px;font-size:11px;color:var(--muted)}
+.stk-pos-num input{width:50px;padding:3px 4px;border:1px solid var(--line);border-radius:5px;background:#0d0d0d;color:var(--gold);font-size:12px;text-align:center}
+.stk-preview-area{flex:1;background:#111;border-radius:14px;padding:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:460px}
 .stk-opt-row{display:flex;gap:6px}
 .stk-opt-btn{flex:1;padding:7px 4px;border:1px solid var(--line);border-radius:7px;background:transparent;cursor:pointer;font-size:11.5px;text-align:center;color:var(--muted)}
 .stk-opt-btn.active{border-color:var(--gold2);color:var(--gold);background:rgba(230,200,143,.08)}
+.stk-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:20px;gap:4px}
+.stk-tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.stk-tab.active{color:var(--gold);border-color:var(--gold)}
 .stk-prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden;display:none;margin-top:4px}
 .stk-prog-bar{height:100%;background:var(--gold);width:0;transition:width .2s}
+/* 모달 픽커 */
+.stk-pick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:300px;overflow-y:auto;margin-bottom:12px}
+.stk-pick-item{border:2px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;text-align:center}
+.stk-pick-item:hover{border-color:var(--gold2)}
+.stk-pick-item.sel{border-color:var(--gold);background:rgba(230,200,143,.1)}
+.stk-pick-item img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:50%;display:block}
+.stk-pick-item .pn{font-size:9px;color:var(--muted);margin-top:3px}
+.stk-qr-pick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-height:280px;overflow-y:auto;margin-bottom:12px}
+.stk-qr-pick-item{border:2px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;text-align:center}
+.stk-qr-pick-item:hover{border-color:var(--gold2)}
+.stk-qr-pick-item.sel{border-color:var(--gold);background:rgba(230,200,143,.1)}
+.stk-qr-pick-item img{width:100%;aspect-ratio:1;object-fit:contain;display:block}
+.stk-qr-pick-item .pn{font-size:8.5px;color:var(--muted);margin-top:2px}
+.stk-qr-pick-item .pc{font-size:7.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-add-multi{display:flex;gap:6px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--line);margin-bottom:10px}
+.stk-add-multi input{width:60px;padding:5px;border:1px solid var(--line);border-radius:5px;background:#111;color:var(--text);font-size:13px;text-align:center}
+.stk-add-multi button{flex:1;padding:7px;border:none;border-radius:6px;background:var(--gold2);color:#111;font-weight:700;cursor:pointer;font-size:12px}
 </style>
 </head>
 <body>
@@ -346,35 +358,42 @@ tr:hover td{background:rgba(255,255,255,.03)}
           <div class="stk-layout">
             <div class="stk-panel">
               <div>
-                <div class="stk-sec">디자인 이미지</div>
-                <div class="stk-dz" onclick="document.getElementById('stkFi').click()">🖼️ 클릭하여 PNG 업로드<br><small style="font-size:10px">여러 개 동시 선택 가능</small></div>
+                <div class="stk-sec">도안 업로드</div>
+                <div class="stk-dz" onclick="document.getElementById('stkFi').click()">🖼️ PNG 업로드 (여러 개 가능)</div>
                 <input type="file" id="stkFi" multiple accept="image/*" style="display:none">
-                <div class="stk-thumb-row" id="stkDThumbs" style="margin-top:7px"></div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
-                  <div class="stk-cnt" id="stkDCnt">0개</div>
-                  <button onclick="stkSaveD()" style="font-size:10px;padding:2px 7px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer">💾 저장</button>
-                </div>
+                <div class="stk-thumb-row" id="stkDThumbs" style="margin-top:6px"></div>
+                <div class="stk-cnt" id="stkDCnt" style="margin-top:3px">도안 0개</div>
               </div>
               <div>
-                <div class="stk-sec">재고에서 QR 불러오기</div>
+                <div class="stk-sec">QR 불러오기</div>
                 <div class="stk-field">
                   <label>제품</label>
                   <select id="stkProd"><option value="">전체</option><option value="CD">CD</option><option value="BMT">BMT</option><option value="GT">GT</option><option value="WT">WT</option><option value="TT">TT</option></select>
                   <label>상태</label>
                   <select id="stkStat"><option value="">전체</option><option value="미등록">미등록</option><option value="판매완료">판매완료</option><option value="사용중">사용중</option></select>
-                  <label>개수 (비우면 전체)</label>
+                  <label>개수 제한</label>
                   <input type="number" id="stkLimit" min="1" max="500" placeholder="예: 29">
                 </div>
                 <button class="stk-btn stk-btn-g" onclick="stkLoadQr()">📥 QR 불러오기</button>
-                <div class="stk-cnt" id="stkQCnt" style="margin-top:6px">QR 0개</div>
+                <div class="stk-cnt" id="stkQCnt">QR 0개</div>
               </div>
               <div style="border-top:1px solid var(--line);padding-top:10px">
-                <button class="stk-btn stk-btn-g" onclick="stkGoPos()">② 위치 조절 →</button>
+                <div class="stk-add-multi">
+                  <span style="font-size:11px;color:var(--muted);white-space:nowrap">선택 도안</span>
+                  <input type="number" id="stkMultiN" min="1" max="15" value="1" placeholder="개수">
+                  <span style="font-size:11px;color:var(--muted)">개 추가</span>
+                  <button onclick="stkAddMulti()">추가</button>
+                </div>
+                <button class="stk-btn stk-btn-w" onclick="stkClearAll()">🗑 전체 초기화</button>
+                <button class="stk-btn stk-btn-g" style="margin-top:4px" onclick="stkGoPos()">② 위치 조절 →</button>
               </div>
             </div>
             <div class="stk-main">
-              <div class="stk-empty" id="stkHint"><div class="big">🖼️</div><p>디자인을 업로드하면<br>각 카드에서 QR을 선택할 수 있어요</p></div>
-              <div class="stk-card-grid" id="stkGrid"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">슬롯 <span id="stkFilledCnt">0</span> / 15</div>
+                <div style="font-size:11px;color:var(--muted)">슬롯 클릭 → 도안·QR 배정</div>
+              </div>
+              <div class="stk-slot-grid" id="stkGrid"></div>
             </div>
           </div>
         </div>
@@ -384,27 +403,26 @@ tr:hover td{background:rgba(255,255,255,.03)}
           <div class="stk-layout">
             <div class="stk-panel">
               <div>
-                <div class="stk-sec">현재 디자인</div>
-                <div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
-                <div id="stkPosInfo" style="font-size:11px;color:var(--muted)"></div>
+                <div class="stk-sec">슬롯 선택</div>
+                <div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
               </div>
               <div>
-                <div class="stk-sec">QR 위치·크기 (직접 입력)</div>
+                <div class="stk-sec">QR 위치·크기</div>
                 <div class="stk-pos-nums">
                   <div class="stk-pos-num"><span>X</span><input type="number" id="stkXn" min="0" max="100" value="50" oninput="stkApplyNums()"><span>%</span></div>
                   <div class="stk-pos-num"><span>Y</span><input type="number" id="stkYn" min="0" max="100" value="55" oninput="stkApplyNums()"><span>%</span></div>
                   <div class="stk-pos-num"><span>크기</span><input type="number" id="stkSn" min="5" max="80" value="32" oninput="stkApplyNums()"><span>%</span></div>
                 </div>
-                <div style="font-size:10.5px;color:var(--muted);margin-top:8px;text-align:center">💡 캔버스에서 드래그로 이동<br>오른쪽 하단 핸들로 크기 조절</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절</div>
               </div>
               <button class="stk-btn stk-btn-g" onclick="stkComposite()">✅ 합성 → ③ 출력</button>
             </div>
             <div class="stk-preview-area">
-              <div style="color:var(--muted);font-size:13px" id="sPosHint">① 탭에서 QR을 매칭하세요</div>
+              <div style="color:var(--muted);font-size:13px" id="sPosHint">슬롯에 도안·QR을 먼저 배정하세요</div>
               <div id="sCvWrap" style="display:none;flex-direction:column;align-items:center;gap:8px">
                 <div class="stk-canvas-wrap" id="sCvContainer">
                   <canvas id="sCv" width="380" height="380" style="display:block;border-radius:50%;box-shadow:0 4px 24px rgba(0,0,0,.6)"></canvas>
-                  <div class="stk-resize-handle" id="sResizeHandle"></div>
+                  <div class="stk-resize-handle" id="sResizeHandle" style="position:absolute;right:0;bottom:0"></div>
                 </div>
                 <div class="stk-nav-row">
                   <button class="stk-nav-btn" onclick="stkPosNav(-1)">◀ 이전</button>
@@ -420,7 +438,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
         <div id="stkP2" style="display:none">
           <div class="stk-layout">
             <div class="stk-panel">
-              <div><div class="stk-sec">합성 스티커</div><div class="stk-thumb-row" id="sCmpThumbs"></div><div class="stk-cnt" id="sCmpCnt" style="margin-top:4px">0개</div></div>
+              <div><div class="stk-sec">합성 스티커</div><div style="display:flex;flex-wrap:wrap;gap:4px" id="sCmpThumbs"></div><div class="stk-cnt" id="sCmpCnt" style="margin-top:4px">0개</div></div>
               <div>
                 <div class="stk-sec">배치</div>
                 <div class="stk-opt-row">
@@ -430,8 +448,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
                 </div>
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between">
-                <label style="font-size:12.5px;color:var(--muted)">부족 시 반복</label>
-                <input type="checkbox" id="sRpt" checked style="accent-color:var(--gold);width:15px;height:15px">
+                <label style="font-size:12px;color:var(--muted)">빈 슬롯 반복 채우기</label>
+                <input type="checkbox" id="sRpt" style="accent-color:var(--gold);width:14px;height:14px">
               </div>
               <button class="stk-btn stk-btn-g" id="sGenBtn" onclick="stkGen()">A4 PDF 생성</button>
               <div class="stk-prog" id="sProg"><div class="stk-prog-bar" id="sProgB"></div></div>
@@ -439,7 +457,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <button class="stk-btn" id="sDlBtn" style="display:none;background:#C8964A;color:#fff;margin-top:4px" onclick="stkDl()">⬇ PDF 다운로드</button>
             </div>
             <div class="stk-preview-area" id="sOutArea">
-              <div class="stk-empty"><div class="big">📄</div><p>합성 완료 후 생성하세요</p></div>
+              <div style="color:var(--muted);font-size:13px;text-align:center">📄<br>PDF 생성 후 여기에 표시</div>
             </div>
           </div>
         </div>
@@ -448,15 +466,26 @@ tr:hover td{background:rgba(255,255,255,.03)}
   </div>
 </div>
 
-<!-- 스티커 QR 선택 모달 -->
-<div class="modal-bg" id="stkModal" onclick="if(event.target===this)stkCM()">
-  <div class="modal" style="max-width:500px">
-    <h3 id="stkModalTitle">QR 선택</h3>
-    <p id="stkModalSub" style="font-size:12px;color:var(--muted);margin-bottom:12px"></p>
-    <div class="stk-qr-pg" id="stkPG"></div>
+<!-- 스티커 도안 선택 모달 -->
+<div class="modal-bg" id="stkDModal" onclick="if(event.target===this)stkDMClose()">
+  <div class="modal" style="max-width:560px">
+    <h3>도안 선택 — 슬롯 <span id="sDModalSlot"></span></h3>
+    <div class="stk-pick-grid" id="sDPickGrid"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="stkCM()">취소</button>
-      <button class="btn btn-primary" onclick="stkOkM()">선택</button>
+      <button class="btn btn-ghost" onclick="stkDMClose()">취소</button>
+      <button class="btn btn-primary" onclick="stkDMOk()">선택</button>
+    </div>
+  </div>
+</div>
+
+<!-- 스티커 QR 선택 모달 -->
+<div class="modal-bg" id="stkQModal" onclick="if(event.target===this)stkQMClose()">
+  <div class="modal" style="max-width:560px">
+    <h3>QR 선택 — 슬롯 <span id="sQModalSlot"></span></h3>
+    <div class="stk-qr-pick-grid" id="sQPickGrid"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="stkQMClose()">취소</button>
+      <button class="btn btn-primary" onclick="stkQMOk()">선택</button>
     </div>
   </div>
 </div>
@@ -1310,14 +1339,21 @@ window.regenerateMissingQrImages = async function() {
 
 <script>
 (function(){
-  var dImgs=[],qrPool=[],designMap={},cmpImgs=[],layout={cols:3,rows:5},pdfBlob=null;
-  var modalTarget=-1,posIdx=0,DB=null;
-  // QR 위치 (0~1 비율)
-  var qrX=0.50, qrY=0.55, qrSize=0.32;
+  var SLOTS=15;
+  var dPool=[];       // 업로드된 도안 풀
+  var qrPool=[];      // 불러온 QR 풀
+  var slots=[];       // slots[i] = {design:src, qr:{src,code}} or null
+  for(var i=0;i<SLOTS;i++)slots.push(null);
+
+  var layout={cols:3,rows:5},pdfBlob=null;
+  var qrX=0.50,qrY=0.55,qrSize=0.32;
   var CV_SIZE=380;
+  var posIdx=0;
+  var DB=null;
+  var modalSlotIdx=-1;
 
   /* ── DB ── */
-  function openDB(cb){if(DB){cb(DB);return;}var r=indexedDB.open('stkDB',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('imgs',{keyPath:'id'});};r.onsuccess=function(e){DB=e.target.result;cb(DB);};r.onerror=function(){cb(null);};}
+  function openDB(cb){if(DB){cb(DB);return;}var r=indexedDB.open('stkDB2',1);r.onupgradeneeded=function(e){e.target.result.createObjectStore('imgs',{keyPath:'id'});};r.onsuccess=function(e){DB=e.target.result;cb(DB);};r.onerror=function(){cb(null);};}
   function dbSave(id,d){openDB(function(db){if(!db)return;db.transaction('imgs','readwrite').objectStore('imgs').put({id:id,data:d});});}
   function dbLoadAll(cb){openDB(function(db){if(!db){cb([]);return;}var r=db.transaction('imgs','readonly').objectStore('imgs').getAll();r.onsuccess=function(){cb(r.result||[]);};r.onerror=function(){cb([]);};});}
 
@@ -1333,37 +1369,21 @@ window.regenerateMissingQrImages = async function() {
   /* ── 초기화 ── */
   window.stkInit=function(){
     stkTab(0,document.querySelector('.stk-tab'));
-    dbLoadAll(function(rows){dImgs=rows.map(function(r){return r.data;});stkRenderDGrid();});
+    dbLoadAll(function(rows){dPool=rows.map(function(r){return r.data;});stkRenderDThumbs();});
     var fi=document.getElementById('stkFi');
     if(fi&&!fi._bound){fi._bound=true;fi.onchange=function(){
-      var files=Array.from(fi.files),loaded=0;
-      files.forEach(function(f){var fr=new FileReader();fr.onload=function(e){dImgs.push(e.target.result);loaded++;if(loaded===files.length)stkRenderDGrid();};fr.readAsDataURL(f);});
+      Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();dbSave('d'+Date.now(),e.target.result);};fr.readAsDataURL(f);});
       fi.value='';
     };}
-    // 저장된 위치 로드
-    try{var p=localStorage.getItem('stkPos2');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;stkSyncNums();}}catch(e){}
-  };
-
-  function stkSyncNums(){
-    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
-    if(xn)xn.value=Math.round(qrX*100);if(yn)yn.value=Math.round(qrY*100);if(sn)sn.value=Math.round(qrSize*100);
-  }
-
-  window.stkApplyNums=function(){
-    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
-    if(xn)qrX=Number(xn.value)/100;if(yn)qrY=Number(yn.value)/100;if(sn)qrSize=Number(sn.value)/100;
-    stkDrawCanvas();
-    try{localStorage.setItem('stkPos2',JSON.stringify({x:qrX,y:qrY,s:qrSize}));}catch(e){}
-  };
-
-  /* ── 디자인 그리드 ── */
-  function stkRenderDGrid(){
-    var t=document.getElementById('stkDThumbs');if(!t)return;t.innerHTML='';
-    dImgs.forEach(function(src,i){var img=document.createElement('img');img.src=src;img.title='클릭시 삭제';img.style.cssText='width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.onclick=function(){dImgs.splice(i,1);delete designMap[i];stkRenderDGrid();};t.appendChild(img);});
-    var c=document.getElementById('stkDCnt');if(c)c.textContent=dImgs.length+'개';
+    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;stkSyncNums();}}catch(e){}
     stkRenderGrid();
+  };
+
+  function stkRenderDThumbs(){
+    var t=document.getElementById('stkDThumbs');if(!t)return;t.innerHTML='';
+    dPool.forEach(function(src,i){var img=document.createElement('img');img.src=src;img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.title='클릭시 삭제';img.onclick=function(){dPool.splice(i,1);stkRenderDThumbs();};t.appendChild(img);});
+    var c=document.getElementById('stkDCnt');if(c)c.textContent='도안 '+dPool.length+'개';
   }
-  window.stkSaveD=function(){dImgs.forEach(function(s,i){dbSave('d'+i,s);});alert('저장 완료 ('+dImgs.length+'개)');};
 
   /* ── QR 불러오기 ── */
   window.stkLoadQr=function(){
@@ -1373,11 +1393,10 @@ window.regenerateMissingQrImages = async function() {
     var lv=document.getElementById('stkLimit').value,limit=lv?parseInt(lv,10):0;
     var filtered=items.filter(function(it){return (!prod||(it.product_type||'')==prod)&&(!stat||(it.status||'')==stat);});
     if(limit>0)filtered=filtered.slice(0,limit);
-    var BASE='https://saegim-memory.web.app';
-    qrPool=[];  // 불러온 QR 풀만 초기화, 배정(designMap)은 유지
+    qrPool=[];
     var c=document.getElementById('stkQCnt');c.textContent='생성 중... ('+filtered.length+'개)';
     if(!filtered.length){c.textContent='조건에 맞는 항목 없음';return;}
-    var done=0;
+    var BASE='https://saegim-memory.web.app',done=0;
     filtered.forEach(function(it){
       var url=BASE+'/?code='+encodeURIComponent(String(it.code||it.id||''));
       var w=document.createElement('div');w.style.cssText='position:absolute;left:-9999px';document.body.appendChild(w);
@@ -1385,140 +1404,179 @@ window.regenerateMissingQrImages = async function() {
         new QRCode(w,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
         setTimeout(function(){
           var cv=w.querySelector('canvas'),src=cv?cv.toDataURL('image/png'):'';
-          if(src)qrPool.push({src:src,url:url,code:String(it.code||it.id||''),name:it.product_name||''});
+          if(src)qrPool.push({src:src,url:url,code:String(it.code||it.id||'')});
           document.body.removeChild(w);done++;
-          if(done===filtered.length){c.textContent='QR '+qrPool.length+'개 로드됨 (슬롯을 클릭해 배정)';stkRenderGrid();}
+          if(done===filtered.length)c.textContent='QR '+qrPool.length+'개 로드됨';
         },300);
       }catch(ex){document.body.removeChild(w);done++;if(done===filtered.length)c.textContent='QR '+qrPool.length+'개';}
     });
   };
 
-  /* ── 카드 그리드 (클릭해서 QR 선택) ── */
+  /* ── 슬롯 그리드 렌더 ── */
   function stkRenderGrid(){
-    var g=document.getElementById('stkGrid'),h=document.getElementById('stkHint');if(!g)return;
-    if(!dImgs.length){g.innerHTML='';if(h)h.style.display='';return;}
-    if(h)h.style.display='none';g.innerHTML='';
-    dImgs.forEach(function(src,di){
-      var matched=qrImgs[di]||null;
-      var card=document.createElement('div');card.className='stk-card'+(matched?' matched':'');
-      // 디자인 썸네일
-      var dimg=document.createElement('img');dimg.src=src;dimg.className='stk-d-thumb';card.appendChild(dimg);
-      // 번호 + 이름
-      var lbl=document.createElement('div');lbl.className='stk-card-label';lbl.textContent='디자인 '+(di+1);card.appendChild(lbl);
-      // 매칭 행
-      var row=document.createElement('div');row.className='stk-match-row';
-      var ar=document.createElement('div');ar.className='stk-arrow';ar.textContent='→';row.appendChild(ar);
-      if(matched){
-        var qi=document.createElement('img');qi.src=matched.src;qi.className='stk-qr-mini';row.appendChild(qi);
-      } else {
-        var us=document.createElement('div');us.className='stk-unset';us.textContent='QR\n선택';row.appendChild(us);
-      }
-      card.appendChild(row);
-      // 상태 배지
-      if(matched){var b=document.createElement('div');b.className='stk-done-badge';b.textContent='✓ '+matched.code;card.appendChild(b);}
-      else{var b2=document.createElement('div');b2.style.cssText='font-size:10px;color:var(--muted)';b2.textContent='클릭하여 QR 선택';card.appendChild(b2);}
-      // 빈 슬롯 또는 QR 이미지 클릭 시 선택
-      if(matched){qi.onclick=function(e){e.stopPropagation();stkOpenModal(di);};}
-      else{us.onclick=function(e){e.stopPropagation();stkOpenModal(di);};}
-      g.appendChild(card);
-    });
+    var g=document.getElementById('stkGrid');if(!g)return;g.innerHTML='';
+    var filled=0;
+    for(var i=0;i<SLOTS;i++){
+      (function(idx){
+        var s=slots[idx];
+        var cell=document.createElement('div');cell.className='stk-slot'+(s?' filled':'');
+        var num=document.createElement('div');num.className='stk-slot-num';num.textContent=idx+1;cell.appendChild(num);
+        if(s&&s.design){
+          var dimg=document.createElement('img');dimg.src=s.design;dimg.className='stk-slot-design';cell.appendChild(dimg);
+          if(s.qr){
+            var qimg=document.createElement('img');qimg.src=s.qr.src;qimg.className='stk-slot-qr';cell.appendChild(qimg);
+            var code=document.createElement('div');code.className='stk-slot-code';code.textContent=s.qr.code;cell.appendChild(code);
+          } else {
+            var noqr=document.createElement('div');noqr.style.cssText='position:absolute;bottom:3px;right:3px;font-size:8px;color:var(--red)';noqr.textContent='QR없음';cell.appendChild(noqr);
+          }
+          filled++;
+        } else {
+          var plus=document.createElement('div');plus.className='stk-slot-empty';plus.textContent='+';cell.appendChild(plus);
+        }
+        // 삭제 버튼
+        var del=document.createElement('button');del.className='stk-slot-del';del.textContent='×';del.onclick=function(e){e.stopPropagation();slots[idx]=null;stkRenderGrid();};cell.appendChild(del);
+        cell.onclick=function(){stkOpenSlot(idx);};
+        g.appendChild(cell);
+      })(i);
+    }
+    var fc=document.getElementById('stkFilledCnt');if(fc)fc.textContent=filled;
   }
 
-  /* ── 모달 ── */
-  window.stkOpenModal=function(di){
-    modalTarget=di;var pg=document.getElementById('stkPG');pg.innerHTML='';
-    var title=document.getElementById('stkModalTitle'),sub=document.getElementById('stkModalSub');
-    if(title)title.textContent='디자인 '+(di+1)+' — QR 선택';
-    if(sub)sub.textContent='QR 재고에서 연결할 코드를 선택하세요';
-    if(!qrPool.length){alert('QR을 먼저 불러오세요.');return;}
-    qrPool.forEach(function(q,qi){
-      var item=document.createElement('div');item.className='stk-qr-pi';item.dataset.qi=qi;
-      if(designMap[modalTarget]&&designMap[modalTarget].code===q.code)item.classList.add('sel');
-      var img=document.createElement('img');img.src=q.src;item.appendChild(img);
-      var qn=document.createElement('div');qn.className='qn';qn.textContent='QR '+(qi+1)+'번';item.appendChild(qn);
-      var qc=document.createElement('div');qc.style.cssText='font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';qc.textContent=q.code;item.appendChild(qc);
-      item.onclick=function(){document.querySelectorAll('.stk-qr-pi').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
+  /* ── 슬롯 클릭 → 도안 선택 모달 ── */
+  window.stkOpenSlot=function(idx){
+    if(!dPool.length){alert('먼저 도안을 업로드하세요.');return;}
+    modalSlotIdx=idx;
+    var lbl=document.getElementById('sDModalSlot');if(lbl)lbl.textContent=idx+1;
+    var pg=document.getElementById('sDPickGrid');pg.innerHTML='';
+    dPool.forEach(function(src,di){
+      var item=document.createElement('div');item.className='stk-pick-item';item.dataset.di=di;
+      if(slots[idx]&&slots[idx].design===src)item.classList.add('sel');
+      var img=document.createElement('img');img.src=src;item.appendChild(img);
+      var pn=document.createElement('div');pn.className='pn';pn.textContent='도안 '+(di+1);item.appendChild(pn);
+      item.onclick=function(){document.querySelectorAll('.stk-pick-item').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
       pg.appendChild(item);
     });
-    document.getElementById('stkModal').classList.add('active');
+    document.getElementById('stkDModal').classList.add('active');
   };
-  window.stkCM=function(){document.getElementById('stkModal').classList.remove('active');};
-  window.stkOkM=function(){
-    var sel=document.querySelector('.stk-qr-pi.sel');if(!sel){alert('QR을 선택하세요.');return;}
-    var qi=Number(sel.dataset.qi);
-    if(modalTarget>=0){designMap[modalTarget]=qrPool[qi];}
-    stkCM();stkRenderGrid();
+  window.stkDMClose=function(){document.getElementById('stkDModal').classList.remove('active');};
+  window.stkDMOk=function(){
+    var sel=document.querySelector('.stk-pick-item.sel');if(!sel){alert('도안을 선택하세요.');return;}
+    var di=Number(sel.dataset.di);
+    if(!slots[modalSlotIdx])slots[modalSlotIdx]={design:null,qr:null};
+    slots[modalSlotIdx].design=dPool[di];
+    stkDMClose();
+    // 바로 QR 선택으로
+    stkOpenQrForSlot(modalSlotIdx);
   };
 
+  /* ── QR 선택 모달 ── */
+  window.stkOpenQrForSlot=function(idx){
+    if(!qrPool.length){stkRenderGrid();return;}
+    modalSlotIdx=idx;
+    var lbl=document.getElementById('sQModalSlot');if(lbl)lbl.textContent=idx+1;
+    var pg=document.getElementById('sQPickGrid');pg.innerHTML='';
+    qrPool.forEach(function(q,qi){
+      var item=document.createElement('div');item.className='stk-qr-pick-item';item.dataset.qi=qi;
+      if(slots[idx]&&slots[idx].qr&&slots[idx].qr.code===q.code)item.classList.add('sel');
+      var img=document.createElement('img');img.src=q.src;item.appendChild(img);
+      var pn=document.createElement('div');pn.className='pn';pn.textContent='QR '+(qi+1)+'번';item.appendChild(pn);
+      var pc=document.createElement('div');pc.className='pc';pc.textContent=q.code;item.appendChild(pc);
+      item.onclick=function(){document.querySelectorAll('.stk-qr-pick-item').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
+      pg.appendChild(item);
+    });
+    document.getElementById('stkQModal').classList.add('active');
+  };
+  window.stkQMClose=function(){document.getElementById('stkQModal').classList.remove('active');stkRenderGrid();};
+  window.stkQMOk=function(){
+    var sel=document.querySelector('.stk-qr-pick-item.sel');
+    if(sel&&slots[modalSlotIdx]){slots[modalSlotIdx].qr=qrPool[Number(sel.dataset.qi)];}
+    stkQMClose();
+  };
+
+  /* ── 선택 도안 N개 추가 ── */
+  window.stkAddMulti=function(){
+    if(!dPool.length){alert('도안을 먼저 업로드하세요.');return;}
+    var n=parseInt(document.getElementById('stkMultiN').value,10)||1;
+    // 도안 선택 모달 열기 (N개 추가 모드)
+    // 간단하게: 첫 빈 슬롯 N개에 선택한 도안 배정
+    var empties=[];for(var i=0;i<SLOTS;i++)if(!slots[i]||!slots[i].design)empties.push(i);
+    if(!empties.length){alert('빈 슬롯이 없습니다.');return;}
+    if(n>empties.length)n=empties.length;
+    // 도안 선택 모달
+    var pg=document.getElementById('sDPickGrid');pg.innerHTML='';
+    dPool.forEach(function(src,di){
+      var item=document.createElement('div');item.className='stk-pick-item';item.dataset.di=di;
+      var img=document.createElement('img');img.src=src;item.appendChild(img);
+      var pn=document.createElement('div');pn.className='pn';pn.textContent='도안 '+(di+1);item.appendChild(pn);
+      item.onclick=function(){document.querySelectorAll('.stk-pick-item').forEach(function(e){e.classList.remove('sel');});item.classList.add('sel');};
+      pg.appendChild(item);
+    });
+    var lbl=document.getElementById('sDModalSlot');if(lbl)lbl.textContent='(빈 슬롯 '+n+'개에 추가)';
+    modalSlotIdx=-99; // 다중 추가 모드 플래그
+    window._multiN=n;window._multiEmpties=empties;
+    document.getElementById('stkDModal').classList.add('active');
+    // DM Ok 재정의
+    var origOk=window.stkDMOk;
+    window.stkDMOk=function(){
+      var sel=document.querySelector('.stk-pick-item.sel');if(!sel){alert('도안을 선택하세요.');return;}
+      var di=Number(sel.dataset.di),src=dPool[di];
+      var target=window._multiEmpties.slice(0,window._multiN);
+      target.forEach(function(si){if(!slots[si])slots[si]={design:null,qr:null};slots[si].design=src;});
+      stkDMClose();stkRenderGrid();
+      window.stkDMOk=origOk;
+    };
+  };
+
+  window.stkClearAll=function(){if(!confirm('모든 슬롯을 초기화할까요?'))return;for(var i=0;i<SLOTS;i++)slots[i]=null;stkRenderGrid();};
+
   window.stkGoPos=function(){
-    var ready=dImgs.filter(function(_,i){return !!designMap[i];});
-    if(!ready.length){alert('QR이 선택된 디자인이 없습니다.\n카드를 클릭하여 QR을 선택해주세요.');return;}
+    var filled=slots.filter(function(s){return s&&s.design;});
+    if(!filled.length){alert('슬롯에 도안을 배정하세요.');return;}
     stkTab(1,document.querySelectorAll('.stk-tab')[1]);
   };
 
   /* ── 위치 조절 ── */
-  var dragging=false,dragOffX=0,dragOffY=0,resizing=false,resizeStartX=0,resizeStartQrSize=0;
+  var dragging=false,dragOffX=0,dragOffY=0,resizing=false,resizeStartX=0,resizeStartSz=0;
+
+  function stkSyncNums(){
+    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
+    if(xn)xn.value=Math.round(qrX*100);if(yn)yn.value=Math.round(qrY*100);if(sn)sn.value=Math.round(qrSize*100);
+  }
+  window.stkApplyNums=function(){
+    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
+    if(xn)qrX=Number(xn.value)/100;if(yn)qrY=Number(yn.value)/100;if(sn)qrSize=Number(sn.value)/100;
+    stkDrawCanvas();stkSavePos();
+  };
+  function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize}));}catch(e){}}
+
+  function getPairs(){return slots.filter(function(s){return s&&s.design;});}
 
   window.stkInitPos=function(){
-    posIdx=0;stkRenderPosNav();stkDrawCanvas();
-    var container=document.getElementById('sCvContainer');
-    var wrap=document.getElementById('sCvWrap'),hint=document.getElementById('sPosHint');
     var pairs=getPairs();
-    if(!pairs.length)return;
+    var wrap=document.getElementById('sCvWrap'),hint=document.getElementById('sPosHint');
+    if(!pairs.length){if(wrap)wrap.style.display='none';if(hint)hint.style.display='';return;}
     if(wrap)wrap.style.display='flex';if(hint)hint.style.display='none';
-
+    posIdx=0;stkRenderPosNav();stkDrawCanvas();stkSyncNums();
     var cv=document.getElementById('sCv');
-    // 드래그 이동
     cv.onmousedown=function(e){
-      var r=cv.getBoundingClientRect();
-      var mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;
-      var qs=qrSize;
-      if(Math.abs(mx-qrX)<qs/2&&Math.abs(my-qrY)<qs/2){
-        dragging=true;dragOffX=mx-qrX;dragOffY=my-qrY;
-        e.preventDefault();
-      }
+      var r=cv.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;
+      if(Math.abs(mx-qrX)<qrSize/2+0.05&&Math.abs(my-qrY)<qrSize/2+0.05){dragging=true;dragOffX=mx-qrX;dragOffY=my-qrY;e.preventDefault();}
     };
     document.onmousemove=function(e){
-      if(dragging){
-        var r=cv.getBoundingClientRect();
-        qrX=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width-dragOffX));
-        qrY=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height-dragOffY));
-        stkDrawCanvas();stkSyncNums();
-      }
-      if(resizing){
-        var dx=e.clientX-resizeStartX;
-        qrSize=Math.min(0.9,Math.max(0.05,resizeStartQrSize+dx/CV_SIZE));
-        stkDrawCanvas();stkSyncNums();
-      }
+      if(dragging){var r=cv.getBoundingClientRect();qrX=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width-dragOffX));qrY=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height-dragOffY));stkDrawCanvas();stkSyncNums();}
+      if(resizing){var dx=e.clientX-resizeStartX;qrSize=Math.min(0.9,Math.max(0.05,resizeStartSz+dx/CV_SIZE));stkDrawCanvas();stkSyncNums();}
     };
-    document.onmouseup=function(){
-      if(dragging||resizing){try{localStorage.setItem('stkPos2',JSON.stringify({x:qrX,y:qrY,s:qrSize}));}catch(e){}}
-      dragging=false;resizing=false;
-    };
-    // 크기 조절 핸들
+    document.onmouseup=function(){if(dragging||resizing)stkSavePos();dragging=false;resizing=false;};
     var handle=document.getElementById('sResizeHandle');
-    if(handle)handle.onmousedown=function(e){
-      resizing=true;resizeStartX=e.clientX;resizeStartQrSize=qrSize;e.preventDefault();e.stopPropagation();
-    };
-    // 터치 지원
-    cv.ontouchstart=function(e){var t=e.touches[0];cv.onmousedown({clientX:t.clientX,clientY:t.clientY,preventDefault:function(){e.preventDefault();}});};
-    cv.ontouchmove=function(e){var t=e.touches[0];document.onmousemove({clientX:t.clientX,clientY:t.clientY});e.preventDefault();};
-    cv.ontouchend=function(){document.onmouseup();};
+    if(handle)handle.onmousedown=function(e){resizing=true;resizeStartX=e.clientX;resizeStartSz=qrSize;e.preventDefault();e.stopPropagation();};
   };
-
-  function getPairs(){return dImgs.map(function(s,i){return designMap[i]?{d:s,q:designMap[i]}:null;}).filter(Boolean);}
 
   function stkRenderPosNav(){
-    var pairs=getPairs();
-    var picks=document.getElementById('stkPPicks'),lbl=document.getElementById('sPosNavLabel'),info=document.getElementById('stkPosInfo');
-    if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=p.d;img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){posIdx=i;stkRenderPosNav();stkDrawCanvas();};picks.appendChild(img);});}
+    var pairs=getPairs(),picks=document.getElementById('stkPPicks'),lbl=document.getElementById('sPosNavLabel');
+    if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=p.design;img.style.cssText='width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){posIdx=i;stkRenderPosNav();stkDrawCanvas();};picks.appendChild(img);});}
     if(lbl)lbl.textContent=(posIdx+1)+' / '+pairs.length;
-    if(info&&pairs[posIdx])info.textContent='코드: '+pairs[posIdx].q.code;
   }
-
-  window.stkPosNav=function(dir){
-    var pairs=getPairs();posIdx=Math.max(0,Math.min(pairs.length-1,posIdx+dir));stkRenderPosNav();stkDrawCanvas();
-  };
+  window.stkPosNav=function(dir){var pairs=getPairs();posIdx=Math.max(0,Math.min(pairs.length-1,posIdx+dir));stkRenderPosNav();stkDrawCanvas();};
 
   function stkDrawCanvas(){
     var pairs=getPairs();if(!pairs.length)return;
@@ -1529,66 +1587,59 @@ window.regenerateMissingQrImages = async function() {
     var di=new Image();di.crossOrigin='anonymous';
     di.onload=function(){
       ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,W,H);ctx.restore();
-      var qi=new Image();qi.crossOrigin='anonymous';
-      qi.onload=function(){
-        var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);
-        ctx.drawImage(qi,qx,qy,qs,qs);
-        // 핸들 위치 갱신
-        var handle=document.getElementById('sResizeHandle');
-        var container=document.getElementById('sCvContainer');
-        if(handle&&container){
-          var scaleX=container.clientWidth/W||1;
-          handle.style.left=(qx+qs)*scaleX-7+'px';
-          handle.style.top=(qy+qs)*scaleX-7+'px';
-          handle.style.right='auto';handle.style.bottom='auto';
-        }
-      };qi.src=p.q.src;
-    };di.src=p.d;
+      if(p.qr){
+        var qi=new Image();qi.crossOrigin='anonymous';
+        qi.onload=function(){var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);ctx.drawImage(qi,qx,qy,qs,qs);
+          var handle=document.getElementById('sResizeHandle');if(handle){handle.style.left=(qx+qs-7)+'px';handle.style.top=(qy+qs-7)+'px';handle.style.right='auto';handle.style.bottom='auto';}
+        };qi.src=p.qr.src;
+      }
+    };di.src=p.design;
   }
 
   /* ── 합성 ── */
   window.stkComposite=function(){
-    var pairs=getPairs();if(!pairs.length){alert('매칭된 쌍이 없습니다.');return;}
-    var SIZE=400;cmpImgs=[];var done=0;
+    var pairs=getPairs();if(!pairs.length){alert('도안이 배정된 슬롯이 없습니다.');return;}
+    var SIZE=400;var cmpArr=[];var done=0;
     pairs.forEach(function(p){
       var cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;var ctx=cv.getContext('2d');
       var di=new Image();di.crossOrigin='anonymous';
       di.onload=function(){
         ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,SIZE,SIZE);ctx.restore();
-        var qi=new Image();qi.crossOrigin='anonymous';
-        qi.onload=function(){var qs=Math.round(qrSize*SIZE);ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);cmpImgs.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}};qi.src=p.q.src;
-      };di.src=p.d;
+        if(p.qr){
+          var qi=new Image();qi.crossOrigin='anonymous';
+          qi.onload=function(){var qs=Math.round(qrSize*SIZE);ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}};qi.src=p.qr.src;
+        }else{cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}}
+      };di.src=p.design;
     });
   };
 
   window.stkRenderCmp=function(){
-    var t=document.getElementById('sCmpThumbs'),c=document.getElementById('sCmpCnt');if(!t)return;t.innerHTML='';
-    cmpImgs.forEach(function(src){var img=document.createElement('img');img.src=src;img.style.cssText='width:36px;height:36px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line)';t.appendChild(img);});
-    if(c)c.textContent=cmpImgs.length+'개';
+    var imgs=window._cmpImgs||[],t=document.getElementById('sCmpThumbs'),c=document.getElementById('sCmpCnt');if(!t)return;t.innerHTML='';
+    imgs.forEach(function(src){var img=document.createElement('img');img.src=src;img.style.cssText='width:34px;height:34px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line)';t.appendChild(img);});
+    if(c)c.textContent=imgs.length+'개';
   };
 
   window.stkSetL=function(el){document.querySelectorAll('.stk-opt-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');layout={cols:Number(el.dataset.cols),rows:Number(el.dataset.rows)};};
 
   window.stkGen=function(){
-    if(!cmpImgs.length){alert('합성된 스티커가 없습니다.');return;}
+    var imgs=window._cmpImgs||[];if(!imgs.length){alert('합성된 스티커가 없습니다.');return;}
     var repeat=document.getElementById('sRpt').checked,total=layout.cols*layout.rows;
-    var slots=[];for(var i=0;i<total;i++)slots.push((!repeat&&i>=cmpImgs.length)?null:cmpImgs[i%cmpImgs.length]);
+    var slots2=[];for(var i=0;i<total;i++)slots2.push((!repeat&&i>=imgs.length)?null:imgs[i%imgs.length]);
     var prog=document.getElementById('sProg'),bar=document.getElementById('sProgB'),stattxt=document.getElementById('sStatTxt'),btn=document.getElementById('sGenBtn'),dl=document.getElementById('sDlBtn');
     if(prog)prog.style.display='block';if(bar)bar.style.width='0';if(btn)btn.disabled=true;if(dl)dl.style.display='none';if(stattxt)stattxt.textContent='생성 중...';
     var jsPDF=window.jspdf&&window.jspdf.jsPDF;if(!jsPDF){alert('jsPDF 로드 실패');if(btn)btn.disabled=false;return;}
     var doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     var gapX=210/layout.cols,gapY=297/layout.rows,d=Math.min(gapX,gapY)*0.88,idx=0;
     function next(){
-      if(idx>=slots.length){if(stattxt)stattxt.textContent='완료!';if(prog)prog.style.display='none';if(btn)btn.disabled=false;pdfBlob=doc.output('blob');if(dl)dl.style.display='block';
-        var out=document.getElementById('sOutArea');if(out)out.innerHTML='<div style="color:var(--green);font-size:22px;margin-bottom:8px">✅ PDF 준비 완료</div><div style="color:var(--muted);font-size:13px">'+total+'칸 / '+layout.cols+'×'+layout.rows+' 레이아웃</div>';return;}
-      if(bar)bar.style.width=(idx/slots.length*100)+'%';if(stattxt)stattxt.textContent=(idx+1)+'/'+slots.length;
-      var s=slots[idx];if(s){var col=idx%layout.cols,row=Math.floor(idx/layout.cols);doc.addImage(s,'PNG',gapX*(col+0.5)-d/2,gapY*(row+0.5)-d/2,d,d);}
+      if(idx>=slots2.length){if(stattxt)stattxt.textContent='완료!';if(prog)prog.style.display='none';if(btn)btn.disabled=false;pdfBlob=doc.output('blob');if(dl)dl.style.display='block';
+        var out=document.getElementById('sOutArea');if(out)out.innerHTML='<div style="color:var(--green);font-size:20px;margin-bottom:8px">✅ PDF 준비 완료</div><div style="color:var(--muted);font-size:13px">'+total+'칸 / '+layout.cols+'×'+layout.rows+' 레이아웃</div>';return;}
+      if(bar)bar.style.width=(idx/slots2.length*100)+'%';if(stattxt)stattxt.textContent=(idx+1)+'/'+slots2.length;
+      var s=slots2[idx];if(s){var col=idx%layout.cols,row=Math.floor(idx/layout.cols);doc.addImage(s,'PNG',gapX*(col+0.5)-d/2,gapY*(row+0.5)-d/2,d,d);}
       idx++;setTimeout(next,0);
-    }
-    next();
+    }next();
   };
 
-  window.stkDl=function(){if(!pdfBlob){alert('먼저 PDF를 생성하세요.');return;}var url=URL.createObjectURL(pdfBlob);var a=document.createElement('a');a.href=url;a.download='saegim_stickers.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(url);},2000);};
+  window.stkDl=function(){if(!pdfBlob)return;var url=URL.createObjectURL(pdfBlob);var a=document.createElement('a');a.href=url;a.download='saegim_stickers.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(url);},2000);};
 
 })();
 </script>
