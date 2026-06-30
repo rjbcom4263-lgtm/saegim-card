@@ -415,6 +415,12 @@ tr:hover td{background:rgba(255,255,255,.03)}
                   <div class="stk-pos-num"><span>도안크기</span><input type="number" id="stkDn" min="30" max="150" value="100" oninput="stkApplyNums()"><span>%</span></div>
                 </div>
                 <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절</div>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid var(--line)">
+                  <input type="checkbox" id="stkGuide" checked onchange="stkDrawCanvas()" style="accent-color:var(--gold)">
+                  <span style="font-size:11px;color:var(--muted)">가이드선 표시</span>
+                  <span style="font-size:9px;color:rgba(255,220,80,.8)">― 58mm</span>
+                  <span style="font-size:9px;color:rgba(80,200,255,.8)">― 52mm</span>
+                </div>
               </div>
               <button class="stk-btn stk-btn-g" onclick="stkComposite()">✅ 합성 → ③ 출력</button>
             </div>
@@ -443,8 +449,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <div>
                 <div class="stk-sec">배치</div>
                 <div class="stk-opt-row">
-                  <div class="stk-opt-btn active" data-cols="3" data-rows="5" onclick="stkSetL(this)">3×5<br><small>15개</small></div>
-                  <div class="stk-opt-btn" data-cols="3" data-rows="4" onclick="stkSetL(this)">3×4<br><small>12개</small></div>
+                  <div class="stk-opt-btn" data-cols="3" data-rows="5" onclick="stkSetL(this)">3×5<br><small>15개</small></div>
+                  <div class="stk-opt-btn active" data-cols="3" data-rows="4" onclick="stkSetL(this)">3×4<br><small>12개</small></div>
                   <div class="stk-opt-btn" data-cols="2" data-rows="3" onclick="stkSetL(this)">2×3<br><small>6개</small></div>
                 </div>
               </div>
@@ -454,7 +460,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
               </div>
               <div style="display:flex;align-items:center;gap:8px">
                 <label style="font-size:12px;color:var(--muted);white-space:nowrap">스티커 크기</label>
-                <input type="number" id="sSizeMm" value="58" min="20" max="100" style="width:60px;padding:5px;border:1px solid var(--line);border-radius:6px;background:#111;color:var(--gold);font-size:13px;text-align:center">
+                <input type="number" id="sSizeMm" value="70" min="20" max="100" style="width:60px;padding:5px;border:1px solid var(--line);border-radius:6px;background:#111;color:var(--gold);font-size:13px;text-align:center">
                 <span style="font-size:12px;color:var(--muted)">mm</span>
               </div>
               <button class="stk-btn stk-btn-g" id="sGenBtn" onclick="stkGen()">A4 PDF 생성</button>
@@ -1360,7 +1366,7 @@ window.regenerateMissingQrImages = async function() {
   var slots=[];       // slots[i] = {design:src, qr:{src,code}} or null
   for(var i=0;i<SLOTS;i++)slots.push(null);
 
-  var layout={cols:3,rows:5},pdfBlob=null;
+  var layout={cols:3,rows:4},pdfBlob=null;
   var dScale=1.0; // 도안 스케일 (1.0 = 꽉채움)
   var _cachedDImg=null,_cachedDSrc=null,_cachedQImg=null,_cachedQSrc=null;
   var qrX=0.50,qrY=0.55,qrSize=0.32;
@@ -1729,6 +1735,17 @@ window.regenerateMissingQrImages = async function() {
         ctx.drawImage(qImg,qx,qy,qs,qs);
         var h=document.getElementById('sResizeHandle');
         if(h){h.style.left=(qx+qs-7)+'px';h.style.top=(qy+qs-7)+'px';h.style.right='auto';h.style.bottom='auto';}
+      }
+      // 가이드선 (합성에는 포함 안 됨 — 미리보기 전용)
+      if(document.getElementById('stkGuide')&&document.getElementById('stkGuide').checked){
+        // 58mm 정면선 (70mm 도안 기준: 58/70 = 0.8286)
+        ctx.save();ctx.setLineDash([6,4]);
+        ctx.strokeStyle='rgba(255,220,80,0.7)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(W/2,H/2,W*0.5*(58/70),0,Math.PI*2);ctx.stroke();
+        // 52mm 안전영역선 (52/70 = 0.7429)
+        ctx.strokeStyle='rgba(80,200,255,0.6)';ctx.lineWidth=1.5;
+        ctx.beginPath();ctx.arc(W/2,H/2,W*0.5*(52/70),0,Math.PI*2);ctx.stroke();
+        ctx.restore();
       }
     };
     var loadQ=function(dImg){
