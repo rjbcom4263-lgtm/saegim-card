@@ -1310,7 +1310,7 @@ window.regenerateMissingQrImages = async function() {
 
 <script>
 (function(){
-  var dImgs=[],qrImgs=[],cmpImgs=[],layout={cols:3,rows:5},pdfBlob=null;
+  var dImgs=[],qrPool=[],designMap={},cmpImgs=[],layout={cols:3,rows:5},pdfBlob=null;
   var modalTarget=-1,posIdx=0,DB=null;
   // QR 위치 (0~1 비율)
   var qrX=0.50, qrY=0.55, qrSize=0.32;
@@ -1359,7 +1359,7 @@ window.regenerateMissingQrImages = async function() {
   /* ── 디자인 그리드 ── */
   function stkRenderDGrid(){
     var t=document.getElementById('stkDThumbs');if(!t)return;t.innerHTML='';
-    dImgs.forEach(function(src,i){var img=document.createElement('img');img.src=src;img.title='클릭시 삭제';img.style.cssText='width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.onclick=function(){dImgs.splice(i,1);qrImgs.splice(i,1);stkRenderDGrid();};t.appendChild(img);});
+    dImgs.forEach(function(src,i){var img=document.createElement('img');img.src=src;img.title='클릭시 삭제';img.style.cssText='width:38px;height:38px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);cursor:pointer';img.onclick=function(){dImgs.splice(i,1);delete designMap[i];stkRenderDGrid();};t.appendChild(img);});
     var c=document.getElementById('stkDCnt');if(c)c.textContent=dImgs.length+'개';
     stkRenderGrid();
   }
@@ -1374,7 +1374,7 @@ window.regenerateMissingQrImages = async function() {
     var filtered=items.filter(function(it){return (!prod||(it.product_type||'')==prod)&&(!stat||(it.status||'')==stat);});
     if(limit>0)filtered=filtered.slice(0,limit);
     var BASE='https://saegim-memory.web.app';
-    qrImgs=[];
+    qrPool=[];  // 불러온 QR 풀만 초기화, 배정(designMap)은 유지
     var c=document.getElementById('stkQCnt');c.textContent='생성 중... ('+filtered.length+'개)';
     if(!filtered.length){c.textContent='조건에 맞는 항목 없음';return;}
     var done=0;
@@ -1385,11 +1385,11 @@ window.regenerateMissingQrImages = async function() {
         new QRCode(w,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
         setTimeout(function(){
           var cv=w.querySelector('canvas'),src=cv?cv.toDataURL('image/png'):'';
-          if(src)qrImgs.push({src:src,url:url,code:String(it.code||it.id||''),name:it.product_name||''});
+          if(src)qrPool.push({src:src,url:url,code:String(it.code||it.id||''),name:it.product_name||''});
           document.body.removeChild(w);done++;
-          if(done===filtered.length){c.textContent='QR '+qrImgs.length+'개 로드됨';stkRenderGrid();}
+          if(done===filtered.length){c.textContent='QR '+qrPool.length+'개 로드됨 (슬롯을 클릭해 배정)';stkRenderGrid();}
         },300);
-      }catch(ex){document.body.removeChild(w);done++;if(done===filtered.length)c.textContent='QR '+qrImgs.length+'개';}
+      }catch(ex){document.body.removeChild(w);done++;if(done===filtered.length)c.textContent='QR '+qrPool.length+'개';}
     });
   };
 
@@ -1430,10 +1430,10 @@ window.regenerateMissingQrImages = async function() {
     var title=document.getElementById('stkModalTitle'),sub=document.getElementById('stkModalSub');
     if(title)title.textContent='디자인 '+(di+1)+' — QR 선택';
     if(sub)sub.textContent='QR 재고에서 연결할 코드를 선택하세요';
-    if(!qrImgs.length){alert('QR을 먼저 불러오세요.');return;}
-    qrImgs.forEach(function(q,qi){
+    if(!qrPool.length){alert('QR을 먼저 불러오세요.');return;}
+    qrPool.forEach(function(q,qi){
       var item=document.createElement('div');item.className='stk-qr-pi';item.dataset.qi=qi;
-      if(qrImgs[modalTarget]&&qrImgs[modalTarget].code===q.code)item.classList.add('sel');
+      if(designMap[modalTarget]&&designMap[modalTarget].code===q.code)item.classList.add('sel');
       var img=document.createElement('img');img.src=q.src;item.appendChild(img);
       var qn=document.createElement('div');qn.className='qn';qn.textContent='QR '+(qi+1)+'번';item.appendChild(qn);
       var qc=document.createElement('div');qc.style.cssText='font-size:8.5px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';qc.textContent=q.code;item.appendChild(qc);
@@ -1446,12 +1446,12 @@ window.regenerateMissingQrImages = async function() {
   window.stkOkM=function(){
     var sel=document.querySelector('.stk-qr-pi.sel');if(!sel){alert('QR을 선택하세요.');return;}
     var qi=Number(sel.dataset.qi);
-    if(modalTarget>=0){while(qrImgs.length<=modalTarget)qrImgs.push(null);qrImgs[modalTarget]=qrImgs[qi];}
+    if(modalTarget>=0){designMap[modalTarget]=qrPool[qi];}
     stkCM();stkRenderGrid();
   };
 
   window.stkGoPos=function(){
-    var ready=dImgs.filter(function(_,i){return !!qrImgs[i];});
+    var ready=dImgs.filter(function(_,i){return !!designMap[i];});
     if(!ready.length){alert('QR이 선택된 디자인이 없습니다.\n카드를 클릭하여 QR을 선택해주세요.');return;}
     stkTab(1,document.querySelectorAll('.stk-tab')[1]);
   };
@@ -1506,7 +1506,7 @@ window.regenerateMissingQrImages = async function() {
     cv.ontouchend=function(){document.onmouseup();};
   };
 
-  function getPairs(){return dImgs.map(function(s,i){return qrImgs[i]?{d:s,q:qrImgs[i]}:null;}).filter(Boolean);}
+  function getPairs(){return dImgs.map(function(s,i){return designMap[i]?{d:s,q:designMap[i]}:null;}).filter(Boolean);}
 
   function stkRenderPosNav(){
     var pairs=getPairs();
