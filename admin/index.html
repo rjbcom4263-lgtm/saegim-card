@@ -1422,7 +1422,7 @@ window.regenerateMissingQrImages = async function() {
   /* ── 초기화 ── */
   window.stkInit=function(){
     stkTab(0,document.querySelector('.stk-tab'));
-    stkLoadDesignsFromStorage();
+    try{ stkLoadDesignsFromStorage(); }catch(e){ console.warn('Storage 로드 실패, 빈 풀로 시작:',e); stkRenderDThumbs(); }
     var fi=document.getElementById('stkFi');
     if(fi&&!fi._bound){fi._bound=true;fi.onchange=function(){
       Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();stkUploadDesign(f.name,e.target.result);};fr.readAsDataURL(f);});
