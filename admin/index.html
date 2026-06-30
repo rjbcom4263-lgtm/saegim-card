@@ -414,9 +414,14 @@ tr:hover td{background:rgba(255,255,255,.03)}
                   <div class="stk-pos-num"><span>QR크기</span><input type="number" id="stkSn" min="5" max="80" value="32" oninput="stkApplyNums()"><span>%</span></div>
                   <div class="stk-pos-num"><span>도안크기</span><input type="number" id="stkDn" min="30" max="150" value="100" oninput="stkApplyNums()"><span>%</span></div>
                 </div>
-                <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절</div>
+                <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절 · 52mm 안으로 자동구속</div>
+                <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
+                  <button onclick="stkQrAuto('center')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">⊙ 중앙</button>
+                  <button onclick="stkQrAuto('bottom')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">↓ 하단</button>
+                  <button onclick="stkQrAuto('top')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">↑ 상단</button>
+                </div>
                 <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid var(--line)">
-                  <input type="checkbox" id="stkGuide" checked onchange="stkDrawCanvas()" style="accent-color:var(--gold)">
+                  <input type="checkbox" id="stkGuide" onchange="stkDrawCanvas()" style="accent-color:var(--gold)">
                   <span style="font-size:11px;color:var(--muted)">가이드선 표시</span>
                   <span style="font-size:9px;color:rgba(255,220,80,.8)">― 58mm</span>
                   <span style="font-size:9px;color:rgba(80,200,255,.8)">― 52mm</span>
@@ -459,9 +464,9 @@ tr:hover td{background:rgba(255,255,255,.03)}
                 <input type="checkbox" id="sRpt" style="accent-color:var(--gold);width:14px;height:14px">
               </div>
               <div style="display:flex;align-items:center;gap:8px">
-                <label style="font-size:12px;color:var(--muted);white-space:nowrap">스티커 크기</label>
-                <input type="number" id="sSizeMm" value="70" min="20" max="100" style="width:60px;padding:5px;border:1px solid var(--line);border-radius:6px;background:#111;color:var(--gold);font-size:13px;text-align:center">
-                <span style="font-size:12px;color:var(--muted)">mm</span>
+                <span style="font-size:12px;color:var(--muted)">스티커 크기</span>
+                <span style="font-size:13px;color:var(--gold);font-weight:700">60mm 고정</span>
+                <input type="hidden" id="sSizeMm" value="60">
               </div>
               <button class="stk-btn stk-btn-g" id="sGenBtn" onclick="stkGen()">A4 PDF 생성</button>
               <div class="stk-prog" id="sProg"><div class="stk-prog-bar" id="sProgB"></div></div>
@@ -1688,6 +1693,13 @@ window.regenerateMissingQrImages = async function() {
     stkDrawCanvas();stkSavePos();
   };
   function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize,d:dScale}));}catch(e){}}
+  window.stkQrAuto=function(pos){
+    var SAFE=0.371,hs=qrSize/2;
+    if(pos==='center'){qrX=0.5;qrY=0.5;}
+    else if(pos==='bottom'){qrX=0.5;qrY=0.5+(SAFE-hs)*0.85;}
+    else if(pos==='top'){qrX=0.5;qrY=0.5-(SAFE-hs)*0.85;}
+    stkDrawCanvas();stkSyncNums();stkSavePos();
+  };
 
   function getPairs(){return slots.filter(function(s){return s&&s.design;});}
 
@@ -1703,7 +1715,20 @@ window.regenerateMissingQrImages = async function() {
       if(Math.abs(mx-qrX)<qrSize/2+0.05&&Math.abs(my-qrY)<qrSize/2+0.05){dragging=true;dragOffX=mx-qrX;dragOffY=my-qrY;e.preventDefault();}
     };
     document.onmousemove=function(e){
-      if(dragging){var r=cv.getBoundingClientRect();qrX=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width-dragOffX));qrY=Math.min(1,Math.max(0,(e.clientY-r.top)/r.height-dragOffY));stkDrawCanvas();stkSyncNums();}
+      if(dragging){
+        var r=cv.getBoundingClientRect();
+        var nx=(e.clientX-r.left)/r.width-dragOffX;
+        var ny=(e.clientY-r.top)/r.height-dragOffY;
+        // 52mm 안전영역 구속 (52/70 = 0.7429, 반지름 0.371)
+        var SAFE=0.371, cx=0.5, cy=0.5;
+        var hs=qrSize/2; // QR 반쪽 크기
+        var dx2=nx-cx, dy2=ny-cy;
+        var dist=Math.sqrt(dx2*dx2+dy2*dy2);
+        var maxDist=SAFE-hs;
+        if(maxDist>0&&dist>maxDist){nx=cx+dx2/dist*maxDist;ny=cy+dy2/dist*maxDist;}
+        qrX=Math.min(1,Math.max(0,nx));qrY=Math.min(1,Math.max(0,ny));
+        stkDrawCanvas();stkSyncNums();
+      }
       if(resizing){var dx=e.clientX-resizeStartX;qrSize=Math.min(0.9,Math.max(0.05,resizeStartSz+dx/CV_SIZE));stkDrawCanvas();stkSyncNums();}
     };
     document.onmouseup=function(){if(dragging||resizing)stkSavePos();dragging=false;resizing=false;};
