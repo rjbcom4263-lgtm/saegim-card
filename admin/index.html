@@ -1521,18 +1521,37 @@ window.regenerateMissingQrImages = async function() {
   function stkShowSlotMenu(idx){
     var menu=document.getElementById('stkSlotMenu');
     if(!menu){
-      menu=document.createElement('div');menu.id='stkSlotMenu';
+      menu=document.createElement('div');
+      menu.id='stkSlotMenu';
       menu.style.cssText='position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;z-index:9999;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,.5)';
       document.body.appendChild(menu);
     }
-    menu.innerHTML='<div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px">슬롯 '+(idx+1)+' 수정</div>'
-      +'<button onclick="stkOpenDesignPicker('+idx+');document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;margin-bottom:8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px">🖼️ 도안 변경</button>'
-      +'<button onclick="stkOpenQrForSlot('+idx+');document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;margin-bottom:8px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);cursor:pointer;font-size:13px">📷 QR 변경</button>'
-      +'<button onclick="document.getElementById('stkSlotMenu').style.display='none'" style="width:100%;padding:9px;border:none;border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:12px">취소</button>';
+    function closeMenu(){ menu.style.display='none'; }
+    window._stkCloseMenu=closeMenu;
+    window._stkMenuIdx=idx;
+    menu.innerHTML='';
+    var title=document.createElement('div');
+    title.style.cssText='font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px';
+    title.textContent='슬롯 '+(idx+1)+' 수정';
+    menu.appendChild(title);
+    var btns=[
+      {icon:'🖼️',label:'도안 변경',fn:function(){closeMenu();stkOpenDesignPicker(idx);}},
+      {icon:'📷',label:'QR 변경',fn:function(){closeMenu();stkOpenQrForSlot(idx);}},
+      {icon:'',label:'취소',fn:closeMenu,muted:true}
+    ];
+    btns.forEach(function(b){
+      var btn=document.createElement('button');
+      btn.textContent=(b.icon?b.icon+' ':'')+b.label;
+      btn.style.cssText='width:100%;padding:9px;margin-bottom:6px;border:'+(b.muted?'none':'1px solid var(--line)')+';border-radius:8px;background:transparent;color:'+(b.muted?'var(--muted)':'var(--text)')+';cursor:pointer;font-size:13px;text-align:left';
+      btn.onclick=b.fn;
+      menu.appendChild(btn);
+    });
     menu.style.display='block';
-    // 바깥 클릭 닫기
     setTimeout(function(){
-      document.addEventListener('click',function h(e){if(!menu.contains(e.target)){menu.style.display='none';}document.removeEventListener('click',h);},{once:true,capture:true});
+      document.addEventListener('click',function h(e){
+        if(!menu.contains(e.target)){closeMenu();}
+        document.removeEventListener('click',h);
+      },{once:true,capture:true});
     },100);
   }
 
