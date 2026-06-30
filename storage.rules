@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // 스티커 도안: 로그인한 사용자만 읽기/쓰기
+    match /sticker-designs/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    // 나머지는 차단
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
