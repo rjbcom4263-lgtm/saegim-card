@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>새김 QR 관리자</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 :root{--bg:#0f0f0f;--card:#181818;--line:#3a3020;--gold:#e6c88f;--gold2:#c7a05d;--text:#f0e6d0;--muted:#8a7a68;--red:#e06060;--green:#6abe78;--blue:#6aabe6}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -116,6 +118,59 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .quick-field:focus,.quick-textarea:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(230,200,143,.12)}
 .quick-edit-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:720px){.quick-edit-grid{grid-template-columns:1fr}}
+
+/* ── 스티커 탭 ── */
+.stk-layout{display:flex;gap:20px;align-items:flex-start}
+.stk-panel{width:260px;flex-shrink:0;display:flex;flex-direction:column;gap:12px}
+.stk-main{flex:1;min-width:0}
+.stk-sec{font-size:10.5px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.stk-dz{border:2px dashed var(--line);border-radius:10px;padding:12px;text-align:center;cursor:pointer;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted);transition:border-color .2s}
+.stk-dz:hover{border-color:var(--gold2);color:var(--gold)}
+.stk-btn{width:100%;padding:10px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+.stk-btn-g{background:linear-gradient(135deg,#f0d9a4,#c79a4f);color:#111}
+.stk-btn-g:disabled{background:#333;color:#666;cursor:not-allowed}
+.stk-btn-w{background:transparent;color:var(--gold);border:1px solid var(--line)}
+.stk-btn-w:hover{border-color:var(--gold2)}
+.stk-cnt{font-size:11px;color:var(--muted);margin-top:2px}
+.stk-field label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
+.stk-field select{width:100%;padding:7px 10px;border:1px solid var(--line);border-radius:7px;background:#111;color:var(--text);font-size:12.5px;margin-bottom:6px}
+.stk-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.stk-card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px;display:flex;gap:8px;align-items:center;position:relative}
+.stk-card .snum{position:absolute;top:5px;left:5px;width:17px;height:17px;background:var(--gold2);color:#111;border-radius:50%;font-size:9.5px;display:flex;align-items:center;justify-content:center;font-weight:700}
+.stk-d-thumb{width:64px;height:64px;border-radius:50%;object-fit:cover;border:1.5px solid var(--line);flex-shrink:0}
+.stk-arrow{color:var(--line);font-size:14px;flex-shrink:0}
+.stk-qr-slot{width:58px;height:58px;border-radius:8px;border:1.5px dashed var(--line);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9.5px;color:var(--muted);text-align:center;overflow:hidden}
+.stk-qr-slot.filled{border-color:var(--gold2)}
+.stk-qr-slot img{width:100%;height:100%;object-fit:contain}
+.stk-info{flex:1;min-width:0}
+.stk-info .dn{font-size:11.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-info .qn{font-size:10.5px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stk-info .spick{margin-top:5px;font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer}
+.stk-info .spick:hover{color:var(--gold);border-color:var(--gold2)}
+.stk-done-badge{position:absolute;top:5px;right:5px;width:15px;height:15px;background:var(--green);color:#111;border-radius:50%;font-size:9px;display:flex;align-items:center;justify-content:center}
+.stk-sl-row{display:flex;align-items:center;gap:8px}
+.stk-sl-row label{font-size:12px;color:var(--muted);width:30px;flex-shrink:0}
+.stk-sl-row input[type=range]{flex:1;accent-color:var(--gold)}
+.stk-sl-row span{font-size:12px;color:var(--gold);width:34px;text-align:right;flex-shrink:0}
+.stk-pos-box{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.stk-opt-row{display:flex;gap:6px}
+.stk-opt-btn{flex:1;padding:7px 4px;border:1px solid var(--line);border-radius:7px;background:transparent;cursor:pointer;font-size:11.5px;text-align:center;color:var(--muted)}
+.stk-opt-btn.active{border-color:var(--gold2);color:var(--gold);background:rgba(230,200,143,.08)}
+.stk-preview-area{flex:1;background:#111;border-radius:14px;padding:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;min-height:420px}
+.stk-tabs{display:flex;border-bottom:1px solid var(--line);margin-bottom:20px;gap:4px}
+.stk-tab{padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.stk-tab.active{color:var(--gold);border-color:var(--gold)}
+.stk-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);padding:60px 20px;text-align:center}
+.stk-empty .big{font-size:40px}
+.stk-thumb-row{display:flex;flex-wrap:wrap;gap:5px}
+.stk-qr-pg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;max-height:320px;overflow-y:auto}
+.stk-qr-pi{border:2px solid var(--line);border-radius:8px;padding:6px;cursor:pointer;text-align:center}
+.stk-qr-pi:hover{border-color:var(--gold2)}
+.stk-qr-pi.sel{border-color:var(--gold);background:rgba(230,200,143,.1)}
+.stk-qr-pi img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:4px;display:block}
+.stk-qr-pi .qn{font-size:9.5px;color:var(--muted);margin-top:3px}
+.stk-prog{height:4px;background:var(--line);border-radius:2px;overflow:hidden;display:none;margin-top:4px}
+.stk-prog-bar{height:100%;background:var(--gold);width:0;transition:width .2s}
 </style>
 </head>
 <body>
@@ -147,6 +202,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
       <div class="nav-item active" onclick="showPage('dashboard',this)">대시보드</div>
       <div class="nav-item" onclick="showPage('inventory',this)">QR 재고</div>
       <div class="nav-item" onclick="showPage('create',this)">QR 생성</div>
+      <div class="nav-item" onclick="showPage('sticker',this);stkInit()">스티커 생성</div>
     </div>
     <div class="content">
       <!-- 대시보드 -->
@@ -276,6 +332,118 @@ tr:hover td{background:rgba(255,255,255,.03)}
           </div>
         </div>
       </div>
+
+      <!-- 스티커 생성 -->
+      <div class="page" id="page-sticker">
+        <h2>스티커 생성</h2>
+        <div class="stk-tabs">
+          <div class="stk-tab active" onclick="stkTab(0,this)">① QR 매칭</div>
+          <div class="stk-tab" onclick="stkTab(1,this)">② 위치 조절</div>
+          <div class="stk-tab" onclick="stkTab(2,this)">③ A4 출력</div>
+        </div>
+        <div id="stkP0">
+          <div class="stk-layout">
+            <div class="stk-panel">
+              <div>
+                <div class="stk-sec">디자인 이미지</div>
+                <div class="stk-dz" id="stkDz" onclick="document.getElementById('stkFi').click()">🖼️ 원형 PNG 업로드<br><small style="font-size:10px">여러 개 가능</small></div>
+                <input type="file" id="stkFi" multiple accept="image/*" style="display:none">
+                <div class="stk-thumb-row" id="stkDThumbs" style="margin-top:7px"></div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px">
+                  <div class="stk-cnt" id="stkDCnt">0개</div>
+                  <button onclick="stkSaveD()" style="font-size:10px;padding:2px 7px;border:1px solid var(--line);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer">💾 저장</button>
+                </div>
+              </div>
+              <div>
+                <div class="stk-sec">재고에서 QR 가져오기</div>
+                <div class="stk-field">
+                  <label>제품</label>
+                  <select id="stkProd"><option value="">전체</option><option value="CD">CD</option><option value="BMT">BMT</option><option value="GT">GT</option><option value="WT">WT</option><option value="TT">TT</option></select>
+                  <label>상태</label>
+                  <select id="stkStat"><option value="">전체</option><option value="미등록">미등록</option><option value="판매완료">판매완료</option><option value="사용중">사용중</option></select>
+                </div>
+                <button class="stk-btn stk-btn-g" onclick="stkLoadQr()" style="margin-bottom:6px">📥 QR 가져오기</button>
+                <div class="stk-cnt" id="stkQCnt">QR 0개</div>
+                <div class="stk-thumb-row" id="stkQThumbs" style="margin-top:6px"></div>
+              </div>
+              <div style="border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:7px">
+                <button class="stk-btn stk-btn-w" onclick="stkAutoMatch()">↕ 자동 매칭</button>
+                <button class="stk-btn stk-btn-g" onclick="stkGoPos()">② 위치 조절 →</button>
+              </div>
+            </div>
+            <div class="stk-main">
+              <div class="stk-empty" id="stkHint"><div class="big">🖼️</div><p>디자인 업로드 후 QR 매칭</p></div>
+              <div class="stk-card-grid" id="stkGrid"></div>
+            </div>
+          </div>
+        </div>
+        <div id="stkP1" style="display:none">
+          <div class="stk-layout">
+            <div class="stk-panel">
+              <div>
+                <div class="stk-sec">QR 위치·크기</div>
+                <div class="stk-pos-box">
+                  <div class="stk-sl-row"><label>X</label><input type="range" id="stkX" min="0" max="100" value="50" oninput="stkUpdPos();stkSavePos()"><span id="stkXv">50%</span></div>
+                  <div class="stk-sl-row"><label>Y</label><input type="range" id="stkY" min="0" max="100" value="55" oninput="stkUpdPos();stkSavePos()"><span id="stkYv">55%</span></div>
+                  <div class="stk-sl-row"><label>크기</label><input type="range" id="stkS" min="5" max="80" value="32" oninput="stkUpdPos();stkSavePos()"><span id="stkSv">32%</span></div>
+                </div>
+                <p style="font-size:11px;color:var(--muted);margin-top:5px">드래그 이동 · 핸들 크기</p>
+              </div>
+              <div><div class="stk-sec">미리보기</div><div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:5px"></div></div>
+              <button class="stk-btn stk-btn-g" onclick="stkComposite()">합성 → ③ 출력</button>
+            </div>
+            <div class="stk-preview-area">
+              <div style="color:var(--muted);font-size:13px" id="sPosHint">① 에서 매칭 후 오세요</div>
+              <div id="sCvWrap" style="display:none;flex-direction:column;align-items:center;gap:10px">
+                <div style="position:relative;display:inline-block">
+                  <canvas id="sCv" width="360" height="360" style="display:block;border-radius:50%;box-shadow:0 4px 24px rgba(0,0,0,.6)"></canvas>
+                  <div id="sOv" style="position:absolute;cursor:move;display:none"></div>
+                </div>
+                <div style="font-size:11px;color:var(--muted)">드래그 이동 · 오른쪽하단 크기조절</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="stkP2" style="display:none">
+          <div class="stk-layout">
+            <div class="stk-panel">
+              <div><div class="stk-sec">합성 스티커</div><div class="stk-thumb-row" id="sCmpThumbs"></div><div class="stk-cnt" id="sCmpCnt">0개</div></div>
+              <div>
+                <div class="stk-sec">배치</div>
+                <div class="stk-opt-row">
+                  <div class="stk-opt-btn active" data-cols="3" data-rows="5" onclick="stkSetL(this)">3×5<br><small>15개</small></div>
+                  <div class="stk-opt-btn" data-cols="3" data-rows="4" onclick="stkSetL(this)">3×4<br><small>12개</small></div>
+                  <div class="stk-opt-btn" data-cols="2" data-rows="3" onclick="stkSetL(this)">2×3<br><small>6개</small></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <label style="font-size:12.5px;color:var(--muted)">부족 시 반복</label>
+                <input type="checkbox" id="sRpt" checked style="accent-color:var(--gold);width:15px;height:15px">
+              </div>
+              <button class="stk-btn stk-btn-g" id="sGenBtn" onclick="stkGen()">A4 PDF 생성</button>
+              <div class="stk-prog" id="sProg"><div class="stk-prog-bar" id="sProgB"></div></div>
+              <div style="font-size:11px;color:var(--muted);margin-top:3px" id="sStatTxt"></div>
+              <button class="stk-btn" id="sDlBtn" style="display:none;background:#C8964A;color:#fff" onclick="stkDl()">PDF 다운로드</button>
+            </div>
+            <div class="stk-preview-area" id="sOutArea">
+              <div class="stk-empty" id="sOutHint"><div class="big">📄</div><p>합성 완료 후 생성</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- 스티커 QR 선택 모달 -->
+<div class="modal-bg" id="stkModal" onclick="if(event.target===this)stkCM()">
+  <div class="modal">
+    <h3>QR 선택</h3>
+    <div class="stk-qr-pg" id="stkPG"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="stkCM()">취소</button>
+      <button class="btn btn-primary" onclick="stkOkM()">선택</button>
     </div>
   </div>
 </div>
@@ -787,344 +955,4 @@ function getQrDownloadUrl(qrFile) {
   return qrFile;
 }
 
-// ── 빠른 수정 섹션 HTML 생성 ──────────────────────────
-function escapeAttr(v) { return escHtml(v); }
-
-function quickInput(label, field, value) {
-  return '<div class="quick-field-wrap">'
-    + '<label>' + escHtml(label) + '</label>'
-    + '<input class="quick-field" data-field="' + escapeAttr(field) + '" value="' + escapeAttr(value) + '">'
-    + '</div>';
-}
-
-function quickTextarea(label, field, value) {
-  return '<div class="quick-field-wrap" style="grid-column:1/-1">'
-    + '<label>' + escHtml(label) + '</label>'
-    + '<textarea class="quick-textarea" data-field="' + escapeAttr(field) + '">' + escHtml(value) + '</textarea>'
-    + '</div>';
-}
-
-function quickSelect(label, field, value, options) {
-  let html = '<div class="quick-field-wrap">'
-    + '<label>' + escHtml(label) + '</label>'
-    + '<select class="quick-field" data-field="' + escapeAttr(field) + '">';
-  options.forEach(function(opt) {
-    const sel = String(value || '') === String(opt.value || '') ? ' selected' : '';
-    html += '<option value="' + escapeAttr(opt.value) + '"' + sel + '>' + escHtml(opt.label) + '</option>';
-  });
-  html += '</select></div>';
-  return html;
-}
-
-function renderQuickEditSection(item, type, code) {
-  let html = '';
-  html += '<div class="quick-edit-box">';
-  html += '<div class="detail-section-title" style="margin-top:0">빠른 수정</div>';
-  html += '<div class="quick-edit-grid">';
-
-  html += quickInput('소유자', 'owner', item.owner || '');
-  html += quickInput('메모', 'memo', item.memo || '');
-
-  if (type === 'CD') {
-    html += quickInput('이름', 'child_name', item.child_name || '');
-    html += quickInput('보호자', 'guardian_name', item.guardian_name || '');
-    html += quickInput('보호자 연락처', 'guardian_phone', item.guardian_phone || '');
-    html += quickInput('혈액형', 'blood_type', item.blood_type || '');
-    html += quickTextarea('알레르기·질환', 'child_allergy', item.child_allergy || '');
-    html += quickTextarea('특이사항', 'child_note', item.child_note || '');
-    html += quickTextarea('안내 메시지', 'child_message', item.child_message || '');
-  }
-  if (type === 'BMT') {
-    html += quickInput('방문 장소', 'bmt_places', item.bmt_places || '');
-    html += quickInput('방문 날짜', 'bmt_visit_date', item.bmt_visit_date || '');
-    html += quickInput('음성 URL', 'bmt_voice', item.bmt_voice || '');
-    html += quickTextarea('여행 메모', 'bmt_travel_memo', item.bmt_travel_memo || '');
-  }
-  if (type === 'WT') {
-    html += quickSelect('언어', 'wt_lang', item.wt_lang || 'ko', [
-      {value:'ko',label:'한국어'},{value:'en',label:'English'},
-      {value:'ja',label:'日本語'},{value:'zh',label:'中文'}
-    ]);
-    html += quickSelect('테마', 'wt_theme', item.wt_theme || 'general', [
-      {value:'general',label:'일반'},{value:'luck',label:'행운'},
-      {value:'health',label:'건강'},{value:'money',label:'재물'},
-      {value:'exam',label:'합격'},{value:'love',label:'사랑'}
-    ]);
-    html += quickInput('생년월일', 'wt_birth_date', item.wt_birth_date || '');
-  }
-  if (type === 'GT') {
-    html += quickInput('정원 이름', 'gt_garden_name', item.gt_garden_name || '');
-  }
-
-  html += quickSelect('분실 모드', 'lost_mode', item.lost_mode || '', [
-    {value:'',label:'꺼짐'},{value:'on',label:'켜짐'}
-  ]);
-  html += quickInput('연락 유형', 'lost_contact_type', item.lost_contact_type || '');
-  html += quickInput('연락 라벨', 'lost_contact_label', item.lost_contact_label || '');
-  html += quickInput('연락 URL', 'lost_contact_url', item.lost_contact_url || '');
-
-  html += '</div>';
-  html += '<div class="quick-edit-actions">';
-  html += '<button class="btn btn-ghost" onclick="saveQuickEdit(\'' + escapeAttr(code) + '\')">빠른 수정 저장</button>';
-  html += '<button class="btn btn-ghost" onclick="openDetailModal(\'' + escapeAttr(code) + '\')">되돌리기</button>';
-  html += '</div>';
-  html += '</div>';
-  return html;
-}
-
-// ── 빠른 수정 저장 ─────────────────────────────────────
-window.saveQuickEdit = async function(code) {
-  code = String(code || '').trim().toUpperCase();
-  if (!code) { alert('QR 코드가 없습니다.'); return; }
-
-  const modal = document.getElementById('detailModal');
-  if (!modal) { alert('상세 모달을 찾을 수 없습니다.'); return; }
-
-  const fields = {};
-  modal.querySelectorAll('[data-field]').forEach(function(el) {
-    const key = el.getAttribute('data-field');
-    if (key) fields[key] = el.value || '';
-  });
-
-  if (!confirm(code + ' 정보를 빠른 수정으로 저장할까요?')) return;
-
-  const adminKey = getAdminApiKey();
-  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
-
-  try {
-    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'updateQrQuickFieldsFromAdmin', admin_key: adminKey, code: code, fields: fields }),
-      redirect: 'follow'
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message || '빠른 수정 실패');
-    alert(data.message || '빠른 수정 완료');
-    await loadInventory();
-    await loadDashboard();
-    openDetailModal(code);
-  } catch(e) {
-    alert('빠른 수정 실패: ' + e.message);
-  }
-};
-
-function getDefaultProductName(type) {
-  const names = { CD:'미아방지', BMT:'부산 메모리 태그', GT:'가든 태그', WT:'바램태그', TT:'길동무 태그' };
-  return names[type] || '';
-}
-
-window.normalizeFirestoreCards = async function() {
-  if (!confirm('qr_cards 전체 문서의 product_type / product 누락값을 보정할까요?')) return;
-  try {
-    let fixedCount = 0;
-    let skipCount  = 0;
-
-    for (const item of allItems) {
-      const code = String(item.code || item.id || '').trim().toUpperCase();
-      if (!code || code.indexOf('-') < 0) { skipCount++; continue; }
-
-      const inferredType    = code.split('-')[0];
-      const inferredProduct = getDefaultProductName(inferredType);
-      const updateData      = {};
-      let needUpdate        = false;
-
-      if (!item.product_type)              { updateData.product_type = inferredType;    needUpdate = true; }
-      if (!item.product && inferredProduct){ updateData.product      = inferredProduct; needUpdate = true; }
-      if (!item.code)                      { updateData.code         = code;            needUpdate = true; }
-
-      if (!needUpdate) { skipCount++; continue; }
-
-      updateData.updated_at = new Date().toISOString().replace('T',' ').slice(0,19);
-      await updateDoc(doc(db, 'qr_cards', code), updateData);
-      fixedCount++;
-    }
-
-    alert('Firestore 데이터 보정 완료\n수정: ' + fixedCount + '건\n건너뜀: ' + skipCount + '건');
-    await loadInventory();
-    await loadDashboard();
-  } catch(e) {
-    alert('Firestore 데이터 보정 실패: ' + e.message);
-  }
-};
-
-// ── QR 생성 (Apps Script API 연동) ────────────────────
-// admin_Code.gs 새 버전 배포 후 실제 URL로 교체
-const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4hup9QdjD2ZpYx52cHL8oiCm9Mer1aLKROMAq8GAoB8tnso-9BOI1AvzvautO6fFQiw/exec';
-
-function getAdminApiKey() {
-  let key = sessionStorage.getItem('admin_api_key');
-  if (!key) {
-    key = prompt('Apps Script 관리자 API 키를 입력하세요:');
-    if (!key) return null;
-    sessionStorage.setItem('admin_api_key', key.trim());
-  }
-  return key;
-}
-
-window.resetAdminApiKey = function() {
-  sessionStorage.removeItem('admin_api_key');
-  alert('API 키가 초기화되었습니다. 다음 생성 시 다시 입력하세요.');
-};
-
-window.createQrCardsViaApi = async function() {
-  const type    = document.getElementById('createType').value;
-  const qty     = Number(document.getElementById('createQty').value);
-  const resultEl = document.getElementById('createResult');
-
-  if (!type) { alert('제품을 선택하세요.'); return; }
-  if (!qty || qty < 1 || qty > 20) { alert('수량은 1~20 사이로 입력하세요.'); return; }
-
-  if (!ADMIN_APPS_SCRIPT_URL) {
-    resultEl.innerHTML = '<span style="color:var(--red)">❌ ADMIN_APPS_SCRIPT_URL이 설정되지 않았습니다.<br>admin/index.html의 ADMIN_APPS_SCRIPT_URL 상수를 채워주세요.</span>';
-    return;
-  }
-
-  const key = getAdminApiKey();
-  if (!key) return;
-
-  resultEl.innerHTML = '<span style="color:var(--muted)">생성 중... (약 10~30초 소요)</span>';
-
-  try {
-    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-      method:   'POST',
-      headers:  { 'Content-Type': 'text/plain' },
-      body:     JSON.stringify({ action: 'createQrInventoryFromAdmin', admin_key: key, product_type: type, quantity: qty }),
-      redirect: 'follow'
-    });
-    const data = await res.json();
-    if (data.success) {
-      resultEl.innerHTML = '<span style="color:var(--green)">✅ ' + data.message + '</span>'
-        + '<br><a href="' + data.folderUrl + '" target="_blank" style="color:var(--gold)">Google Drive 폴더 열기</a>';
-      await loadInventory();
-      await loadDashboard();
-    } else {
-      if (data.message && data.message.indexOf('관리자 키') > -1) {
-        sessionStorage.removeItem('admin_api_key');
-      }
-      resultEl.innerHTML = '<span style="color:var(--red)">❌ ' + data.message + '</span>';
-    }
-  } catch(e) {
-    resultEl.innerHTML = '<span style="color:var(--red)">오류: ' + e.message + '</span>';
-  }
-};
-
-window.saveStatus = async function() {
-  const code   = document.getElementById('modalCode').value;
-  const status = document.getElementById('modalStatus').value;
-
-  if (!code)   { alert('코드가 없습니다.'); return; }
-  if (!status) { alert('상태값이 없습니다.'); return; }
-
-  if (!confirm(code + ' 상태를 [' + status + ']로 변경할까요?')) return;
-
-  const adminKey = getAdminApiKey();
-  if (!adminKey) return;
-
-  try {
-    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-      method:   'POST',
-      headers:  { 'Content-Type': 'text/plain' },
-      body:     JSON.stringify({ action: 'updateQrStatusFromAdmin', admin_key: adminKey, code: code, status: status }),
-      redirect: 'follow'
-    });
-
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message || '상태 변경 실패');
-
-    closeModal('statusModal');
-    await loadInventory();
-    await loadDashboard();
-    alert(data.message || code + ' 상태를 [' + status + ']로 변경했습니다.');
-  } catch(e) {
-    alert('저장 실패: ' + e.message);
-  }
-};
-
-window.regenerateQrImage = async function(code) {
-  code = String(code || '').trim().toUpperCase();
-  if (!code) { alert('QR 코드가 없습니다.'); return; }
-
-  if (!confirm(code + ' QR 이미지를 다시 생성할까요?\n기존 Drive QR 파일은 휴지통으로 이동되고 새 파일 링크로 갱신됩니다.')) return;
-
-  const adminKey = getAdminApiKey();
-  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
-
-  try {
-    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'regenerateQrImageFromAdmin', admin_key: adminKey, code: code }),
-      redirect: 'follow'
-    });
-
-    const data = await res.json();
-    if (!data.success) throw new Error(data.message || 'QR 재생성 실패');
-
-    alert(data.message || 'QR 이미지를 재생성했습니다.');
-    await loadInventory();
-    await loadDashboard();
-    if (typeof closeModal === 'function') closeModal('detailModal');
-  } catch(e) {
-    alert('QR 재생성 실패: ' + e.message);
-  }
-};
-
-window.regenerateMissingQrImages = async function() {
-  const targets = (currentShownItems || []).filter(function(item) {
-    const label = getBackupStatus(item).label;
-    return label === 'QR 없음' || label === '점검필요';
-  });
-
-  if (!targets.length) {
-    alert('현재 표시 목록에 QR 재생성이 필요한 항목이 없습니다.');
-    return;
-  }
-
-  if (targets.length > 20) {
-    alert('한 번에 최대 20개까지만 재생성하세요.\n현재 대상: ' + targets.length + '개');
-    return;
-  }
-
-  const codes = targets.map(function(item) {
-    return String(item.code || item.id || '').trim().toUpperCase();
-  }).filter(Boolean);
-
-  if (!codes.length) { alert('재생성할 QR 코드가 없습니다.'); return; }
-
-  if (!confirm('현재 표시 목록 중 QR 이미지가 없는 항목 ' + codes.length + '개를 재생성할까요?\n\n' + codes.join(', '))) return;
-
-  const adminKey = getAdminApiKey();
-  if (!adminKey) { alert('관리자 API 키가 필요합니다.'); return; }
-
-  let successCount = 0;
-  const failList = [];
-
-  for (let i = 0; i < codes.length; i++) {
-    const code = codes[i];
-    try {
-      const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'regenerateQrImageFromAdmin', admin_key: adminKey, code: code }),
-        redirect: 'follow'
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'QR 재생성 실패');
-      successCount++;
-    } catch(e) {
-      failList.push(code + ': ' + e.message);
-    }
-  }
-
-  await loadInventory();
-  await loadDashboard();
-
-  let msg = 'QR 일괄 재생성 완료\n성공: ' + successCount + '개';
-  if (failList.length) msg += '\n실패: ' + failList.length + '개\n\n' + failList.join('\n');
-  alert(msg);
-};
-</script>
-</body>
-</html>
-
+// ── 빠른 수정 섹션 HTML 생성 ─────────────
