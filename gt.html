@@ -798,6 +798,7 @@ async function adminGiveSeed(){
   const got=all[Math.floor(Math.random()*all.length)];
   const inv={...(g.seed_inventory||{})}; inv[got]=(inv[got]||0)+1;
   await updateDoc(ref,{seed_inventory:inv});
+<<<<<<< HEAD
   alert('씨앗 지급: '+GT_SPECIES[got].name);renderGardenAdmin();
 }
 window.adminGiveSeed=adminGiveSeed;
@@ -832,3 +833,6 @@ window.firestoreApi={doc,getDoc,setDoc,updateDoc};
 </script>
 </body>
 </html>
+=======
+  alert('씨앗 지급: '+GT_SPECIES[g
+>>>>>>> 0ba487fc1cdb43d7fd567265cc07d97d641451cb

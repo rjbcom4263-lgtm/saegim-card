@@ -4,12 +4,46 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>새김</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#e6c88f;--muted:#b7a88f}
-*{box-sizing:border-box}
-body{margin:0;background:#111;color:var(--muted);font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
+:root{--green:#22552f;--green2:#1a4024;--gold:#e6c88f;--muted:#b7a88f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111;color:var(--muted);font-family:'Noto Sans KR',system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}
 .logo{font-family:serif;font-size:36px;letter-spacing:.18em;color:var(--gold);margin-bottom:12px}
 .msg{font-size:14px;color:var(--muted);line-height:1.8}
+
+/* ── 동의 모달 ── */
+#consentOverlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+#consentBox{background:#fff;width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:28px 22px 36px;color:#222;text-align:left;max-height:90vh;overflow-y:auto}
+.c-logo{font-family:serif;font-size:22px;letter-spacing:.15em;color:var(--green);margin-bottom:4px;text-align:center}
+.c-title{font-size:17px;font-weight:600;color:#111;margin-bottom:6px;text-align:center}
+.c-sub{font-size:13px;color:#666;text-align:center;margin-bottom:20px;line-height:1.6}
+.c-divider{height:1px;background:#eee;margin:16px 0}
+
+/* 수집 항목 요약 */
+.c-items{background:#f7f9f7;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.c-item{display:flex;gap:10px;padding:5px 0;font-size:13px;color:#444;align-items:flex-start}
+.c-item-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.c-item-text{line-height:1.5}
+.c-sensitive{color:#c0392b;font-size:11.5px;font-weight:600}
+
+/* 체크박스 */
+.c-check{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:10px;border:1.5px solid #e0e0e0;margin-bottom:10px;cursor:pointer;transition:border-color .2s,background .2s}
+.c-check.checked{border-color:var(--green);background:#f0f8f1}
+.c-check input{display:none}
+.c-check-box{width:22px;height:22px;border-radius:6px;border:2px solid #ccc;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s;margin-top:1px}
+.c-check.checked .c-check-box{background:var(--green);border-color:var(--green)}
+.c-check.checked .c-check-box::after{content:'✓';color:#fff;font-size:14px;font-weight:700}
+.c-check-text{font-size:13.5px;color:#333;line-height:1.5}
+.c-check-text strong{display:block;font-size:14px;color:#111;margin-bottom:2px}
+.c-check-link{color:var(--green);text-decoration:underline;font-size:12.5px}
+
+/* 버튼 */
+#agreeBtn{width:100%;padding:15px;background:var(--green);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:16px;transition:background .2s;letter-spacing:.03em}
+#agreeBtn:disabled{background:#ccc;cursor:not-allowed}
+#agreeBtn:not(:disabled):active{background:var(--green2)}
+.c-skip{text-align:center;margin-top:12px;font-size:12px;color:#999}
 </style>
 </head>
 <body>
@@ -17,27 +51,176 @@ body{margin:0;background:#111;color:var(--muted);font-family:system-ui,sans-seri
   <div class="logo">SAEGIM</div>
   <div class="msg" id="msg">QR 코드를 확인하는 중입니다...</div>
 </div>
-<script>
-(function(){
-  var p=new URLSearchParams(location.search);
-  var code=p.get('code')||'';
-  var mode=p.get('mode')||'';
-  var suffix=code?(mode?'?code='+encodeURIComponent(code)+'&mode='+encodeURIComponent(mode):'?code='+encodeURIComponent(code)):'';
 
-  if(!code){
-    document.getElementById('msg').textContent='QR 코드가 없습니다. 제품의 QR을 스캔해 주세요.';
+<!-- 첫 방문 동의 모달 -->
+<div id="consentOverlay" style="display:none">
+  <div id="consentBox">
+    <div class="c-logo">SAEGIM</div>
+    <div class="c-title" id="cTitle"></div>
+    <div class="c-sub" id="cSub">서비스를 이용하기 전에<br>개인정보 수집·이용에 동의해 주세요.</div>
+    <div class="c-items" id="cItems"></div>
+    <div class="c-divider"></div>
+
+    <!-- 필수: 개인정보 -->
+    <div class="c-check" id="check1" onclick="toggleCheck('check1','chk1')">
+      <input type="checkbox" id="chk1">
+      <div class="c-check-box"></div>
+      <div class="c-check-text">
+        <strong>[필수] 개인정보 수집·이용 동의</strong>
+        서비스 제공 목적으로 위 항목을 수집·이용하는 데 동의합니다.
+        (<a class="c-check-link" href="privacy.html" target="_blank" onclick="event.stopPropagation()">처리방침 전문 보기</a>)
+      </div>
+    </div>
+
+    <!-- 필수: 민감정보 — CD만 표시 -->
+    <div class="c-check" id="check2" onclick="toggleCheck('check2','chk2')" style="display:none">
+      <input type="checkbox" id="chk2">
+      <div class="c-check-box"></div>
+      <div class="c-check-text">
+        <strong>[필수] 민감정보 수집·이용 동의</strong>
+        대상자의 혈액형·알레르기 정보(민감정보)를 수집·이용하는 데 동의합니다.
+      </div>
+    </div>
+
+    <!-- 필수: 국외 이전 -->
+    <div class="c-check" id="check3" onclick="toggleCheck('check3','chk3')">
+      <input type="checkbox" id="chk3">
+      <div class="c-check-box"></div>
+      <div class="c-check-text">
+        <strong>[필수] 개인정보 국외 이전 동의</strong>
+        데이터가 Google LLC(미국)의 Firebase 서버에 저장되는 데 동의합니다.
+      </div>
+    </div>
+
+    <button id="agreeBtn" disabled onclick="doAgree()">동의하고 시작하기</button>
+    <div class="c-skip">동의하지 않으면 서비스를 이용할 수 없습니다.</div>
+  </div>
+</div>
+
+<script>
+/* 제품별 동의 모달 설정 */
+var CONSENT_INFO = {
+  CD: {
+    title: '안심태그 이용 동의',
+    hasSensitive: true,
+    items: [
+      { icon: '🪪', text: '<b>대상자 이름</b> — 보호자가 직접 입력' },
+      { icon: '📞', text: '<b>보호자 이름·연락처</b> — 분실 시 연락 목적' },
+      { icon: '🩸', text: '<b>혈액형·알레르기</b> — 응급 상황 대비 <span class="c-sensitive">※ 민감정보</span>' },
+      { icon: '💬', text: '<b>개인 메시지</b> — 보호자가 직접 입력' },
+      { icon: '☁️', text: '<b>[공통]</b> 방문 일시, 접속 IP · Google Firebase(미국) 저장' }
+    ]
+  },
+  BMT: {
+    title: '부산 메모리 태그 이용 동의',
+    hasSensitive: false,
+    items: [
+      { icon: '📸', text: '<b>사진</b> — 여행·추억 기록' },
+      { icon: '📝', text: '<b>여행 메모·방문 장소</b> — 직접 입력' },
+      { icon: '☁️', text: '<b>[공통]</b> 방문 일시, 접속 IP · Google Firebase(미국) 저장' }
+    ]
+  },
+  WT: {
+    title: '바램태그 이용 동의',
+    hasSensitive: false,
+    items: [
+      { icon: '🎂', text: '<b>생년월일</b> — 바램 메시지 생성 목적' },
+      { icon: '🌸', text: '<b>테마·언어 설정</b> — 화면 구성 목적' },
+      { icon: '💬', text: '<b>메시지</b> — 직접 입력' },
+      { icon: '☁️', text: '<b>[공통]</b> 방문 일시, 접속 IP · Google Firebase(미국) 저장' }
+    ]
+  },
+  GT: {
+    title: '가든태그 이용 동의',
+    hasSensitive: false,
+    items: [
+      { icon: '🌿', text: '<b>정원 이름</b> — 직접 입력' },
+      { icon: '📅', text: '<b>방문 기록·성장 포인트</b> — 정원 육성 기록' },
+      { icon: '✦', text: '<b>기억 메시지</b> — 식물에 새기는 메시지 (직접 입력)' },
+      { icon: '☁️', text: '<b>[공통]</b> 방문 일시, 접속 IP · Google Firebase(미국) 저장' }
+    ]
+  },
+  TT: {
+    title: '길동무 태그 이용 동의',
+    hasSensitive: false,
+    items: [
+      { icon: '📞', text: '<b>연락처</b> — 여행 동반자 연결 목적' },
+      { icon: '📝', text: '<b>메모</b> — 직접 입력' },
+      { icon: '☁️', text: '<b>[공통]</b> 방문 일시, 접속 IP · Google Firebase(미국) 저장' }
+    ]
+  }
+};
+
+(function(){
+  var p = new URLSearchParams(location.search);
+  var code = p.get('code') || '';
+  var mode = p.get('mode') || '';
+  var suffix = code ? (mode
+    ? '?code=' + encodeURIComponent(code) + '&mode=' + encodeURIComponent(mode)
+    : '?code=' + encodeURIComponent(code)) : '';
+
+  if (!code) {
+    document.getElementById('msg').textContent = 'QR 코드가 없습니다. 제품의 QR을 스캔해 주세요.';
     return;
   }
 
-  var prefix=code.split('-')[0].toUpperCase();
-  var routes={'CD':'cd.html','BMT':'bmt.html','TT':'tt.html','WT':'wt.html','GT':'gt.html'};
-  var target=routes[prefix];
-  if(target){
-    location.replace(target+suffix);
-  }else{
-    document.getElementById('msg').textContent='알 수 없는 태그 코드입니다: '+code;
+  var prefix = code.split('-')[0].toUpperCase();
+  var routes = { CD:'cd.html', BMT:'bmt.html', TT:'tt.html', WT:'wt.html', GT:'gt.html' };
+  var target = routes[prefix];
+  if (!target) {
+    document.getElementById('msg').textContent = '알 수 없는 태그 코드입니다: ' + code;
+    return;
   }
+
+  // 이미 동의했으면 바로 이동 (태그 코드별 1회)
+  var key = 'saegim_consent_' + code + '_v1';
+  if (localStorage.getItem(key)) {
+    location.replace(target + suffix);
+    return;
+  }
+
+  // 제품별 모달 내용 채우기
+  var info = CONSENT_INFO[prefix] || CONSENT_INFO.GT;
+  document.getElementById('cTitle').textContent = info.title;
+  var itemsHtml = info.items.map(function(it){
+    return '<div class="c-item"><span class="c-item-icon">' + it.icon + '</span>'
+         + '<div class="c-item-text">' + it.text + '</div></div>';
+  }).join('');
+  document.getElementById('cItems').innerHTML = itemsHtml;
+
+  // CD만 민감정보 동의 표시
+  if (info.hasSensitive) {
+    document.getElementById('check2').style.display = 'flex';
+  }
+
+  document.getElementById('consentOverlay').style.display = 'flex';
+  window._consentTarget = target + suffix;
+  window._consentKey = key;
+  window._hasSensitive = info.hasSensitive;
 })();
+
+function toggleCheck(divId, inputId) {
+  var div = document.getElementById(divId);
+  var inp = document.getElementById(inputId);
+  inp.checked = !inp.checked;
+  div.classList.toggle('checked', inp.checked);
+  updateBtn();
+}
+
+function updateBtn() {
+  var ids = ['chk1', 'chk3'];
+  if (window._hasSensitive) ids.push('chk2');
+  var all = ids.every(function(id){ return document.getElementById(id).checked; });
+  document.getElementById('agreeBtn').disabled = !all;
+}
+
+function doAgree() {
+  localStorage.setItem(window._consentKey, JSON.stringify({
+    agreed: true,
+    date: new Date().toISOString()
+  }));
+  location.replace(window._consentTarget);
+}
 </script>
 </body>
 </html>
