@@ -409,9 +409,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
               <div>
                 <div class="stk-sec">QR 위치·크기</div>
                 <div class="stk-pos-nums">
-                  <div class="stk-pos-num"><span>X</span><input type="number" id="stkXn" min="0" max="100" value="50" oninput="stkApplyNums()"><span>%</span></div>
-                  <div class="stk-pos-num"><span>Y</span><input type="number" id="stkYn" min="0" max="100" value="55" oninput="stkApplyNums()"><span>%</span></div>
-                  <div class="stk-pos-num"><span>크기</span><input type="number" id="stkSn" min="5" max="80" value="32" oninput="stkApplyNums()"><span>%</span></div>
+                  <div class="stk-pos-num"><span>QR X</span><input type="number" id="stkXn" min="0" max="100" value="50" oninput="stkApplyNums()"><span>%</span></div>
+                  <div class="stk-pos-num"><span>QR Y</span><input type="number" id="stkYn" min="0" max="100" value="55" oninput="stkApplyNums()"><span>%</span></div>
+                  <div class="stk-pos-num"><span>QR크기</span><input type="number" id="stkSn" min="5" max="80" value="32" oninput="stkApplyNums()"><span>%</span></div>
+                  <div class="stk-pos-num"><span>도안크기</span><input type="number" id="stkDn" min="30" max="150" value="100" oninput="stkApplyNums()"><span>%</span></div>
                 </div>
                 <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절</div>
               </div>
@@ -1355,6 +1356,8 @@ window.regenerateMissingQrImages = async function() {
   for(var i=0;i<SLOTS;i++)slots.push(null);
 
   var layout={cols:3,rows:5},pdfBlob=null;
+  var dScale=1.0; // 도안 스케일 (1.0 = 꽉채움)
+  var _cachedDImg=null,_cachedDSrc=null,_cachedQImg=null,_cachedQSrc=null;
   var qrX=0.50,qrY=0.55,qrSize=0.32;
   var CV_SIZE=380;
   var posIdx=0;
@@ -1428,7 +1431,7 @@ window.regenerateMissingQrImages = async function() {
       Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();stkUploadDesign(f.name,e.target.result);};fr.readAsDataURL(f);});
       fi.value='';
     };}
-    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;stkSyncNums();}}catch(e){}
+    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;dScale=v.d||1.0;stkSyncNums();}}catch(e){}
     stkRenderGrid();
   };
 
@@ -1653,15 +1656,16 @@ window.regenerateMissingQrImages = async function() {
   var dragging=false,dragOffX=0,dragOffY=0,resizing=false,resizeStartX=0,resizeStartSz=0;
 
   function stkSyncNums(){
-    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
-    if(xn)xn.value=Math.round(qrX*100);if(yn)yn.value=Math.round(qrY*100);if(sn)sn.value=Math.round(qrSize*100);
+    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn'),dn=document.getElementById('stkDn');
+    if(xn)xn.value=Math.round(qrX*100);if(yn)yn.value=Math.round(qrY*100);if(sn)sn.value=Math.round(qrSize*100);if(dn)dn.value=Math.round(dScale*100);
   }
   window.stkApplyNums=function(){
-    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn');
+    var xn=document.getElementById('stkXn'),yn=document.getElementById('stkYn'),sn=document.getElementById('stkSn'),dn=document.getElementById('stkDn');
     if(xn)qrX=Number(xn.value)/100;if(yn)qrY=Number(yn.value)/100;if(sn)qrSize=Number(sn.value)/100;
+    if(dn){dScale=Math.min(1.5,Math.max(0.3,Number(dn.value)/100));}
     stkDrawCanvas();stkSavePos();
   };
-  function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize}));}catch(e){}}
+  function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize,d:dScale}));}catch(e){}}
 
   function getPairs(){return slots.filter(function(s){return s&&s.design;});}
 
@@ -1670,7 +1674,7 @@ window.regenerateMissingQrImages = async function() {
     var wrap=document.getElementById('sCvWrap'),hint=document.getElementById('sPosHint');
     if(!pairs.length){if(wrap)wrap.style.display='none';if(hint)hint.style.display='';return;}
     if(wrap){wrap.style.display='flex';wrap.style.flexDirection='column';wrap.style.alignItems='center';wrap.style.gap='8px';}if(hint)hint.style.display='none';
-    posIdx=0;stkRenderPosNav();stkDrawCanvas();stkSyncNums();
+    posIdx=0;_cachedDImg=null;_cachedDSrc=null;_cachedQImg=null;_cachedQSrc=null;stkRenderPosNav();stkDrawCanvas();stkSyncNums();
     var cv=document.getElementById('sCv');
     cv.onmousedown=function(e){
       var r=cv.getBoundingClientRect(),mx=(e.clientX-r.left)/r.width,my=(e.clientY-r.top)/r.height;
@@ -1690,57 +1694,75 @@ window.regenerateMissingQrImages = async function() {
     if(picks){picks.innerHTML='';pairs.forEach(function(p,i){var img=document.createElement('img');img.src=stkGetSrc(p.design);img.style.cssText='width:32px;height:32px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid '+(i===posIdx?'var(--gold)':'var(--line)');img.onclick=function(){posIdx=i;stkRenderPosNav();stkDrawCanvas();};picks.appendChild(img);});}
     if(lbl)lbl.textContent=(posIdx+1)+' / '+pairs.length;
   }
-  window.stkPosNav=function(dir){var pairs=getPairs();posIdx=Math.max(0,Math.min(pairs.length-1,posIdx+dir));stkRenderPosNav();stkDrawCanvas();};
+  window.stkPosNav=function(dir){var pairs=getPairs();posIdx=Math.max(0,Math.min(pairs.length-1,posIdx+dir));_cachedDImg=null;_cachedDSrc=null;_cachedQImg=null;_cachedQSrc=null;stkRenderPosNav();stkDrawCanvas();};
 
   function stkDrawCanvas(){
     var pairs=getPairs();if(!pairs.length)return;
     var p=pairs[Math.min(posIdx,pairs.length-1)];
     var cv=document.getElementById('sCv');if(!cv)return;
     var ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
-    ctx.clearRect(0,0,W,H);
-    var src=stkGetSrc(p.design);
-    if(!src)return;
-    var drawQrOn=function(){
-      if(!p.qr)return;
-      var qi=new Image();
-      qi.onload=function(){
+    var src=stkGetSrc(p.design);if(!src)return;
+    var qsrc=p.qr?p.qr.src:null;
+    var ds=dScale||1.0,dw=Math.round(W*ds),dh=Math.round(H*ds),dx=Math.round((W-dw)/2),dy=Math.round((H-dh)/2);
+    var doRender=function(dImg,qImg){
+      ctx.clearRect(0,0,W,H);
+      ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();
+      ctx.drawImage(dImg,dx,dy,dw,dh);ctx.restore();
+      if(qImg){
         var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);
-        ctx.drawImage(qi,qx,qy,qs,qs);
+        ctx.drawImage(qImg,qx,qy,qs,qs);
         var h=document.getElementById('sResizeHandle');
         if(h){h.style.left=(qx+qs-7)+'px';h.style.top=(qy+qs-7)+'px';h.style.right='auto';h.style.bottom='auto';}
-      };
-      qi.src=p.qr.src;
+      }
     };
+    var loadQ=function(dImg){
+      if(!qsrc){doRender(dImg,null);return;}
+      if(_cachedQSrc===qsrc&&_cachedQImg){doRender(dImg,_cachedQImg);return;}
+      var qi=new Image();qi.onload=function(){_cachedQImg=qi;_cachedQSrc=qsrc;doRender(dImg,qi);};qi.src=qsrc;
+    };
+    if(_cachedDSrc===src&&_cachedDImg){loadQ(_cachedDImg);return;}
     var di=new Image();
-    // data URL이면 crossOrigin 세팅 불필요 (오히려 문제 유발)
-    if(src.indexOf('data:')<0) di.crossOrigin='anonymous';
-    di.onload=function(){
-      ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,W,H);ctx.restore();
-      drawQrOn();
-    };
-    di.onerror=function(){
-      // crossOrigin 없이 재시도 (Firebase Storage CORS 설정 전 fallback)
-      var di2=new Image();
-      di2.onload=function(){ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di2,0,0,W,H);ctx.restore();drawQrOn();};
-      di2.src=src;
-    };
+    if(src.indexOf('data:')<0)di.crossOrigin='anonymous';
+    di.onload=function(){_cachedDImg=di;_cachedDSrc=src;loadQ(di);};
+    di.onerror=function(){var di2=new Image();di2.onload=function(){_cachedDImg=di2;_cachedDSrc=src;loadQ(di2);};di2.src=src;};
     di.src=src;
   }
+
 
   /* ── 합성 ── */
   window.stkComposite=function(){
     var pairs=getPairs();if(!pairs.length){alert('도안이 배정된 슬롯이 없습니다.');return;}
-    var SIZE=400;var cmpArr=[];var done=0;
-    pairs.forEach(function(p){
+    var SIZE=400,ds=dScale||1.0,cmpArr=[],done=0,total=pairs.length;
+    function finish(){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}
+    pairs.forEach(function(p,pi){
       var cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;var ctx=cv.getContext('2d');
-      var di=new Image();di.crossOrigin='anonymous';
-      di.onload=function(){
-        ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();ctx.drawImage(di,0,0,SIZE,SIZE);ctx.restore();
+      var dw=Math.round(SIZE*ds),dh=Math.round(SIZE*ds),dx=Math.round((SIZE-dw)/2),dy=Math.round((SIZE-dh)/2);
+      var drawD=function(di){
+        ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();
+        ctx.drawImage(di,dx,dy,dw,dh);ctx.restore();
+      };
+      var drawQ=function(){
         if(p.qr){
-          var qi=new Image();qi.crossOrigin='anonymous';
-          qi.onload=function(){var qs=Math.round(qrSize*SIZE);ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}};qi.src=p.qr.src;
-        }else{cmpArr.push(cv.toDataURL('image/png'));done++;if(done===pairs.length){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}}
-      };di.src=stkGetSrc(p.design);
+          var qi=new Image();
+          qi.onload=function(){
+            var qs=Math.round(qrSize*SIZE);
+            ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);
+            try{cmpArr[pi]=cv.toDataURL('image/png');}catch(e){cmpArr[pi]='';}
+            done++;if(done===total)finish();
+          };
+          qi.onerror=function(){try{cmpArr[pi]=cv.toDataURL('image/png');}catch(e){cmpArr[pi]='';}done++;if(done===total)finish();};
+          qi.src=p.qr.src;
+        }else{
+          try{cmpArr[pi]=cv.toDataURL('image/png');}catch(e){cmpArr[pi]='';}
+          done++;if(done===total)finish();
+        }
+      };
+      var src=stkGetSrc(p.design);
+      var di=new Image();
+      if(src.indexOf('data:')<0)di.crossOrigin='anonymous';
+      di.onload=function(){drawD(di);drawQ();};
+      di.onerror=function(){var di2=new Image();di2.onload=function(){drawD(di2);drawQ();};di2.onerror=function(){done++;if(done===total)finish();};di2.src=src;};
+      di.src=src;
     });
   };
 
