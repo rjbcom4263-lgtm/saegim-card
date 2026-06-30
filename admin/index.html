@@ -1384,7 +1384,7 @@ window.regenerateMissingQrImages = async function() {
   for(var i=0;i<SLOTS;i++)slots.push(null);
 
   var layout={cols:3,rows:4},pdfBlob=null;
-  var dScale=1.0; // 도안 스케일 (1.0 = 꽉채움)
+  var dScale=0.829; // 도안 스케일 (58/70 = 58mm 기본)
   var _cachedDImg=null,_cachedDSrc=null,_cachedQImg=null,_cachedQSrc=null;
   var qrX=0.50,qrY=0.55,qrSize=0.32;
   var CV_SIZE=380;
@@ -1470,7 +1470,7 @@ window.regenerateMissingQrImages = async function() {
       Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();stkUploadDesign(f.name,e.target.result);};fr.readAsDataURL(f);});
       fi.value='';
     };}
-    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;dScale=v.d||1.0;stkSyncNums();}}catch(e){}
+    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.32;dScale=v.d||0.829;stkSyncNums();}}catch(e){}
     stkRenderGrid();
   };
 
