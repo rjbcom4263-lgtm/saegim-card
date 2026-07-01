@@ -122,21 +122,32 @@ window._fbLogin = async function() {
   catch(e) { alert('로그인 실패: ' + e.message); }
 };
 
-window._loadCdQr = async function() {
+let _selectedProd = 'CD';
+window._setProd = function(prod, el) {
+  _selectedProd = prod;
+  document.querySelectorAll('#prodBtns button').forEach(b => {
+    b.style.background = '#fff'; b.style.color = '#333'; b.style.borderColor = '#ccc';
+  });
+  el.style.background = '#1a3a1a'; el.style.color = '#4caf50'; el.style.borderColor = '#4caf50';
+};
+window._loadQrByProduct = async function() {
   if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
-  const btn = document.getElementById('cdLoadBtn');
+  const btn = document.getElementById('qrLoadBtn');
+  const stat = document.getElementById('qrStatFilter').value;
+  const limit = Math.max(1, parseInt(document.getElementById('qrLimitInput').value) || 9);
   if (btn) btn.textContent = '불러오는 중...';
   try {
     const snap = await getDocs(collection(db, 'qr_cards'));
-    const items = snap.docs.map(d => ({id: d.id, ...d.data()}))
-      .filter(it => (it.product_type||it.product||'') === 'CD' && (it.status||'') === '사용중')
-      .slice(0, 9);
-    if (!items.length) { alert('CD 사용중 항목이 없습니다.'); if(btn)btn.textContent='⚡ CD QR 자동 불러오기'; return; }
+    let items = snap.docs.map(d => ({id: d.id, ...d.data()}));
+    if (_selectedProd) items = items.filter(it => (it.product_type||it.product||'') === _selectedProd);
+    if (stat) items = items.filter(it => (it.status||'') === stat);
+    items = items.slice(0, limit);
+    if (!items.length) { alert('조건에 맞는 항목이 없습니다.'); if(btn)btn.textContent='⚡ QR 자동 불러오기 (Firestore)'; return; }
     window._generateQrImages(items);
-    if (btn) btn.textContent = '⚡ CD QR 자동 불러오기';
+    if (btn) btn.textContent = '⚡ QR 자동 불러오기 (Firestore)';
   } catch(e) {
     alert('오류: ' + e.message);
-    if (btn) btn.textContent = '⚡ CD QR 자동 불러오기';
+    if (btn) btn.textContent = '⚡ QR 자동 불러오기 (Firestore)';
   }
 };
 </script>
@@ -238,8 +249,31 @@ window._loadCdQr = async function() {
 
   <div class="group">
     <h2>2. QR 자동 적용</h2>
-    <button id="cdLoadBtn" onclick="window._loadCdQr()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ CD QR 자동 불러오기 (Firestore)</button>
-    <div class="hint" style="margin-top:0;margin-bottom:10px">CD 제품 · 사용중 · 최대 9개 자동 생성</div>
+    <label style="margin-bottom:6px">제품 선택</label>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px" id="prodBtns">
+      <button onclick="window._setProd('CD',this)"   style="width:auto;padding:7px 12px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">CD</button>
+      <button onclick="window._setProd('BMT',this)"  style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">BMT</button>
+      <button onclick="window._setProd('GT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">GT</button>
+      <button onclick="window._setProd('WT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">WT</button>
+      <button onclick="window._setProd('TT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">TT</button>
+      <button onclick="window._setProd('',this)"     style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">전체</button>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <div>
+        <label>상태</label>
+        <select id="qrStatFilter">
+          <option value="사용중">사용중</option>
+          <option value="판매완료">판매완료</option>
+          <option value="미등록">미등록</option>
+          <option value="">전체</option>
+        </select>
+      </div>
+      <div>
+        <label>개수</label>
+        <input id="qrLimitInput" type="number" value="9" min="1" max="100" style="padding:9px 10px;border:1px solid #cfcfcf;border-radius:10px">
+      </div>
+    </div>
+    <button id="qrLoadBtn" onclick="window._loadQrByProduct()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ QR 자동 불러오기 (Firestore)</button>
     <label>QR 이미지 파일 추가 (또는 직접 업로드)</label>
     <input id="qrFiles" type="file" accept="image/*" multiple>
     <div id="qrList" class="filelist">QR을 1개씩 추가해도 기존 QR 목록에 누적됩니다. 1번 QR=1번 배지, 2번 QR=2번 배지 순서로 적용됩니다.</div>
@@ -618,7 +652,7 @@ canvas.addEventListener("mousedown", (e) => {
 
 canvas.addEventListener("mousemove", (e) => {
   const p = pointerToCanvas(e);
-  let hoveringQr = false;
+  let hoveringQr = false; // false 또는 배지 인덱스
   let hoveringHandle = false;
 
   for (let i = 0; i < circlePositions.length; i++) {
@@ -639,7 +673,7 @@ canvas.addEventListener("mousemove", (e) => {
       p.x >= r.x && p.x <= r.x + r.w &&
       p.y >= r.y && p.y <= r.y + r.h
     ) {
-      hoveringQr = true;
+      hoveringQr = i;
     }
   }
 
@@ -693,12 +727,23 @@ canvas.addEventListener("mousemove", (e) => {
     return;
   }
 
+  const tooltip = document.getElementById('qrTooltip');
   if (hoveringHandle) {
     canvas.style.cursor = "se-resize";
-  } else if (hoveringQr) {
+    if (tooltip) tooltip.style.display = 'none';
+  } else if (hoveringQr !== false) {
     canvas.style.cursor = "grab";
+    // 툴팁 표시
+    if (tooltip && hoveringQr !== false && qrImgs[hoveringQr]) {
+      const codeName = qrImgs[hoveringQr].name.replace(/\.png$/i, '');
+      tooltip.textContent = codeName;
+      tooltip.style.display = 'block';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top = (e.clientY - 10) + 'px';
+    }
   } else {
     canvas.style.cursor = "default";
+    if (tooltip) tooltip.style.display = 'none';
   }
 });
 
@@ -706,6 +751,10 @@ window.addEventListener("mouseup", () => {
   dragState = null;
   resizeState = null;
   canvas.style.cursor = "default";
+});
+canvas.addEventListener("mouseleave", () => {
+  const tooltip = document.getElementById('qrTooltip');
+  if (tooltip) tooltip.style.display = 'none';
 });
 
 $("downloadBtn").addEventListener("click", () => {
@@ -954,5 +1003,6 @@ window._generateQrImages = function(items) {
 
 render();
 </script>
+<div id="qrTooltip" style="position:fixed;background:#111;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;pointer-events:none;display:none;z-index:9999;letter-spacing:.05em"></div>
 </body>
 </html>
