@@ -100,6 +100,13 @@
   .step-nav button { flex:1; margin-top:0; }
   .step-prev { background:#fff !important; color:#111 !important; border:1px solid #bbb !important; }
   .step-next { background:#111 !important; color:#fff !important; border:none !important; }
+
+  .filter-pill {
+    width:auto; padding:7px 11px; margin:0;
+    background:#fff; color:#333; border:1px solid #ccc;
+    border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;
+  }
+  .filter-pill.active-pill { background:#1a3a1a; color:#4caf50; border-color:#4caf50; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
@@ -145,18 +152,29 @@ window._setProd = function(prod, el) {
   });
   el.style.background = '#1a3a1a'; el.style.color = '#4caf50'; el.style.borderColor = '#4caf50';
 };
+window._setStat = function(val, el) {
+  document.getElementById('qrStatFilter').value = val;
+  document.querySelectorAll('#statBtns button').forEach(function(b){ b.classList.remove('active-pill'); });
+  el.classList.add('active-pill');
+};
+window._setLimit = function(val, el) {
+  document.getElementById('qrLimitInput').value = val;
+  document.querySelectorAll('#limitBtns button').forEach(function(b){ b.classList.remove('active-pill'); });
+  el.classList.add('active-pill');
+};
 window._loadQrByProduct = async function() {
   if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
   const btn = document.getElementById('qrLoadBtn');
   const stat = document.getElementById('qrStatFilter').value;
-  const limit = Math.max(1, parseInt(document.getElementById('qrLimitInput').value) || 9);
+  const limitVal = parseInt(document.getElementById('qrLimitInput').value);
+  const limit = (isNaN(limitVal) || limitVal <= 0) ? Infinity : limitVal;
   if (btn) btn.textContent = '불러오는 중...';
   try {
     const snap = await getDocs(collection(db, 'qr_cards'));
     let items = snap.docs.map(d => ({id: d.id, ...d.data()}));
     if (_selectedProd) items = items.filter(it => (it.product_type||it.product||'') === _selectedProd);
     if (stat) items = items.filter(it => (it.status||'') === stat);
-    items = items.slice(0, limit);
+    if (isFinite(limit)) items = items.slice(0, limit);
     if (!items.length) { alert('조건에 맞는 항목이 없습니다.'); if(btn)btn.textContent='⚡ QR 자동 불러오기 (Firestore)'; return; }
     window._generateQrImages(items);
     if (btn) btn.textContent = '⚡ QR 자동 불러오기 (Firestore)';
@@ -218,21 +236,22 @@ window._loadQrByProduct = async function() {
         <button onclick="window._setProd('TT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">TT</button>
         <button onclick="window._setProd('',this)"     style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">전체</button>
       </div>
-      <div class="row" style="margin-bottom:8px">
-        <div>
-          <label>상태</label>
-          <select id="qrStatFilter">
-            <option value="사용중">사용중</option>
-            <option value="판매완료">판매완료</option>
-            <option value="미등록">미등록</option>
-            <option value="">전체</option>
-          </select>
-        </div>
-        <div>
-          <label>개수</label>
-          <input id="qrLimitInput" type="number" value="9" min="1" max="100" style="padding:9px 10px;border:1px solid #cfcfcf;border-radius:10px">
-        </div>
+      <label style="margin-bottom:4px">상태</label>
+      <div id="statBtns" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        <button onclick="window._setStat('사용중',this)" class="filter-pill active-pill">사용중</button>
+        <button onclick="window._setStat('판매완료',this)" class="filter-pill">판매완료</button>
+        <button onclick="window._setStat('미등록',this)" class="filter-pill">미등록</button>
+        <button onclick="window._setStat('',this)" class="filter-pill">전체</button>
       </div>
+      <label style="margin-bottom:4px">개수</label>
+      <div id="limitBtns" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
+        <button onclick="window._setLimit(3,this)" class="filter-pill">3개</button>
+        <button onclick="window._setLimit(5,this)" class="filter-pill">5개</button>
+        <button onclick="window._setLimit(9,this)" class="filter-pill active-pill">9개</button>
+        <button onclick="window._setLimit(0,this)" class="filter-pill">전체</button>
+      </div>
+      <input id="qrStatFilter" type="hidden" value="사용중">
+      <input id="qrLimitInput" type="hidden" value="9">
       <button id="qrLoadBtn" onclick="window._loadQrByProduct()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ QR 자동 불러오기 (Firestore)</button>
       <label>QR 이미지 파일 직접 업로드(선택)</label>
       <input id="qrFiles" type="file" accept="image/*" multiple>
