@@ -85,6 +85,21 @@
     #stage { background:#fff; padding:0; border-radius:0; }
     canvas { box-shadow:none; max-width:none; }
   }
+
+  /* ── 3-step navigation ── */
+  #stepTabs { display:flex; gap:4px; margin-bottom:14px; }
+  .step-tab {
+    flex:1; padding:10px 4px; border:1px solid #ddd; border-radius:10px;
+    background:#f5f5f5; color:#666; font-size:12px; font-weight:700; cursor:pointer; margin-top:0;
+    transition:background .15s,color .15s;
+  }
+  .step-tab.active { background:#111; color:#fff; border-color:#111; }
+  .step-panel { display:none; }
+  .step-panel.active { display:block; }
+  .step-nav { display:flex; gap:8px; margin-top:14px; }
+  .step-nav button { flex:1; margin-top:0; }
+  .step-prev { background:#fff !important; color:#111 !important; border:1px solid #bbb !important; }
+  .step-next { background:#111 !important; color:#fff !important; border:none !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
@@ -168,227 +183,250 @@ window._loadQrByProduct = async function() {
 
 <main>
 <aside>
-  <div class="group">
-    <h2>1. 원 안에 넣을 이미지</h2>
-    <label>배지 이미지 / 사진 파일</label>
-    <input id="artFiles" type="file" accept="image/*" multiple>
-    <div id="artList" class="filelist">이미지를 1개씩 추가해도 기존 이미지 목록에 누적됩니다. 1번 이미지=1번 배지, 2번 이미지=2번 배지 순서로 적용됩니다. 외곽 안전축소 값을 키우면 디자인이 가장자리에서 안쪽으로 자동 축소됩니다.</div>
-    <div class="check"><input id="appendArt" type="checkbox" checked><span>이미지 업로드 시 기존 목록에 누적 추가</span></div>
-    <div class="check"><input id="sameArt" type="checkbox"><span>첫 번째 이미지를 모든 원에 반복 적용</span></div>
-    <div class="check"><input id="blankMissingArt" type="checkbox" checked><span>이미지가 없는 배지는 빈 원으로 유지</span></div>
-
-    <label>QR 미사용용 이미지 파일(선택)</label>
-    <input id="noQrArtFiles" type="file" accept="image/*" multiple>
-    <div id="noQrArtList" class="filelist">필수에 가깝습니다. QR용 이미지에 사각 빈칸이 들어 있다면, QR을 끌 때는 중앙 빈칸이 없는 QR 미사용용 이미지를 따로 넣어야 합니다.</div>
-    <div class="check"><input id="appendNoQrArt" type="checkbox" checked><span>QR 미사용 이미지도 기존 목록에 누적 추가</span></div>
-    <div class="check"><input id="sameNoQrArt" type="checkbox"><span>첫 번째 QR 미사용 이미지를 모든 원에 반복 적용</span></div>
-    <div class="check"><input id="blankMissingNoQrArt" type="checkbox" checked><span>QR 미사용 이미지가 없는 배지는 빈 원으로 유지</span></div>
-    <div class="row">
-      <div>
-        <label>이미지 적용 지름 mm</label>
-        <input id="artDia" type="number" value="70" step="0.1">
-      </div>
-      <div>
-        <label>이미지 확대 %</label>
-        <input id="artScale" type="number" value="97" step="1">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>외곽 안전축소 mm</label>
-        <input id="outerInset" type="number" value="2.0" step="0.1">
-      </div>
-      <div>
-        <label>축소 프리셋</label>
-        <select id="outerPreset">
-          <option value="0">축소 없음</option>
-          <option value="1.5">1.5mm</option>
-          <option value="2.0" selected>2.0mm 권장</option>
-          <option value="2.5">2.5mm</option>
-          <option value="3.0">3.0mm</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>이미지 X 보정 mm</label>
-        <input id="artX" type="number" value="0" step="0.1">
-      </div>
-      <div>
-        <label>이미지 Y 보정 mm</label>
-        <input id="artY" type="number" value="2.0" step="0.1">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>시각중심 보정</label>
-        <select id="visualPreset">
-          <option value="none">보정 없음</option>
-          <option value="mild">약하게</option>
-          <option value="recommended" selected>권장</option>
-          <option value="strong">강하게</option>
-        </select>
-      </div>
-      <div>
-        <label>QR Y 추가보정 mm</label>
-        <input id="qrVisualY" type="number" value="1.0" step="0.1">
-      </div>
-    </div>
-    <div class="hint">
-      위로 쏠려 보이는 도안은 원 중심과 시각중심이 달라서 생깁니다.
-      권장값은 이미지 크기 97%, 이미지 Y +2.0mm, QR Y 추가 +1.0mm입니다.
-    </div>
-    <label>맞춤 방식</label>
-    <select id="artFit">
-      <option value="cover" selected>원 가득 채우기</option>
-      <option value="contain">잘리지 않게 넣기</option>
-    </select>
-    <button id="clearArtOnlyBtn" class="secondary" type="button">이미지 목록만 비우기</button>
-    <button id="clearNoQrArtOnlyBtn" class="secondary" type="button">QR 미사용 이미지 목록만 비우기</button>
+  <div id="stepTabs">
+    <button onclick="showStep(1)" id="stepTab1" class="step-tab active">① 도안·QR 선택</button>
+    <button onclick="showStep(2)" id="stepTab2" class="step-tab">② 세부 설정</button>
+    <button onclick="showStep(3)" id="stepTab3" class="step-tab">③ 출력</button>
   </div>
 
-  <div class="group">
-    <h2>2. QR 자동 적용</h2>
-    <label style="margin-bottom:6px">제품 선택</label>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px" id="prodBtns">
-      <button onclick="window._setProd('CD',this)"   style="width:auto;padding:7px 12px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">CD</button>
-      <button onclick="window._setProd('BMT',this)"  style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">BMT</button>
-      <button onclick="window._setProd('GT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">GT</button>
-      <button onclick="window._setProd('WT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">WT</button>
-      <button onclick="window._setProd('TT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">TT</button>
-      <button onclick="window._setProd('',this)"     style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">전체</button>
+  <!-- ① 도안 & QR 선택 -->
+  <div id="step1" class="step-panel active">
+    <div class="group">
+      <h2>도안 이미지</h2>
+      <label>배지 이미지 / 사진 파일</label>
+      <input id="artFiles" type="file" accept="image/*" multiple>
+      <div id="artList" class="filelist">이미지를 1개씩 추가해도 기존 이미지 목록에 누적됩니다. 1번 이미지=1번 배지, 2번 이미지=2번 배지 순서로 적용됩니다.</div>
+      <div class="check"><input id="appendArt" type="checkbox" checked><span>이미지 업로드 시 기존 목록에 누적 추가</span></div>
+      <div class="check"><input id="sameArt" type="checkbox"><span>첫 번째 이미지를 모든 원에 반복 적용</span></div>
+      <div class="check"><input id="blankMissingArt" type="checkbox" checked><span>이미지가 없는 배지는 빈 원으로 유지</span></div>
+      <label>QR 미사용용 이미지 파일(선택)</label>
+      <input id="noQrArtFiles" type="file" accept="image/*" multiple>
+      <div id="noQrArtList" class="filelist">QR 미사용용 이미지를 넣으면 QR을 끌 때 자동으로 이 이미지 목록이 적용됩니다.</div>
+      <div class="check"><input id="appendNoQrArt" type="checkbox" checked><span>QR 미사용 이미지도 기존 목록에 누적 추가</span></div>
+      <div class="check"><input id="sameNoQrArt" type="checkbox"><span>첫 번째 QR 미사용 이미지를 모든 원에 반복 적용</span></div>
+      <div class="check"><input id="blankMissingNoQrArt" type="checkbox" checked><span>QR 미사용 이미지가 없는 배지는 빈 원으로 유지</span></div>
     </div>
-    <div class="row" style="margin-bottom:8px">
-      <div>
-        <label>상태</label>
-        <select id="qrStatFilter">
-          <option value="사용중">사용중</option>
-          <option value="판매완료">판매완료</option>
-          <option value="미등록">미등록</option>
-          <option value="">전체</option>
-        </select>
-      </div>
-      <div>
-        <label>개수</label>
-        <input id="qrLimitInput" type="number" value="9" min="1" max="100" style="padding:9px 10px;border:1px solid #cfcfcf;border-radius:10px">
-      </div>
-    </div>
-    <button id="qrLoadBtn" onclick="window._loadQrByProduct()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ QR 자동 불러오기 (Firestore)</button>
-    <label>QR 이미지 파일 추가 (또는 직접 업로드)</label>
-    <input id="qrFiles" type="file" accept="image/*" multiple>
-    <div id="qrList" class="filelist">QR을 1개씩 추가해도 기존 QR 목록에 누적됩니다. 1번 QR=1번 배지, 2번 QR=2번 배지 순서로 적용됩니다.</div>
-    <div class="check"><input id="appendQr" type="checkbox" checked><span>QR 업로드 시 기존 목록에 누적 추가</span></div>
-    <div class="check"><input id="sameQr" type="checkbox"><span>첫 번째 QR을 9개 모두 반복 적용</span></div>
-    <div class="check"><input id="blankMissingQr" type="checkbox" checked><span>QR 파일이 없는 배지는 빈 사각형으로 유지</span></div>
-    <div class="check"><input id="insertQr" type="checkbox" checked><span>QR 이미지 삽입</span></div>
-    <div class="check"><input id="whiteQrBox" type="checkbox" checked><span>QR 영역을 흰색으로 덮고 적용</span></div>
-    <div class="check"><input id="showQrBox" type="checkbox" checked><span>QR 사각 테두리 표시</span></div>
-    <div class="check"><input id="hideQrAreaWhenOff" type="checkbox" checked><span>QR 미적용 시 사각부위 자동 삭제</span></div>
-    <div class="check"><input id="dragQr" type="checkbox" checked><span>미리보기에서 QR 사각 위치 드래그로 이동</span></div>
-    <div class="check"><input id="resizeQr" type="checkbox" checked><span>QR 사각 크기를 마우스로 조절</span></div>
 
-    <div class="row3">
-      <div>
-        <label>QR X mm</label>
-        <input id="qrX" type="number" value="0" step="0.1">
+    <div class="group">
+      <h2>QR 불러오기</h2>
+      <label style="margin-bottom:6px">제품 선택</label>
+      <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px" id="prodBtns">
+        <button onclick="window._setProd('CD',this)"   style="width:auto;padding:7px 12px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">CD</button>
+        <button onclick="window._setProd('BMT',this)"  style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">BMT</button>
+        <button onclick="window._setProd('GT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">GT</button>
+        <button onclick="window._setProd('WT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">WT</button>
+        <button onclick="window._setProd('TT',this)"   style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">TT</button>
+        <button onclick="window._setProd('',this)"     style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">전체</button>
       </div>
-      <div>
-        <label>QR Y mm</label>
-        <input id="qrY" type="number" value="1.8" step="0.1">
+      <div class="row" style="margin-bottom:8px">
+        <div>
+          <label>상태</label>
+          <select id="qrStatFilter">
+            <option value="사용중">사용중</option>
+            <option value="판매완료">판매완료</option>
+            <option value="미등록">미등록</option>
+            <option value="">전체</option>
+          </select>
+        </div>
+        <div>
+          <label>개수</label>
+          <input id="qrLimitInput" type="number" value="9" min="1" max="100" style="padding:9px 10px;border:1px solid #cfcfcf;border-radius:10px">
+        </div>
       </div>
-      <div>
-        <label>QR 적용 사각 크기 mm</label>
-        <input id="qrSize" type="number" value="19.5" step="0.1">
-      </div>
+      <button id="qrLoadBtn" onclick="window._loadQrByProduct()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ QR 자동 불러오기 (Firestore)</button>
+      <label>QR 이미지 파일 직접 업로드(선택)</label>
+      <input id="qrFiles" type="file" accept="image/*" multiple>
+      <div id="qrList" class="filelist">QR을 1개씩 추가해도 기존 QR 목록에 누적됩니다. 1번 QR=1번 배지, 2번 QR=2번 배지 순서로 적용됩니다.</div>
+      <div class="check"><input id="appendQr" type="checkbox" checked><span>QR 업로드 시 기존 목록에 누적 추가</span></div>
     </div>
-    <div class="row">
-      <div>
-        <label>QR 내부 여백 mm</label>
-        <input id="qrPad" type="number" value="1.0" step="0.1">
-      </div>
-      <div>
-        <label>QR 테두리 굵기 mm</label>
-        <input id="qrBorder" type="number" value="0.25" step="0.05">
-      </div>
+
+    <div class="step-nav">
+      <button onclick="showStep(2)" class="step-next">세부 설정 →</button>
     </div>
-    <div class="hint">QR 적용 사각 크기를 줄이면 흰 사각 박스와 QR 이미지가 함께 작아집니다. 실제 QR 이미지는 내부 여백만큼 더 작게 들어갑니다.</div>
-    <div class="row">
-      <div>
-        <label>QR 차단 여백 mm</label>
-        <input id="qrKnockout" type="number" value="0.8" step="0.1">
-      </div>
-      <div>
-        <label>QR 배경색</label>
-        <select id="qrBg">
-          <option value="#ffffff" selected>흰색</option>
-          <option value="#f7f7f7">연회색</option>
-        </select>
-      </div>
-    </div>
-    <div class="hint">겹침이 있으면 QR 크기를 줄이거나 QR Y를 위/아래로 0.5mm씩 조정하세요. 기본값은 현재 배지 이미지 기준으로 줄였습니다.</div>
-    <div class="hint">QR 적용을 끄면, “QR 미적용 시 사각부위 자동 삭제” 체크 상태에서 사각 박스와 흰 배경을 함께 숨길 수 있습니다. 이미지 자체에 사각 빈칸이 포함된 경우에는 “QR 미사용용 이미지 파일”을 따로 넣어야 완전히 자연스럽게 바뀝니다. 같은 이미지 한 장만으로는 숨겨진 중앙 그림을 복원할 수 없습니다.</div>
-    <div class="hint">드래그 기능을 켜면 미리보기에서 아무 배지의 QR 사각형을 마우스로 끌어 위치를 바꿀 수 있습니다. 이동값은 QR X / QR Y에 자동 반영됩니다.</div>
-    <button id="clearQrOnlyBtn" class="secondary" type="button">QR 목록만 비우기</button>
-    <div id="modeWarning" class="warning" style="display:none;"></div>
   </div>
 
-  <div class="group">
-    <h2>3. 출력판 기준</h2>
-    <div class="row">
-      <div>
-        <label>용지 폭 mm</label>
-        <input id="paperW" type="number" value="210" step="0.1">
+  <!-- ② 세부 설정 -->
+  <div id="step2" class="step-panel">
+    <div class="group">
+      <h2>이미지 설정</h2>
+      <div class="row">
+        <div>
+          <label>이미지 적용 지름 mm</label>
+          <input id="artDia" type="number" value="70" step="0.1">
+        </div>
+        <div>
+          <label>이미지 확대 %</label>
+          <input id="artScale" type="number" value="97" step="1">
+        </div>
       </div>
-      <div>
-        <label>용지 높이 mm</label>
-        <input id="paperH" type="number" value="297" step="0.1">
+      <div class="row">
+        <div>
+          <label>외곽 안전축소 mm</label>
+          <input id="outerInset" type="number" value="2.0" step="0.1">
+        </div>
+        <div>
+          <label>축소 프리셋</label>
+          <select id="outerPreset">
+            <option value="0">축소 없음</option>
+            <option value="1.5">1.5mm</option>
+            <option value="2.0" selected>2.0mm 권장</option>
+            <option value="2.5">2.5mm</option>
+            <option value="3.0">3.0mm</option>
+          </select>
+        </div>
       </div>
+      <div class="row">
+        <div>
+          <label>이미지 X 보정 mm</label>
+          <input id="artX" type="number" value="0" step="0.1">
+        </div>
+        <div>
+          <label>이미지 Y 보정 mm</label>
+          <input id="artY" type="number" value="2.0" step="0.1">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>시각중심 보정</label>
+          <select id="visualPreset">
+            <option value="none">보정 없음</option>
+            <option value="mild">약하게</option>
+            <option value="recommended" selected>권장</option>
+            <option value="strong">강하게</option>
+          </select>
+        </div>
+        <div>
+          <label>QR Y 추가보정 mm</label>
+          <input id="qrVisualY" type="number" value="1.0" step="0.1">
+        </div>
+      </div>
+      <div class="hint">위로 쏠려 보이는 도안은 원 중심과 시각중심이 달라서 생깁니다. 권장값은 이미지 크기 97%, 이미지 Y +2.0mm, QR Y 추가 +1.0mm입니다.</div>
+      <label>맞춤 방식</label>
+      <select id="artFit">
+        <option value="cover" selected>원 가득 채우기</option>
+        <option value="contain">잘리지 않게 넣기</option>
+      </select>
+      <button id="clearArtOnlyBtn" class="secondary" type="button">이미지 목록만 비우기</button>
+      <button id="clearNoQrArtOnlyBtn" class="secondary" type="button">QR 미사용 이미지 목록만 비우기</button>
     </div>
-    <div class="row">
-      <div>
-        <label>DPI</label>
-        <select id="dpi">
-          <option>300</option>
-          <option selected>600</option>
-        </select>
+
+    <div class="group">
+      <h2>QR 위치·크기</h2>
+      <div class="check"><input id="sameQr" type="checkbox"><span>첫 번째 QR을 9개 모두 반복 적용</span></div>
+      <div class="check"><input id="blankMissingQr" type="checkbox" checked><span>QR 파일이 없는 배지는 빈 사각형으로 유지</span></div>
+      <div class="check"><input id="insertQr" type="checkbox" checked><span>QR 이미지 삽입</span></div>
+      <div class="check"><input id="whiteQrBox" type="checkbox" checked><span>QR 영역을 흰색으로 덮고 적용</span></div>
+      <div class="check"><input id="showQrBox" type="checkbox" checked><span>QR 사각 테두리 표시</span></div>
+      <div class="check"><input id="hideQrAreaWhenOff" type="checkbox" checked><span>QR 미적용 시 사각부위 자동 삭제</span></div>
+      <div class="check"><input id="dragQr" type="checkbox" checked><span>미리보기에서 QR 사각 위치 드래그로 이동</span></div>
+      <div class="check"><input id="resizeQr" type="checkbox" checked><span>QR 사각 크기를 마우스로 조절</span></div>
+      <div class="row3">
+        <div>
+          <label>QR X mm</label>
+          <input id="qrX" type="number" value="0" step="0.1">
+        </div>
+        <div>
+          <label>QR Y mm</label>
+          <input id="qrY" type="number" value="1.8" step="0.1">
+        </div>
+        <div>
+          <label>QR 크기 mm</label>
+          <input id="qrSize" type="number" value="19.5" step="0.1">
+        </div>
       </div>
-      <div>
-        <label>원 지름 mm</label>
-        <input id="circleDia" type="number" value="70" step="0.1">
+      <div class="row">
+        <div>
+          <label>QR 내부 여백 mm</label>
+          <input id="qrPad" type="number" value="1.0" step="0.1">
+        </div>
+        <div>
+          <label>QR 테두리 굵기 mm</label>
+          <input id="qrBorder" type="number" value="0.25" step="0.05">
+        </div>
       </div>
+      <div class="row">
+        <div>
+          <label>QR 차단 여백 mm</label>
+          <input id="qrKnockout" type="number" value="0.8" step="0.1">
+        </div>
+        <div>
+          <label>QR 배경색</label>
+          <select id="qrBg">
+            <option value="#ffffff" selected>흰색</option>
+            <option value="#f7f7f7">연회색</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">QR 적용 사각 크기를 줄이면 흰 사각 박스와 QR 이미지가 함께 작아집니다. 겹침이 있으면 QR 크기를 줄이거나 QR Y를 위/아래로 0.5mm씩 조정하세요.</div>
+      <button id="clearQrOnlyBtn" class="secondary" type="button">QR 목록만 비우기</button>
+      <div id="modeWarning" class="warning" style="display:none;"></div>
     </div>
-    <div class="check"><input id="showCircle" type="checkbox" checked><span>70파이 원형 가이드 표시</span></div>
-    <div class="check"><input id="clipCircle" type="checkbox" checked><span>이미지를 원 안으로 클리핑</span></div>
-    <div class="check"><input id="showPageBorder" type="checkbox" checked><span>용지 외곽선 표시</span></div>
-    <div id="warning" class="warning"></div>
+
+    <div class="group">
+      <h2>출력판 기준</h2>
+      <div class="row">
+        <div>
+          <label>용지 폭 mm</label>
+          <input id="paperW" type="number" value="210" step="0.1">
+        </div>
+        <div>
+          <label>용지 높이 mm</label>
+          <input id="paperH" type="number" value="297" step="0.1">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>DPI</label>
+          <select id="dpi">
+            <option>300</option>
+            <option selected>600</option>
+          </select>
+        </div>
+        <div>
+          <label>원 지름 mm</label>
+          <input id="circleDia" type="number" value="70" step="0.1">
+        </div>
+      </div>
+      <div class="check"><input id="showCircle" type="checkbox" checked><span>70파이 원형 가이드 표시</span></div>
+      <div class="check"><input id="clipCircle" type="checkbox" checked><span>이미지를 원 안으로 클리핑</span></div>
+      <div class="check"><input id="showPageBorder" type="checkbox" checked><span>용지 외곽선 표시</span></div>
+      <div id="warning" class="warning"></div>
+    </div>
+
+    <div class="group">
+      <h2>화면 표시</h2>
+      <div class="check"><input id="fitScreen" type="checkbox" checked><span>한 화면에 맞게 자동 축소</span></div>
+      <div class="row">
+        <div>
+          <label>미리보기 배율 %</label>
+          <input id="previewScale" type="number" value="100" step="5">
+        </div>
+        <div>
+          <label>최대 화면 폭 %</label>
+          <input id="previewMax" type="number" value="100" step="5">
+        </div>
+      </div>
+      <div class="hint">출력 해상도는 그대로 유지되고, 화면에서 보이는 미리보기만 축소됩니다.</div>
+    </div>
+
+    <div class="step-nav">
+      <button onclick="showStep(1)" class="step-prev">← 이전</button>
+      <button onclick="showStep(3)" class="step-next">출력 →</button>
+    </div>
   </div>
 
-
-  <div class="group">
-    <h2>4. 화면 표시</h2>
-    <div class="check"><input id="fitScreen" type="checkbox" checked><span>한 화면에 맞게 자동 축소</span></div>
-    <div class="row">
-      <div>
-        <label>미리보기 배율 %</label>
-        <input id="previewScale" type="number" value="100" step="5">
-      </div>
-      <div>
-        <label>최대 화면 폭 %</label>
-        <input id="previewMax" type="number" value="100" step="5">
-      </div>
+  <!-- ③ 출력 -->
+  <div id="step3" class="step-panel">
+    <div class="group">
+      <h2>저장 · 출력</h2>
+      <button id="renderBtn">미리보기 갱신</button>
+      <button id="downloadBtn" class="secondary">PNG 저장</button>
+      <button id="printBtn" class="secondary">인쇄 / PDF 저장</button>
+      <button id="clearBtn" class="warn">업로드 파일 초기화</button>
+      <div class="hint">PDF 저장은 브라우저 인쇄창에서 "PDF로 저장"을 선택하면 됩니다. 이 템플릿은 첨부된 9개 원형 PDF 배치 좌표를 기준으로 고정되어 있습니다.</div>
     </div>
-    <div class="hint">출력 해상도는 그대로 유지되고, 화면에서 보이는 미리보기만 축소됩니다. 시각중심 보정은 저장/인쇄에도 적용됩니다.</div>
-  </div>
-
-  <div class="group">
-    <h2>5. 저장</h2>
-    <button id="renderBtn">미리보기 갱신</button>
-    <button id="downloadBtn" class="secondary">PNG 저장</button>
-    <button id="printBtn" class="secondary">인쇄 / PDF 저장</button>
-    <button id="clearBtn" class="warn">업로드 파일 초기화</button>
-    <div class="hint">
-      PDF 저장은 브라우저 인쇄창에서 “PDF로 저장”을 선택하면 됩니다.
-      이 템플릿은 첨부된 9개 원형 PDF 배치 좌표를 기준으로 고정되어 있습니다.
+    <div class="step-nav">
+      <button onclick="showStep(2)" class="step-prev">← 이전</button>
     </div>
   </div>
 </aside>
@@ -1000,6 +1038,16 @@ window._generateQrImages = function(items) {
     }
   });
 };
+
+
+function showStep(n) {
+  for (var i = 1; i <= 3; i++) {
+    var panel = document.getElementById('step' + i);
+    var tab = document.getElementById('stepTab' + i);
+    if (panel) panel.classList.toggle('active', i === n);
+    if (tab) tab.classList.toggle('active', i === n);
+  }
+}
 
 render();
 </script>
