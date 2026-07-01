@@ -78,18 +78,29 @@
     display:none; background:#fff4e5; border:1px solid #ffd199; color:#5b3700;
     border-radius:12px; padding:9px 10px; font-size:12px; line-height:1.5; margin-top:10px;
   }
+  @page { size: A4 portrait; margin: 0; }
   @media print {
-    header, aside, .step-nav { display:none !important; }
-    main, section { display:block; padding:0; margin:0; overflow:visible; }
-    body { background:#fff; margin:0; }
-    #stage { background:#fff; padding:0; margin:0; border-radius:0; display:block; }
-    /* 캔버스를 A4 정확 크기로 고정 — 브라우저 배율 무관하게 70mm 유지 */
+    /* 캔버스 제외 모든 요소 숨김 */
+    header, aside, .step-nav, .preview-toolbar,
+    #stepTabs, #qrTooltip { display:none !important; }
+    body { background:#fff; margin:0; padding:0; }
+    main {
+      display:block !important; padding:0; margin:0;
+      grid-template-columns:unset !important;
+    }
+    section { padding:0; margin:0; display:block !important; }
+    #stage {
+      background:#fff; padding:0; margin:0;
+      border-radius:0; display:block;
+      width:210mm; height:297mm; overflow:hidden;
+    }
+    /* 캔버스 = 정확히 A4, 배율 무관 */
     canvas {
       box-shadow:none !important;
       width:210mm !important;
       height:297mm !important;
       max-width:none !important;
-      display:block;
+      display:block; margin:0; padding:0;
     }
   }
 
