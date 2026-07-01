@@ -1380,6 +1380,8 @@ window.regenerateMissingQrImages = async function() {
 
   var layout={cols:3,rows:4},pdfBlob=null;
   var dScale=0.829; // 도안 스케일 (58/70 = 58mm 기본)
+  var artYCorr=0.0286; // 시각 중심 보정 Y (+2mm/70mm, 프레스 후 위 쏠림 보정)
+  var qrVisualY=0.0143; // QR 추가 Y 보정 (+1mm/70mm)
   var _cachedDImg=null,_cachedDSrc=null,_cachedQImg=null,_cachedQSrc=null;
   var qrX=0.50,qrY=0.55,qrSize=0.371;
   var CV_SIZE=380;
@@ -1465,7 +1467,7 @@ window.regenerateMissingQrImages = async function() {
       Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();stkUploadDesign(f.name,e.target.result);};fr.readAsDataURL(f);});
       fi.value='';
     };}
-    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.371;dScale=v.d||0.829;stkSyncNums();}}catch(e){}
+    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.371;dScale=v.d||0.829;artYCorr=v.ay||0.0286;qrVisualY=v.qvy||0.0143;stkSyncNums();}}catch(e){}
     stkRenderGrid();
   };
 
@@ -1708,7 +1710,7 @@ window.regenerateMissingQrImages = async function() {
     if(dn){dScale=Math.min(1.5,Math.max(0.3,Number(dn.value)/100));}
     stkDrawCanvas();stkSavePos();
   };
-  function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize,d:dScale}));}catch(e){}}
+  function stkSavePos(){try{localStorage.setItem('stkPos3',JSON.stringify({x:qrX,y:qrY,s:qrSize,d:dScale,ay:artYCorr,qvy:qrVisualY}));}catch(e){}}
   window.stkQrAuto=function(pos){
     var SAFE=0.371,hs=qrSize/2;
     if(pos==='center'){qrX=0.5;qrY=0.5;}
@@ -1766,13 +1768,13 @@ window.regenerateMissingQrImages = async function() {
     var ctx=cv.getContext('2d'),W=cv.width,H=cv.height;
     var src=stkGetSrc(p.design);if(!src)return;
     var qsrc=p.qr?p.qr.src:null;
-    var ds=dScale||1.0,dw=Math.round(W*ds),dh=Math.round(H*ds),dx=Math.round((W-dw)/2),dy=Math.round((H-dh)/2);
+    var ds=dScale||1.0,dw=Math.round(W*ds),dh=Math.round(H*ds),dx=Math.round((W-dw)/2),dy=Math.round((W-dh)/2+artYCorr*W);
     var doRender=function(dImg,qImg){
       ctx.clearRect(0,0,W,H);
       ctx.save();ctx.beginPath();ctx.arc(W/2,H/2,W/2,0,Math.PI*2);ctx.clip();
       ctx.drawImage(dImg,dx,dy,dw,dh);ctx.restore();
       if(qImg){
-        var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round(qrY*H-qs/2);
+        var qs=Math.round(qrSize*W),qx=Math.round(qrX*W-qs/2),qy=Math.round((qrY+qrVisualY)*H-qs/2);
         ctx.drawImage(qImg,qx,qy,qs,qs);
         var h=document.getElementById('sResizeHandle');
         if(h){h.style.left=(qx+qs-7)+'px';h.style.top=(qy+qs-7)+'px';h.style.right='auto';h.style.bottom='auto';}
@@ -1810,7 +1812,7 @@ window.regenerateMissingQrImages = async function() {
     function finish(){window._cmpImgs=cmpArr;stkTab(2,document.querySelectorAll('.stk-tab')[2]);stkRenderCmp();}
     pairs.forEach(function(p,pi){
       var cv=document.createElement('canvas');cv.width=SIZE;cv.height=SIZE;var ctx=cv.getContext('2d');
-      var dw=Math.round(SIZE*ds),dh=Math.round(SIZE*ds),dx=Math.round((SIZE-dw)/2),dy=Math.round((SIZE-dh)/2);
+      var dw=Math.round(SIZE*ds),dh=Math.round(SIZE*ds),dx=Math.round((SIZE-dw)/2),dy=Math.round((SIZE-dh)/2+artYCorr*SIZE);
       var drawD=function(di){
         ctx.save();ctx.beginPath();ctx.arc(SIZE/2,SIZE/2,SIZE/2,0,Math.PI*2);ctx.clip();
         ctx.drawImage(di,dx,dy,dw,dh);ctx.restore();
@@ -1820,7 +1822,7 @@ window.regenerateMissingQrImages = async function() {
           var qi=new Image();
           qi.onload=function(){
             var qs=Math.round(qrSize*SIZE);
-            ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round(qrY*SIZE-qs/2),qs,qs);
+            ctx.drawImage(qi,Math.round(qrX*SIZE-qs/2),Math.round((qrY+qrVisualY)*SIZE-qs/2),qs,qs);
             try{cmpArr[pi]=cv.toDataURL('image/png');}catch(e){cmpArr[pi]='';}
             done++;if(done===total)finish();
           };
