@@ -1380,8 +1380,8 @@ window.regenerateMissingQrImages = async function() {
 
   var layout={cols:3,rows:4},pdfBlob=null;
   var dScale=0.829; // 도안 스케일 (58/70 = 58mm 기본)
-  var artYCorr=0.0286; // 시각 중심 보정 Y (+2mm/70mm, 프레스 후 위 쏠림 보정)
-  var qrVisualY=0.0143; // QR 추가 Y 보정 (+1mm/70mm)
+  var artYCorr=0; // 시각 중심 보정 Y (원형 도안은 0 유지)
+  var qrVisualY=0; // QR 추가 Y 보정
   var _cachedDImg=null,_cachedDSrc=null,_cachedQImg=null,_cachedQSrc=null;
   var qrX=0.50,qrY=0.55,qrSize=0.371;
   var CV_SIZE=380;
@@ -1467,7 +1467,7 @@ window.regenerateMissingQrImages = async function() {
       Array.from(fi.files).forEach(function(f){var fr=new FileReader();fr.onload=function(e){dPool.push(e.target.result);stkRenderDThumbs();stkUploadDesign(f.name,e.target.result);};fr.readAsDataURL(f);});
       fi.value='';
     };}
-    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.371;dScale=v.d||0.829;artYCorr=v.ay||0.0286;qrVisualY=v.qvy||0.0143;stkSyncNums();}}catch(e){}
+    try{var p=localStorage.getItem('stkPos3');if(p){var v=JSON.parse(p);qrX=v.x||0.5;qrY=v.y||0.55;qrSize=v.s||0.371;dScale=v.d||0.829;artYCorr=v.ay||0;qrVisualY=v.qvy||0;stkSyncNums();}}catch(e){}
     stkRenderGrid();
   };
 
