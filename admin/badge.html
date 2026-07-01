@@ -79,11 +79,18 @@
     border-radius:12px; padding:9px 10px; font-size:12px; line-height:1.5; margin-top:10px;
   }
   @media print {
-    header, aside { display:none !important; }
-    main, section { display:block; padding:0; overflow:visible; }
-    body { background:#fff; }
-    #stage { background:#fff; padding:0; border-radius:0; }
-    canvas { box-shadow:none; max-width:none; }
+    header, aside, .step-nav { display:none !important; }
+    main, section { display:block; padding:0; margin:0; overflow:visible; }
+    body { background:#fff; margin:0; }
+    #stage { background:#fff; padding:0; margin:0; border-radius:0; display:block; }
+    /* 캔버스를 A4 정확 크기로 고정 — 브라우저 배율 무관하게 70mm 유지 */
+    canvas {
+      box-shadow:none !important;
+      width:210mm !important;
+      height:297mm !important;
+      max-width:none !important;
+      display:block;
+    }
   }
 
   /* ── 3-step navigation ── */
