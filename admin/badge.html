@@ -107,6 +107,21 @@
     border-radius:8px; font-size:12px; font-weight:700; cursor:pointer;
   }
   .filter-pill.active-pill { background:#1a3a1a; color:#4caf50; border-color:#4caf50; }
+
+  .qr-picker-list {
+    max-height:220px; overflow-y:auto;
+    border:1px solid #e0e0e0; border-radius:10px;
+    padding:4px; background:#fafafa; margin-top:6px;
+  }
+  .qr-pick-item {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 8px; font-size:13px; cursor:pointer;
+    border-radius:7px; user-select:none;
+  }
+  .qr-pick-item:hover { background:#f0f7f0; }
+  .qr-pick-item input[type=checkbox] { width:auto; margin:0; cursor:pointer; }
+  .qr-pick-code { font-weight:700; flex:1; letter-spacing:.03em; }
+  .qr-pick-status { font-size:11px; white-space:nowrap; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
@@ -152,37 +167,83 @@ window._setProd = function(prod, el) {
   });
   el.style.background = '#1a3a1a'; el.style.color = '#4caf50'; el.style.borderColor = '#4caf50';
 };
+let _allQrItems = [];
+
 window._setStat = function(val, el) {
   document.getElementById('qrStatFilter').value = val;
   document.querySelectorAll('#statBtns button').forEach(function(b){ b.classList.remove('active-pill'); });
   el.classList.add('active-pill');
+  var wrap = document.getElementById('qrPickerWrap');
+  if (wrap && wrap.style.display !== 'none') window._loadQrList();
 };
-window._setLimit = function(val, el) {
-  document.getElementById('qrLimitInput').value = val;
-  document.querySelectorAll('#limitBtns button').forEach(function(b){ b.classList.remove('active-pill'); });
-  el.classList.add('active-pill');
-};
-window._loadQrByProduct = async function() {
+
+window._loadQrList = async function() {
   if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
-  const btn = document.getElementById('qrLoadBtn');
   const stat = document.getElementById('qrStatFilter').value;
-  const limitVal = parseInt(document.getElementById('qrLimitInput').value);
-  const limit = (isNaN(limitVal) || limitVal <= 0) ? Infinity : limitVal;
+  const loadingEl = document.getElementById('qrPickerLoading');
+  const wrap = document.getElementById('qrPickerWrap');
+  const btn = document.getElementById('qrLoadBtn');
+  if (loadingEl) loadingEl.style.display = 'block';
   if (btn) btn.textContent = '불러오는 중...';
   try {
     const snap = await getDocs(collection(db, 'qr_cards'));
     let items = snap.docs.map(d => ({id: d.id, ...d.data()}));
     if (_selectedProd) items = items.filter(it => (it.product_type||it.product||'') === _selectedProd);
     if (stat) items = items.filter(it => (it.status||'') === stat);
-    if (isFinite(limit)) items = items.slice(0, limit);
-    if (!items.length) { alert('조건에 맞는 항목이 없습니다.'); if(btn)btn.textContent='⚡ QR 자동 불러오기 (Firestore)'; return; }
-    window._generateQrImages(items);
-    if (btn) btn.textContent = '⚡ QR 자동 불러오기 (Firestore)';
+    _allQrItems = items;
+    if (wrap) wrap.style.display = 'block';
+    window._renderQrList(_allQrItems);
   } catch(e) {
     alert('오류: ' + e.message);
-    if (btn) btn.textContent = '⚡ QR 자동 불러오기 (Firestore)';
+  } finally {
+    if (loadingEl) loadingEl.style.display = 'none';
+    if (btn) btn.textContent = '⚡ QR 목록 불러오기';
   }
 };
+
+window._renderQrList = function(items) {
+  const listEl = document.getElementById('qrPickerList');
+  const countEl = document.getElementById('qrPickerCount');
+  if (!listEl) return;
+  const searchVal = (document.getElementById('qrSearch') ? document.getElementById('qrSearch').value : '').toLowerCase();
+  const filtered = items.filter(it => {
+    const code = String(it.code || it.id || '').toLowerCase();
+    return !searchVal || code.includes(searchVal);
+  });
+  if (countEl) countEl.textContent = filtered.length + '개 표시 / 전체 ' + items.length + '개';
+  if (!filtered.length) {
+    listEl.innerHTML = '<div style="color:#999;font-size:12px;padding:8px">검색 결과 없음</div>';
+    return;
+  }
+  listEl.innerHTML = filtered.map(it => {
+    const code = String(it.code || it.id || '');
+    const status = it.status || '';
+    const sc = status === '사용중' ? '#4caf50' : status === '판매완료' ? '#e53935' : '#aaa';
+    return '<label class="qr-pick-item"><input type="checkbox" value="' + code + '" checked>'
+      + '<span class="qr-pick-code">' + code + '</span>'
+      + '<span class="qr-pick-status" style="color:' + sc + '">' + status + '</span></label>';
+  }).join('');
+};
+
+window._filterQrList = function() {
+  window._renderQrList(_allQrItems);
+};
+
+window._selectAll = function() {
+  document.querySelectorAll('#qrPickerList input[type=checkbox]').forEach(cb => cb.checked = true);
+};
+window._deselectAll = function() {
+  document.querySelectorAll('#qrPickerList input[type=checkbox]').forEach(cb => cb.checked = false);
+};
+
+window._applySelected = function() {
+  const checked = Array.from(document.querySelectorAll('#qrPickerList input[type=checkbox]:checked'));
+  if (!checked.length) { alert('선택된 QR이 없습니다.'); return; }
+  const items = checked.map(cb => _allQrItems.find(it => String(it.code || it.id || '') === cb.value) || {code: cb.value, id: cb.value});
+  window._generateQrImages(items);
+};
+
+window._loadQrByProduct = window._loadQrList;
 </script>
 </head>
 <body>
@@ -227,7 +288,7 @@ window._loadQrByProduct = async function() {
 
     <div class="group">
       <h2>QR 불러오기</h2>
-      <label style="margin-bottom:6px">제품 선택</label>
+      <label style="margin-bottom:4px">제품 선택</label>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px" id="prodBtns">
         <button onclick="window._setProd('CD',this)"   style="width:auto;padding:7px 12px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">CD</button>
         <button onclick="window._setProd('BMT',this)"  style="width:auto;padding:7px 12px;margin:0;background:#fff;color:#333;border:1px solid #ccc;border-radius:8px;font-size:12px;font-weight:700">BMT</button>
@@ -243,19 +304,28 @@ window._loadQrByProduct = async function() {
         <button onclick="window._setStat('미등록',this)" class="filter-pill">미등록</button>
         <button onclick="window._setStat('',this)" class="filter-pill">전체</button>
       </div>
-      <label style="margin-bottom:4px">개수</label>
-      <div id="limitBtns" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">
-        <button onclick="window._setLimit(3,this)" class="filter-pill">3개</button>
-        <button onclick="window._setLimit(5,this)" class="filter-pill">5개</button>
-        <button onclick="window._setLimit(9,this)" class="filter-pill active-pill">9개</button>
-        <button onclick="window._setLimit(0,this)" class="filter-pill">전체</button>
-      </div>
       <input id="qrStatFilter" type="hidden" value="사용중">
-      <input id="qrLimitInput" type="hidden" value="9">
-      <button id="qrLoadBtn" onclick="window._loadQrByProduct()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:8px">⚡ QR 자동 불러오기 (Firestore)</button>
-      <label>QR 이미지 파일 직접 업로드(선택)</label>
+      <button id="qrLoadBtn" onclick="window._loadQrList()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-bottom:4px">⚡ QR 목록 불러오기</button>
+      <div id="qrPickerLoading" style="display:none;font-size:12px;color:#888;padding:6px 0">불러오는 중...</div>
+
+      <!-- 검색 + 체크리스트 -->
+      <div id="qrPickerWrap" style="display:none">
+        <input id="qrSearch" type="text" placeholder="코드 검색 (예: 0003)" oninput="window._filterQrList()" style="margin-top:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:7px 0 2px">
+          <span id="qrPickerCount" style="font-size:12px;color:#888"></span>
+          <div style="display:flex;gap:4px">
+            <button onclick="window._selectAll()" class="filter-pill" style="font-size:11px;padding:4px 8px;margin:0">전체선택</button>
+            <button onclick="window._deselectAll()" class="filter-pill" style="font-size:11px;padding:4px 8px;margin:0">전체해제</button>
+          </div>
+        </div>
+        <div id="qrPickerList" class="qr-picker-list"></div>
+        <button onclick="window._applySelected()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-top:8px">✅ 선택한 QR 배지에 적용</button>
+      </div>
+
+      <div id="qrList" class="filelist" style="margin-top:8px">QR이 적용되면 여기에 표시됩니다.</div>
+
+      <label style="margin-top:10px">QR 이미지 파일 직접 업로드(선택)</label>
       <input id="qrFiles" type="file" accept="image/*" multiple>
-      <div id="qrList" class="filelist">QR을 1개씩 추가해도 기존 QR 목록에 누적됩니다. 1번 QR=1번 배지, 2번 QR=2번 배지 순서로 적용됩니다.</div>
       <div class="check"><input id="appendQr" type="checkbox" checked><span>QR 업로드 시 기존 목록에 누적 추가</span></div>
     </div>
 
