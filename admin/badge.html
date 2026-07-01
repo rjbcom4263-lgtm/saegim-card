@@ -497,6 +497,8 @@ window._loadQrByProduct = window._loadQrList;
       <div class="check"><input id="showCircle" type="checkbox" checked><span>70파이 원형 가이드 표시</span></div>
       <div class="check"><input id="clipCircle" type="checkbox" checked><span>이미지를 원 안으로 클리핑</span></div>
       <div class="check"><input id="showPageBorder" type="checkbox" checked><span>용지 외곽선 표시</span></div>
+      <div class="check"><input id="showGuide" type="checkbox" checked><span>중심 가이드선 표시 (빨간 십자)</span></div>
+      <div class="check"><input id="showSafeZone" type="checkbox"><span>58mm·52mm 안전영역 가이드</span></div>
       <div id="warning" class="warning"></div>
     </div>
 
@@ -526,7 +528,8 @@ window._loadQrByProduct = window._loadQrList;
   <div id="step3" class="step-panel">
     <div class="group">
       <h2>저장 · 출력</h2>
-      <button id="renderBtn">미리보기 갱신</button>
+      <div id="printStatus" style="background:#f9f9f9;border:1px solid #e0e0e0;border-radius:10px;padding:10px;font-size:13px;margin-bottom:6px;line-height:1.7">① 도안·QR 선택 후 여기서 확인하세요.</div>
+      <button id="renderBtn">🔄 미리보기 갱신</button>
       <button id="downloadBtn" class="secondary">PNG 저장</button>
       <button id="printBtn" class="secondary">인쇄 / PDF 저장</button>
       <button id="clearBtn" class="warn">업로드 파일 초기화</button>
@@ -1065,9 +1068,36 @@ function drawOne(pos, idx) {
     ctx.stroke();
     ctx.restore();
   }
+
+  // 빨간 중심 십자선
+  if ($("showGuide") && $("showGuide").checked) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(229,57,53,0.85)";
+    ctx.lineWidth = Math.max(1, mmToPx(0.2));
+    ctx.setLineDash([mmToPx(2.5), mmToPx(1.5)]);
+    ctx.beginPath(); ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(229,57,53,0.9)";
+    ctx.beginPath(); ctx.arc(cx, cy, mmToPx(0.7), 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // 58mm 가시영역(노랑) + 52mm 안전영역(파랑)
+  if ($("showSafeZone") && $("showSafeZone").checked) {
+    ctx.save();
+    ctx.lineWidth = Math.max(1, mmToPx(0.15));
+    ctx.setLineDash([mmToPx(2), mmToPx(1.2)]);
+    ctx.strokeStyle = "rgba(255,193,7,0.9)";
+    ctx.beginPath(); ctx.arc(cx, cy, mmToPx(29), 0, Math.PI*2); ctx.stroke();
+    ctx.strokeStyle = "rgba(33,150,243,0.9)";
+    ctx.beginPath(); ctx.arc(cx, cy, mmToPx(26), 0, Math.PI*2); ctx.stroke();
+    ctx.restore();
+  }
 }
 
 function render() {
+  _saveSettings();
   const paperW = Number($("paperW").value);
   const paperH = Number($("paperH").value);
   const W = Math.round(mmToPx(paperW));
@@ -1133,19 +1163,38 @@ window._generateQrImages = function(items) {
               qrImgs = newQrs.filter(Boolean);
               listQrFiles();
               render();
-              setStatus('CD QR ' + qrImgs.length + '개 자동 로드 완료');
+              setStatus('✅ QR ' + qrImgs.length + '개 적용 완료 — ③ 출력 탭에서 확인하세요');
             }
           });
         }
         document.body.removeChild(w);
       }, 300);
     } catch(ex) {
-      document.body.removeChild(w);
+      );
       done++;
     }
   });
 };
 
+// ── 설정 자동저장 (localStorage) ──
+var _SAVE_IDS = ['artDia','artScale','outerInset','artX','artY','qrX','qrY','qrSize','qrPad','qrBorder','qrKnockout','previewScale','previewMax','dpi','circleDia','paperW','paperH'];
+var _SAVE_CHECKS = ['appendArt','sameArt','blankMissingArt','appendNoQrArt','sameNoQrArt','blankMissingNoQrArt','appendQr','sameQr','blankMissingQr','insertQr','whiteQrBox','showQrBox','hideQrAreaWhenOff','dragQr','resizeQr','showCircle','clipCircle','showPageBorder','fitScreen','showGuide','showSafeZone'];
+function _saveSettings() {
+  try {
+    var s = {};
+    _SAVE_IDS.forEach(function(id){ var el=$(id); if(el) s[id]=el.value; });
+    _SAVE_CHECKS.forEach(function(id){ var el=$(id); if(el) s[id+'_c']=el.checked; });
+    localStorage.setItem('badge_v1', JSON.stringify(s));
+  } catch(e) {}
+}
+function _loadSettings() {
+  try {
+    var s = JSON.parse(localStorage.getItem('badge_v1')||'{}');
+    _SAVE_IDS.forEach(function(id){ if(s[id]!==undefined && $(id)) $(id).value=s[id]; });
+    _SAVE_CHECKS.forEach(function(id){ if(s[id+'_c']!==undefined && $(id)) $(id).checked=s[id+'_c']; });
+  } catch(e) {}
+}
+_loadSettings();
 
 function showStep(n) {
   for (var i = 1; i <= 3; i++) {
@@ -1153,6 +1202,17 @@ function showStep(n) {
     var tab = document.getElementById('stepTab' + i);
     if (panel) panel.classList.toggle('active', i === n);
     if (tab) tab.classList.toggle('active', i === n);
+  }
+  if (n === 3) {
+    var ac = artImgs.length, qc = qrImgs.length, total = circlePositions.length;
+    var un = Math.max(0, total - qc);
+    var el = document.getElementById('printStatus');
+    if (el) el.innerHTML =
+      '도안 이미지 <b>' + ac + '개</b> &nbsp;·&nbsp; QR <b>' + qc + '개</b>' +
+      (un > 0
+        ? ' &nbsp;·&nbsp; <span style="color:#e53935">⚠ QR ' + un + '개 미배정</span>'
+        : ' &nbsp;·&nbsp; <span style="color:#4caf50">✅ ' + total + '개 전체 배정</span>');
+    render();
   }
 }
 
