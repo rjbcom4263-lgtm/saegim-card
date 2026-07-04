@@ -709,7 +709,7 @@ async function registerFirst(){
   const pw=val('new_password');if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
   const r=await apiPost({action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify([])});
   if(!r.success){alert(r.message||'등록 실패');return;}
-  alert('등록이 완료되었습니다!');location.href='?code='+encodeURIComponent(CODE);
+  location.href='?code='+encodeURIComponent(CODE);
 }
 window.registerFirst=registerFirst;
 

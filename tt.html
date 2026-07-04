@@ -239,13 +239,13 @@ async function registerFirst(){
   const form={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify([])};
   ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   const r=await apiPost(form);if(!r.success){alert(r.message||'등록 실패');return;}
-  alert('등록이 완료되었습니다!');location.href='?code='+encodeURIComponent(CODE);
+  location.href='?code='+encodeURIComponent(CODE);
 }
 async function saveEdit(){
   const form={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify([])};
   ['lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
   const r=await apiPost(form);if(!r.success){alert(r.message||'저장 실패');return;}
-  alert('저장되었습니다.');location.href='?code='+encodeURIComponent(CODE);
+  location.href='?code='+encodeURIComponent(CODE);
 }
 
 function normalizeLostUrl_(type,url){const v=String(url||'').trim();if(!v)return'';if(type==='전화')return v.startsWith('tel:')?v:'tel:'+v.replace(/[^0-9+]/g,'');if(type==='이메일')return v.startsWith('mailto:')?v:'mailto:'+v;return v;}
