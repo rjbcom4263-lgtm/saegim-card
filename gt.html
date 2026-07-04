@@ -116,7 +116,7 @@ async function apiGet(action,extra={}){
   const r=await fetch(url);return r.json();
 }
 async function apiPost(payload){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json();
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),redirect:'follow'});return r.json();
 }
 
 function brand(){return`<div class="brand"><div class="logo">SAEGIM</div><div class="slogan">기억을 새기다 · 마음을 잇다</div></div>`;}

@@ -71,7 +71,7 @@ async function apiGet(action,extra={}){
   const r=await fetch(url);return r.json();
 }
 async function apiPost(payload){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});return r.json();
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload),redirect:'follow'});return r.json();
 }
 async function loadData(){
   try{const data=await apiGet('getQrData');QR_DATA=data;if(MODE==='edit'){renderPassword();return;}renderView(data);}
