@@ -543,21 +543,25 @@ async function registerFirst(){
   const ok=await uploadBmtFiles();if(!ok)return;
   const links=collectLinks();
   const form={action:'registerSoldQr',code:CODE,password:pw,owner:val('owner'),links:JSON.stringify(links)};
-  ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit'].forEach(k=>form[k]=val(k));
+  const fields=['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit'];
+  fields.forEach(k=>form[k]=val(k));
   const r=await apiPost(form);
   if(!r.success){alert(r.message||'등록 실패');return;}
-  alert('등록이 완료되었습니다!');
-  location.href='?code='+encodeURIComponent(CODE);
+  fields.forEach(k=>{if(!QR_DATA)QR_DATA={};QR_DATA[k]=val(k);});
+  QR_DATA.owner=val('owner');QR_DATA.links=links;
+  renderBmtPrivate(QR_DATA);
 }
 async function saveEdit(){
   const ok=await uploadBmtFiles();if(!ok)return;
   const links=collectLinks();
   const form={action:'updateCustomerData',code:CODE,password:val('password'),owner:val('owner'),links:JSON.stringify(links)};
-  ['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'].forEach(k=>form[k]=val(k));
+  const fields=['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_travel_memo','bmt_places','bmt_voice','bmt_photo_fit','bmt_photo_position','lost_contact_type','lost_contact_label','lost_contact_url','owner_email'];
+  fields.forEach(k=>form[k]=val(k));
   const r=await apiPost(form);
   if(!r.success){alert(r.message||'저장 실패');return;}
-  alert('저장되었습니다.');
-  location.href='?code='+encodeURIComponent(CODE);
+  fields.forEach(k=>{QR_DATA[k]=val(k);});
+  QR_DATA.owner=val('owner');QR_DATA.links=links;
+  renderBmtPrivate(QR_DATA);
 }
 
 // ── 유틸 ───────────────────────────────────────────────────
