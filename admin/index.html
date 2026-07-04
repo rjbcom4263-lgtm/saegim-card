@@ -190,6 +190,63 @@ tr:hover td{background:rgba(255,255,255,.03)}
 .stk-add-multi{display:flex;gap:6px;align-items:center;padding:10px;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--line);margin-bottom:10px}
 .stk-add-multi input{width:60px;padding:5px;border:1px solid var(--line);border-radius:5px;background:#111;color:var(--text);font-size:13px;text-align:center}
 .stk-add-multi button{flex:1;padding:7px;border:none;border-radius:6px;background:var(--gold2);color:#111;font-weight:700;cursor:pointer;font-size:12px}
+
+/* ══ 모바일 반응형 ══ */
+@media(max-width:768px){
+  /* 탑바 압축 */
+  .topbar{padding:10px 14px;gap:8px}
+  .topbar-title{font-size:15px}
+  .topbar-email{display:none}
+  .logout-btn{padding:5px 10px;font-size:12px}
+
+  /* 레이아웃: 세로 */
+  .main{flex-direction:column}
+
+  /* 사이드바 → 상단 가로 스크롤 탭 */
+  .sidebar{
+    width:100%; border-right:none; border-bottom:1px solid var(--line);
+    padding:0; display:flex; overflow-x:auto; overflow-y:hidden;
+    flex-shrink:0; -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  .sidebar::-webkit-scrollbar{display:none}
+  .nav-item{
+    white-space:nowrap; padding:12px 16px; border-left:none;
+    border-bottom:3px solid transparent; flex-shrink:0; font-size:13px;
+  }
+  .nav-item:hover,.nav-item.active{
+    border-left-color:transparent; border-bottom-color:var(--gold2);
+  }
+
+  /* 콘텐츠 패딩 축소 */
+  .content{padding:14px 12px}
+  h2{font-size:17px;margin-bottom:14px}
+
+  /* 통계 카드 2열 */
+  .stat-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px}
+  .stat-num{font-size:26px}
+
+  /* 검색바 세로 */
+  .search-bar{flex-direction:column;gap:8px}
+  .search-bar input,.search-bar select{width:100%;min-width:0}
+
+  /* 테이블 가로 스크롤 */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+  table{font-size:12px;min-width:480px}
+  th,td{padding:8px 10px}
+
+  /* 모달 */
+  .modal{padding:18px;border-radius:14px;max-height:90vh}
+
+  /* 스티커 레이아웃 */
+  .stk-layout{flex-direction:column}
+  .stk-panel{width:100%}
+  .quick-edit-grid{grid-template-columns:1fr}
+
+  /* 상세보기 그리드 */
+  .detail-grid{grid-template-columns:100px 1fr}
+  .detail-label,.detail-value{font-size:12px;padding:9px 10px}
+}
 </style>
 </head>
 <body>
@@ -243,7 +300,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
           <button id="productStatsToggle" class="btn btn-ghost" type="button">접기</button>
         </div>
         <div id="productStatsContent">
-          <table class="admin-table product-stat-table" style="margin-top:14px">
+          <div class="table-wrap"><table class="admin-table product-stat-table" style="margin-top:14px">
             <thead>
               <tr>
                 <th>제품</th><th>전체</th><th>사용중</th>
@@ -253,7 +310,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <tbody id="productStatsBody">
               <tr><td colspan="7" class="loading-msg">불러오는 중...</td></tr>
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
@@ -307,7 +364,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
           <button class="btn btn-ghost" onclick="normalizeFirestoreCards()">Firestore 데이터 보정</button>
         </div>
         <div style="overflow-x:auto">
-          <table id="inventoryTable">
+          <div class="table-wrap"><table id="inventoryTable">
             <thead>
               <tr>
                 <th>코드</th><th>제품</th><th>상태</th><th>소유자</th>
@@ -315,7 +372,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
               </tr>
             </thead>
             <tbody id="inventoryBody"><tr><td colspan="8" class="loading-msg">로딩 중...</td></tr></tbody>
-          </table>
+          </table></div>
         </div>
       </div>
 
@@ -1918,7 +1975,4 @@ window.regenerateMissingQrImages = async function() {
   window.stkDl=function(){if(!pdfBlob)return;var url=URL.createObjectURL(pdfBlob);var a=document.createElement('a');a.href=url;a.download='saegim_stickers.pdf';a.click();setTimeout(function(){URL.revokeObjectURL(url);},2000);};
 
 })();
-</script>
-</body>
-</html>
-
+</sc
