@@ -160,7 +160,7 @@ var CONSENT_INFO = {
     : '?code=' + encodeURIComponent(code)) : '';
 
   if (!code) {
-    document.getElementById('msg').textContent = 'QR 코드가 없습니다. 제품의 QR을 스캔해 주세요.';
+    location.replace('/home.html');
     return;
   }
 
