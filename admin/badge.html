@@ -1066,18 +1066,22 @@ function drawOne(pos, idx) {
     ctx.restore();
   }
 
-  // QR 코드명 — 원 위에 작게 표시 (화면 식별용)
+  // QR 코드명 — 아트와 외곽 원 사이 상단 여백에 표시
   const _qrLabel = $("sameQr").checked
     ? (qrImgs[0] ? qrImgs[0].name.replace(/\.png$/i,'') : '')
     : (qrImgs[idx] ? qrImgs[idx].name.replace(/\.png$/i,'') : '');
   if (_qrLabel) {
     ctx.save();
-    const _fs = Math.max(11, mmToPx(2));
+    const _fs = Math.max(10, mmToPx(2.2));
     ctx.font = `700 ${_fs}px system-ui,sans-serif`;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = '#1565C0';
-    ctx.fillText(_qrLabel, cx, cy - radius - mmToPx(0.8));
+    // 아트 상단과 외곽 원 상단 사이 중앙
+    const _artTop = cy - artDia/2 + artY;
+    const _circleTop = cy - radius;
+    const _labelY = (_artTop + _circleTop) / 2;
+    ctx.fillText(_qrLabel, cx, _labelY);
     ctx.restore();
   }
 }
