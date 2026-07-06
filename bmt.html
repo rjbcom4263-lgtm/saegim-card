@@ -537,6 +537,15 @@ function addLinkItem(){const links=collectLinksRaw();if(links.length>=5){alert('
 function removeLinkItem(index){const links=collectLinksRaw();links.splice(index,1);document.getElementById('linksEdit').innerHTML=editLinks(links.length?links:[{type:'전화',label:'',url:''}]);}
 
 // ── 등록 & 저장 ────────────────────────────────────────────
+async function savePhotosDirectToFirestore(fields){
+  if(!window.firestoreDb||!window.firestoreApi||!window.firestoreApi.setDoc)return;
+  const photoKeys=['bmt_photo1','bmt_photo2','bmt_photo3','bmt_photo4','bmt_photo5','bmt_voice','bmt_photo_fit','bmt_photo_position','bmt_travel_memo','bmt_places','owner'];
+  const updates={};
+  photoKeys.forEach(k=>{const v=val(k);updates[k]=v||null;});
+  try{
+    await window.firestoreApi.setDoc(window.firestoreApi.doc(window.firestoreDb,'qr_cards',CODE),updates,{merge:true});
+  }catch(e){console.warn('[Firestore 직접 저장 실패 - Apps Script 저장은 완료됨]',e.message);}
+}
 async function registerFirst(){
   const pw=val('new_password');
   if(!pw||pw.length<4){alert('비밀번호를 4자 이상 입력해주세요.');return;}
@@ -551,6 +560,7 @@ async function registerFirst(){
     if(!QR_DATA)QR_DATA={};
     fields.forEach(k=>{QR_DATA[k]=val(k);});
     QR_DATA.owner=val('owner');QR_DATA.links=links;
+    await savePhotosDirectToFirestore(fields);
     renderBmtPrivate(QR_DATA);
   }catch(e){alert('등록 오류: '+e.message);}
 }
@@ -565,6 +575,7 @@ async function saveEdit(){
     if(!r.success){alert(r.message||'저장 실패');return;}
     fields.forEach(k=>{QR_DATA[k]=val(k);});
     QR_DATA.owner=val('owner');QR_DATA.links=links;
+    await savePhotosDirectToFirestore(fields);
     renderBmtPrivate(QR_DATA);
   }catch(e){alert('저장 오류: '+e.message);}
 }
@@ -588,12 +599,12 @@ const I18N={
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
 import{getStorage,ref,uploadBytesResumable,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
-import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,doc,getDoc}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
+import{getFirestore,collection,addDoc,query,orderBy,onSnapshot,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js";
 const fbApp=initializeApp({apiKey:"AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",authDomain:"saegim-memory.firebaseapp.com",projectId:"saegim-memory",storageBucket:"saegim-memory.firebasestorage.app",messagingSenderId:"888229102391",appId:"1:888229102391:web:f4fe41ece07ddacd2a10b2"});
 const storage=getStorage(fbApp);
 const db=getFirestore(fbApp);
 window.firestoreDb=db;
-window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot};
+window.firestoreApi={collection,addDoc,query,orderBy,onSnapshot,doc,setDoc};
 window.uploadToFirebase=function(file,path,onProgress){
   return new Promise((resolve,reject)=>{
     const storageRef=ref(storage,path);

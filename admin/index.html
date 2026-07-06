@@ -278,7 +278,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
       <div class="nav-item active" onclick="showPage('dashboard',this)">대시보드</div>
       <div class="nav-item" onclick="showPage('inventory',this)">QR 재고</div>
       <div class="nav-item" onclick="showPage('create',this)">QR 생성</div>
-      <div class="nav-item" onclick="showPage('sticker',this);stkInit()">스티커 생성</div>
+      <div class="nav-item" onclick="showPage('sticker',this)">뱃지 도안 생성</div>
       <div class="nav-item" onclick="window.open('/saju/','_blank')">사주 ↗</div>
     </div>
     <div class="content">
@@ -400,7 +400,15 @@ tr:hover td{background:rgba(255,255,255,.03)}
             <button class="btn btn-primary" onclick="createQrCardsViaApi()">QR 생성</button>
             <button class="btn btn-ghost" onclick="resetAdminApiKey()" style="margin-left:10px">API 키 재입력</button>
           </div>
-          <div id="createResult" style="margin-top:16px;font-size:13px;line-height:1.8"></div>
+          <div id="createProgress" style="display:none;margin-top:16px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+              <span id="createProgressText" style="font-size:13px;color:var(--muted)">0 / 0</span>
+              <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+                <div id="createProgressBar" style="height:100%;background:linear-gradient(90deg,#c7a05d,#f0d9a4);border-radius:3px;width:0%;transition:width .4s"></div>
+              </div>
+            </div>
+          </div>
+          <div id="createResult" style="margin-top:4px;font-size:13px;display:flex;flex-direction:column;gap:6px"></div>
         </div>
         <div class="card" style="margin-top:0">
           <div style="color:var(--muted);font-size:12px;line-height:1.8">
@@ -410,143 +418,19 @@ tr:hover td{background:rgba(255,255,255,.03)}
         </div>
       </div>
 
-      <!-- 스티커 생성 -->
+      <!-- 뱃지 도안 생성 -->
       <div class="page" id="page-sticker">
-        <h2>스티커 생성</h2>
-        <div style="margin-bottom:16px">
-          <a href="/admin/badge.html" target="_blank" style="display:inline-block;padding:10px 20px;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none">🏅 안심뱃지 출력판 열기 →</a>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">CD QR 자동 불러오기 + 마우스 드래그 QR 배치 + PNG/인쇄 출력</div>
-        </div>
-        <div class="stk-tabs">
-          <div class="stk-tab active" onclick="stkTab(0,this)">① QR 매칭</div>
-          <div class="stk-tab" onclick="stkTab(1,this)">② 위치 조절</div>
-          <div class="stk-tab" onclick="stkTab(2,this)">③ A4 출력</div>
-        </div>
-
-        <!-- ① QR 매칭 -->
-        <div id="stkP0">
-          <div class="stk-layout">
-            <div class="stk-panel">
-              <div>
-                <div class="stk-sec">도안 업로드</div>
-                <div class="stk-dz" onclick="document.getElementById('stkFi').click()">🖼️ PNG 업로드 (여러 개 가능)</div>
-                <input type="file" id="stkFi" multiple accept="image/*" style="display:none">
-                <div class="stk-thumb-row" id="stkDThumbs" style="margin-top:6px"></div>
-                <div class="stk-cnt" id="stkDCnt" style="margin-top:3px">도안 0개</div>
-              </div>
-              <div>
-                <div class="stk-sec">QR 불러오기</div>
-                <div class="stk-field">
-                  <label>제품</label>
-                  <select id="stkProd"><option value="">전체</option><option value="CD">CD</option><option value="BMT">BMT</option><option value="GT">GT</option><option value="WT">WT</option><option value="TT">TT</option></select>
-                  <label>상태</label>
-                  <select id="stkStat"><option value="">전체</option><option value="미등록">미등록</option><option value="판매완료">판매완료</option><option value="사용중">사용중</option></select>
-                  <label>개수 제한</label>
-                  <input type="number" id="stkLimit" min="1" max="500" placeholder="예: 29">
-                </div>
-                <button class="stk-btn" style="background:#4a3020;color:#C8964A;border:1px solid var(--gold);font-size:12px;margin-bottom:3px" onclick="stkCdQuickLoad()">⚡ CD 안심뱃지 빠른 불러오기</button>
-                <button class="stk-btn stk-btn-g" onclick="stkLoadQr()">📥 QR 불러오기</button>
-                <div class="stk-cnt" id="stkQCnt">QR 0개</div>
-              </div>
-              <div style="border-top:1px solid var(--line);padding-top:10px">
-                <div class="stk-add-multi">
-                  <span style="font-size:11px;color:var(--muted);white-space:nowrap">선택 도안</span>
-                  <input type="number" id="stkMultiN" min="1" max="15" value="1" placeholder="개수">
-                  <span style="font-size:11px;color:var(--muted)">개 추가</span>
-                  <button onclick="stkAddMulti()">추가</button>
-                </div>
-                <button class="stk-btn stk-btn-w" onclick="stkClearAll()">🗑 전체 초기화</button>
-                <button class="stk-btn stk-btn-g" style="margin-top:4px" onclick="stkGoPos()">② 위치 조절 →</button>
-              </div>
-            </div>
-            <div class="stk-main">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                <div style="font-size:13px;font-weight:600;color:var(--text)">슬롯 <span id="stkFilledCnt">0</span> / 15</div>
-                <div style="font-size:11px;color:var(--muted)">슬롯 클릭 → 도안·QR 배정</div>
-              </div>
-              <div class="stk-slot-grid" id="stkGrid"></div>
-            </div>
+        <h2>뱃지 도안 생성</h2>
+        <div style="margin:40px auto;max-width:480px;text-align:center">
+          <a href="/admin/badge.html" target="_blank"
+             style="display:block;padding:28px 20px;background:linear-gradient(135deg,#1a3a1a,#0f2a0f);color:#4caf50;border:2px solid #4caf50;border-radius:18px;font-weight:700;font-size:22px;text-decoration:none;letter-spacing:.05em;box-shadow:0 8px 32px rgba(0,0,0,.4)">
+            🏅 안심뱃지 출력판 열기 →
+          </a>
+          <div style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.7">
+            CD QR 자동 불러오기 · 도안 배치 · PNG/PDF 인쇄 출력
           </div>
         </div>
 
-        <!-- ② 위치 조절 -->
-        <div id="stkP1" style="display:none">
-          <div class="stk-layout">
-            <div class="stk-panel">
-              <div>
-                <div class="stk-sec">슬롯 선택</div>
-                <div id="stkPPicks" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px"></div>
-              </div>
-              <div>
-                <div class="stk-sec">QR 위치·크기</div>
-                <div class="stk-pos-nums">
-                  <div class="stk-pos-num"><span>QR X</span><input type="number" id="stkXn" min="0" max="100" value="50" oninput="stkApplyNums()"><span>%</span></div>
-                  <div class="stk-pos-num"><span>QR Y</span><input type="number" id="stkYn" min="0" max="100" value="55" oninput="stkApplyNums()"><span>%</span></div>
-                  <div class="stk-pos-num"><span>QR크기</span><input type="number" id="stkSn" min="5" max="80" value="37" oninput="stkApplyNums()"><span>%</span></div>
-                  <div class="stk-pos-num"><span>도안크기</span><input type="number" id="stkDn" min="30" max="150" value="100" oninput="stkApplyNums()"><span>%</span></div>
-                </div>
-                <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center">드래그로 이동 · 핸들로 크기조절 · 52mm 안으로 자동구속</div>
-                <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
-                  <button onclick="stkQrAuto('center')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">⊙ 중앙</button>
-                  <button onclick="stkQrAuto('bottom')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">↓ 하단</button>
-                  <button onclick="stkQrAuto('top')" style="flex:1;padding:6px 4px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-size:11px">↑ 상단</button>
-                </div>
-                <div style="display:flex;align-items:center;gap:6px;margin-top:10px;padding:8px;background:rgba(255,255,255,.04);border-radius:8px;border:1px solid var(--line)">
-                  <input type="checkbox" id="stkGuide" onchange="stkDrawCanvas()" style="accent-color:var(--gold)">
-                  <span style="font-size:11px;color:var(--muted)">가이드선 표시</span>
-                  <span style="font-size:9px;color:rgba(255,220,80,.8)">― 58mm</span>
-                  <span style="font-size:9px;color:rgba(80,200,255,.8)">― 52mm</span>
-                </div>
-              </div>
-              <button class="stk-btn stk-btn-g" onclick="stkComposite()">✅ 합성 → ③ 출력</button>
-            </div>
-            <div class="stk-preview-area">
-              <div style="color:var(--muted);font-size:13px" id="sPosHint">슬롯에 도안·QR을 먼저 배정하세요</div>
-              <div id="sCvWrap" style="display:none;flex-direction:column;align-items:center;gap:8px">
-                <div class="stk-canvas-wrap" id="sCvContainer">
-                  <canvas id="sCv" width="380" height="380" style="display:block;border-radius:50%;box-shadow:0 4px 24px rgba(0,0,0,.6)"></canvas>
-                  <div class="stk-resize-handle" id="sResizeHandle" style="position:absolute;right:0;bottom:0"></div>
-                </div>
-                <div class="stk-nav-row">
-                  <button class="stk-nav-btn" onclick="stkPosNav(-1)">◀ 이전</button>
-                  <span id="sPosNavLabel" style="font-size:12px;color:var(--muted)"></span>
-                  <button class="stk-nav-btn" onclick="stkPosNav(1)">다음 ▶</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ③ A4 출력 -->
-        <div id="stkP2" style="display:none">
-          <div class="stk-layout">
-            <div class="stk-panel">
-              <div><div class="stk-sec">합성 스티커</div><div style="display:flex;flex-wrap:wrap;gap:4px" id="sCmpThumbs"></div><div class="stk-cnt" id="sCmpCnt" style="margin-top:4px">0개</div></div>
-              <div>
-                <div class="stk-sec">배치</div>
-                <div style="padding:8px;background:rgba(200,150,74,.08);border:1px solid rgba(200,150,74,.3);border-radius:8px;font-size:12px;color:var(--gold);text-align:center">
-                  🏅 9개 / 육각 배치 고정<br><span style="color:var(--muted);font-size:10px">70mm · 마진 없음 · A4 1장</span>
-                </div>
-              </div>
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-                <label style="font-size:12px;color:var(--muted)">빈 슬롯 반복 채우기</label>
-                <input type="checkbox" id="sRpt" style="accent-color:var(--gold);width:14px;height:14px">
-              </div>
-              <div style="font-size:11px;color:var(--muted)">스티커 크기: <span style="color:var(--gold)">70mm</span> 고정 (프레스용)</div>
-              <button class="stk-btn stk-btn-g" id="sGenBtn" onclick="stkGen()">A4 PDF 생성</button>
-              <div class="stk-prog" id="sProg"><div class="stk-prog-bar" id="sProgB"></div></div>
-              <div style="font-size:11px;color:var(--muted);margin-top:3px" id="sStatTxt"></div>
-              <button class="stk-btn" id="sDlBtn" style="display:none;background:#C8964A;color:#fff;margin-top:4px" onclick="stkDl()">⬇ PDF 다운로드</button>
-            </div>
-            <div style="flex:1;display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:80vh">
-              <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:4px">📄 A4 미리보기 — PDF 생성 전 확인</div>
-              <div id="sA4Preview" class="stk-a4-page-wrap"></div>
-              <div class="stk-preview-area" id="sOutArea" style="min-height:60px;margin-top:4px">
-                <div style="color:var(--muted);font-size:13px;text-align:center">PDF 생성 후 여기에 표시</div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
     </div>
@@ -1257,7 +1141,7 @@ window.normalizeFirestoreCards = async function() {
 
 // ── QR 생성 (Apps Script API 연동) ────────────────────
 // admin_Code.gs 새 버전 배포 후 실제 URL로 교체
-const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4hup9QdjD2ZpYx52cHL8oiCm9Mer1aLKROMAq8GAoB8tnso-9BOI1AvzvautO6fFQiw/exec';
+const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmUM4LuNSwYLMmofq1UV2qabUqNk0XQB1-nCy2vLGOswYFhYuuTxV1CFkrA6JMVUw4vA/exec';
 
 function getAdminApiKey() {
   let key = sessionStorage.getItem('admin_api_key');
@@ -1275,45 +1159,87 @@ window.resetAdminApiKey = function() {
 };
 
 window.createQrCardsViaApi = async function() {
-  const type    = document.getElementById('createType').value;
-  const qty     = Number(document.getElementById('createQty').value);
+  const type     = document.getElementById('createType').value;
+  const qty      = Number(document.getElementById('createQty').value);
   const resultEl = document.getElementById('createResult');
+  const progWrap = document.getElementById('createProgress');
+  const progBar  = document.getElementById('createProgressBar');
+  const progText = document.getElementById('createProgressText');
+  const genBtn   = document.querySelector('#page-create .btn-primary');
 
   if (!type) { alert('제품을 선택하세요.'); return; }
   if (!qty || qty < 1 || qty > 20) { alert('수량은 1~20 사이로 입력하세요.'); return; }
 
-  if (!ADMIN_APPS_SCRIPT_URL) {
-    resultEl.innerHTML = '<span style="color:var(--red)">❌ ADMIN_APPS_SCRIPT_URL이 설정되지 않았습니다.<br>admin/index.html의 ADMIN_APPS_SCRIPT_URL 상수를 채워주세요.</span>';
-    return;
-  }
-
   const key = getAdminApiKey();
   if (!key) return;
 
-  resultEl.innerHTML = '<span style="color:var(--muted)">생성 중... (약 10~30초 소요)</span>';
+  // 초기화
+  resultEl.innerHTML = '';
+  progWrap.style.display = 'block';
+  progBar.style.width = '0%';
+  progText.textContent = '0 / ' + qty;
+  genBtn.disabled = true;
 
-  try {
-    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
-      method:   'POST',
-      headers:  { 'Content-Type': 'text/plain' },
-      body:     JSON.stringify({ action: 'createQrInventoryFromAdmin', admin_key: key, product_type: type, quantity: qty }),
-      redirect: 'follow'
-    });
-    const data = await res.json();
-    if (data.success) {
-      resultEl.innerHTML = '<span style="color:var(--green)">✅ ' + data.message + '</span>'
-        + '<br><a href="' + data.folderUrl + '" target="_blank" style="color:var(--gold)">Google Drive 폴더 열기</a>';
-      await loadInventory();
-      await loadDashboard();
-    } else {
-      if (data.message && data.message.indexOf('관리자 키') > -1) {
-        sessionStorage.removeItem('admin_api_key');
+  let successCount = 0;
+  let lastFolderUrl = '';
+
+  for (let i = 0; i < qty; i++) {
+    // 진행 중 카드
+    const pendingId = 'qr-pending-' + i;
+    const pendingEl = document.createElement('div');
+    pendingEl.id = pendingId;
+    pendingEl.style.cssText = 'padding:8px 12px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:12px';
+    pendingEl.innerHTML = '⏳ ' + (i + 1) + '번째 생성 중...';
+    resultEl.appendChild(pendingEl);
+    resultEl.scrollTop = resultEl.scrollHeight;
+
+    try {
+      const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'createSingleQrFromAdmin', admin_key: key, product_type: type }),
+        redirect: 'follow'
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        successCount++;
+        lastFolderUrl = data.folderUrl;
+        pendingEl.style.background = 'rgba(80,160,80,.08)';
+        pendingEl.style.borderColor = 'rgba(80,160,80,.25)';
+        pendingEl.innerHTML = '✅ <b style="color:#90c890">' + data.code + '</b>'
+          + ' &nbsp;<a href="' + data.qrFileUrl + '" target="_blank" style="color:var(--gold);font-size:11px">QR 파일 ↗</a>';
+      } else {
+        if (data.message && data.message.indexOf('관리자 키') > -1) sessionStorage.removeItem('admin_api_key');
+        pendingEl.style.background = 'rgba(160,60,60,.1)';
+        pendingEl.style.borderColor = 'rgba(200,80,80,.3)';
+        pendingEl.innerHTML = '❌ ' + (data.message || '실패');
       }
-      resultEl.innerHTML = '<span style="color:var(--red)">❌ ' + data.message + '</span>';
+    } catch(e) {
+      pendingEl.style.background = 'rgba(160,60,60,.1)';
+      pendingEl.style.borderColor = 'rgba(200,80,80,.3)';
+      pendingEl.innerHTML = '❌ 네트워크 오류: ' + e.message;
     }
-  } catch(e) {
-    resultEl.innerHTML = '<span style="color:var(--red)">오류: ' + e.message + '</span>';
+
+    // 진행률 업데이트
+    const pct = Math.round((i + 1) / qty * 100);
+    progBar.style.width = pct + '%';
+    progText.textContent = (i + 1) + ' / ' + qty;
   }
+
+  // 완료
+  genBtn.disabled = false;
+  progText.textContent = '완료 ' + successCount + ' / ' + qty;
+  progBar.style.background = successCount === qty ? 'linear-gradient(90deg,#4a9a4a,#70c870)' : 'linear-gradient(90deg,#c7a05d,#e07070)';
+
+  if (lastFolderUrl) {
+    const doneEl = document.createElement('div');
+    doneEl.style.cssText = 'margin-top:4px;font-size:12px';
+    doneEl.innerHTML = '<a href="' + lastFolderUrl + '" target="_blank" style="color:var(--gold)">📁 Google Drive 폴더 열기</a>';
+    resultEl.appendChild(doneEl);
+  }
+
+  if (successCount > 0) { await loadInventory(); await loadDashboard(); }
 };
 
 window.saveStatus = async function() {

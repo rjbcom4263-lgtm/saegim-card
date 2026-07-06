@@ -359,6 +359,45 @@ function createQrInventory(form) {
   };
 }
 
+// 단건 QR 생성 (프론트에서 1개씩 순차 호출용)
+function createSingleQrInventory(form) {
+  const productType = String(form.product_type || '').trim().toUpperCase();
+
+  if (!productType) throw new Error('제품을 선택해주세요.');
+  if (!ACTIVE_PRODUCT_TYPES.includes(productType)) throw new Error('허용되지 않은 제품 타입: ' + productType);
+
+  const products = getProducts();
+  const product  = products.find(function(p) { return p.product_type === productType; });
+  if (!product) throw new Error('등록되지 않은 제품: ' + productType);
+
+  const masterSheet  = ensureMasterSheet_();
+  const productSheet = ensureProductSheet_(productType);
+  const folder       = DriveApp.getFolderById(QR_FOLDER_ID);
+
+  let nextNumber = getNextNumber_(productSheet, productType);
+  let code = makeCode_(productType, nextNumber);
+  while (codeExistsInMaster_(code)) {
+    nextNumber++;
+    code = makeCode_(productType, nextNumber);
+  }
+
+  const qrUrl  = CARD_BASE_URL + '/?code=' + encodeURIComponent(code);
+  const qrFile = saveQrImage_(folder, code, qrUrl);
+  const row    = makeQrRow_(code, productType, product.product_name, qrFile);
+
+  productSheet.getRange(productSheet.getLastRow() + 1, 1, 1, QR_HEADERS.length).setValues([row]);
+  masterSheet.getRange(masterSheet.getLastRow()  + 1, 1, 1, QR_HEADERS.length).setValues([row]);
+
+  backupOneQrCodeToFirestoreV1_(code);
+
+  return {
+    success:    true,
+    code:       code,
+    qrFileUrl:  qrFile,
+    folderUrl:  'https://drive.google.com/drive/folders/' + QR_FOLDER_ID
+  };
+}
+
 // ─────────────────────────────────────────────
 // Inventory & Dashboard
 // ─────────────────────────────────────────────
@@ -1184,6 +1223,10 @@ function doPost(e) {
     if (action === 'createQrInventoryFromAdmin') {
       const form = payload.form || payload;
       const result = createQrInventory(form);
+      return adminJsonResponse_(result);
+
+    } else if (action === 'createSingleQrFromAdmin') {
+      const result = createSingleQrInventory(payload);
       return adminJsonResponse_(result);
 
     } else if (action === 'updateQrStatusFromAdmin') {

@@ -68,6 +68,9 @@ function handleApi_(params) {
       case 'sendOwnerPushAlert':
         result = sendOwnerPushAlert(params);
         break;
+      case 'nvidiaProxy':
+        result = nvidiaProxy_(params);
+        break;
       default:
         result = { success: false, message: '알 수 없는 action: ' + params.action };
     }
@@ -902,5 +905,39 @@ function sendOwnerPushAlert(params) {
   } catch (err) {
     return { success: false, message: String(err) };
   }
+}
+
+// ─── NVIDIA NIM 이미지 생성 프록시 ───────────────────────────────
+function nvidiaProxy_(params) {
+  const apiKey = params.apiKey || '';
+  const model  = params.model  || '';
+  const prompt = params.prompt || '';
+  const seed   = parseInt(params.seed) || 0;
+
+  if (!apiKey) return { success: false, message: 'apiKey 없음' };
+  if (!model)  return { success: false, message: 'model 없음' };
+  if (!prompt) return { success: false, message: 'prompt 없음' };
+
+  const body = { model, prompt, n: 1, size: '1024x1024', response_format: 'b64_json' };
+  if (seed > 0) body.seed = seed;
+
+  const res = UrlFetchApp.fetch('https://integrate.api.nvidia.com/v1/images/generations', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + apiKey },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+
+  const code = res.getResponseCode();
+  const text = res.getContentText();
+  if (code !== 200) {
+    return { success: false, message: 'NVIDIA ' + code + ': ' + text.slice(0, 400) };
+  }
+
+  const data = JSON.parse(text);
+  const b64 = (data.data && data.data[0]) ? data.data[0].b64_json : null;
+  if (!b64) return { success: false, message: '응답에 이미지 없음: ' + text.slice(0, 200) };
+  return { success: true, b64 };
 }
 

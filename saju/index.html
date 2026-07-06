@@ -4,15 +4,367 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/saju/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="생년월일시 기반 만세력, 사주팔자 풀이, 오늘의 운세를 읽기 쉽게 정리하는 사주 서비스입니다."
-    />
+    <meta name="description" content="생년월일시 기반 만세력, 사주팔자 풀이, 오늘의 운세를 읽기 쉽게 정리하는 사주 서비스입니다." />
     <title>사주팔자 만세력</title>
     <script type="module" crossorigin src="/saju/assets/index-BnF1FJUk.js"></script>
     <link rel="stylesheet" crossorigin href="/saju/assets/index-DSXEIiFK.css">
+    <style>
+      #saju-ai-btn {
+        position: fixed; bottom: 24px; right: 24px;
+        width: 52px; height: 52px; border-radius: 50%;
+        background: linear-gradient(135deg, #1a1a2e, #3a2a6e);
+        border: 1.5px solid rgba(180,140,255,.4);
+        color: #fff; font-size: 22px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,.3);
+        z-index: 9999; transition: transform .15s, box-shadow .15s;
+      }
+      #saju-ai-btn:hover { transform: scale(1.08); box-shadow: 0 6px 24px rgba(100,60,200,.4); }
+
+      #saju-ai-tooltip {
+        position: fixed; bottom: 32px; right: 84px;
+        background: #1e1e2e; color: #e0d8f0;
+        border: 1px solid rgba(180,140,255,.25); border-radius: 10px;
+        padding: 6px 12px; font-size: 12px; white-space: nowrap;
+        z-index: 9998; pointer-events: none;
+        opacity: 1; transition: opacity .4s;
+        font-family: system-ui, sans-serif;
+      }
+      #saju-ai-tooltip::after {
+        content: ''; position: absolute; right: -6px; top: 50%;
+        transform: translateY(-50%);
+        border: 5px solid transparent; border-left-color: rgba(180,140,255,.25);
+      }
+
+      #saju-ai-panel {
+        position: fixed; bottom: 88px; right: 24px; width: 300px;
+        background: #0f0f1a; border: 1px solid rgba(180,140,255,.3);
+        border-radius: 18px; display: none; flex-direction: column;
+        z-index: 9999; box-shadow: 0 8px 32px rgba(0,0,0,.5);
+        font-family: system-ui, -apple-system, 'Noto Sans KR', sans-serif;
+        overflow: hidden;
+      }
+      #saju-ai-panel.open { display: flex; }
+
+      .sai-head {
+        background: linear-gradient(135deg, #1a1a2e, #2a1a4e);
+        padding: 12px 16px; display: flex; align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid rgba(180,140,255,.15);
+        flex-shrink: 0;
+      }
+      .sai-head-title { font-size: 13px; font-weight: 700; color: #d4b8ff; }
+      .sai-head-sub { font-size: 10px; color: #8a7aaa; margin-top: 2px; }
+      .sai-close { background: none; border: none; color: #8a7aaa; font-size: 18px; cursor: pointer; padding: 0; }
+      .sai-close:hover { color: #d4b8ff; }
+
+      /* 설정 화면 */
+      .sai-setup { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+      .sai-sync-box {
+        background: #1a1a2e; border: 1px solid rgba(180,140,255,.2);
+        border-radius: 12px; padding: 12px 14px;
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
+      }
+      .sai-sync-info { flex: 1; }
+      .sai-sync-label { font-size: 10px; color: #8a7aaa; margin-bottom: 4px; }
+      .sai-sync-val { font-size: 12px; color: #e0d8f0; font-weight: 500; line-height: 1.5; }
+      .sai-sync-val.empty { color: #5a5070; font-style: italic; }
+      .sai-sync-btn {
+        background: rgba(122,90,248,.15); border: 1px solid rgba(122,90,248,.3);
+        color: #b89af8; border-radius: 8px; padding: 6px 10px;
+        font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+        font-family: inherit;
+      }
+      .sai-sync-btn:hover { background: rgba(122,90,248,.25); }
+
+      .sai-start-btn {
+        width: 100%; padding: 11px;
+        background: linear-gradient(135deg, #7a5af8, #5a3ad8);
+        color: #fff; border: none; border-radius: 10px;
+        font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+      }
+      .sai-start-btn:disabled { opacity: .3; cursor: not-allowed; }
+      .sai-start-btn:not(:disabled):hover { opacity: .9; }
+
+      /* 채팅 화면 */
+      .sai-chat-info {
+        padding: 6px 14px; font-size: 10px; color: #8a7aaa;
+        background: rgba(122,90,248,.07);
+        border-bottom: 1px solid rgba(180,140,255,.1); flex-shrink: 0;
+      }
+      .sai-chat-info b { color: #b89af8; }
+
+      .sai-messages {
+        flex: 1; overflow-y: auto; padding: 12px;
+        display: flex; flex-direction: column; gap: 8px;
+        min-height: 0; max-height: 260px;
+      }
+      .sai-messages::-webkit-scrollbar { width: 3px; }
+      .sai-messages::-webkit-scrollbar-thumb { background: rgba(180,140,255,.2); border-radius: 2px; }
+
+      .sai-msg {
+        max-width: 86%; border-radius: 12px;
+        padding: 8px 11px; font-size: 12px; line-height: 1.65; word-break: keep-all;
+      }
+      .sai-msg.ai {
+        background: #1a1a2e; border: 1px solid rgba(180,140,255,.15);
+        align-self: flex-start; color: #e0d8f0; border-bottom-left-radius: 3px;
+      }
+      .sai-msg.user {
+        background: rgba(122,90,248,.2); border: 1px solid rgba(122,90,248,.3);
+        align-self: flex-end; color: #d4b8ff; border-bottom-right-radius: 3px;
+      }
+      .sai-msg.thinking { opacity: .5; font-style: italic; border-style: dashed; }
+
+      .sai-quick { display: flex; gap: 5px; flex-wrap: wrap; padding: 4px 12px 6px; flex-shrink: 0; }
+      .sai-qb {
+        padding: 3px 9px; border: 1px solid rgba(180,140,255,.2);
+        border-radius: 20px; background: transparent; color: #8a7aaa;
+        font-size: 10px; cursor: pointer; font-family: inherit; transition: all .15s;
+      }
+      .sai-qb:hover { border-color: #7a5af8; color: #d4b8ff; }
+
+      .sai-input-row {
+        display: flex; gap: 6px; padding: 10px 12px;
+        border-top: 1px solid rgba(180,140,255,.1);
+        background: #0a0a14; flex-shrink: 0;
+      }
+      .sai-input {
+        flex: 1; background: #1a1a2e; border: 1px solid rgba(180,140,255,.2);
+        border-radius: 10px; padding: 7px 11px; color: #e0d8f0;
+        font-size: 12px; font-family: inherit; resize: none;
+        max-height: 80px; line-height: 1.4;
+      }
+      .sai-input:focus { outline: none; border-color: #7a5af8; }
+      .sai-send {
+        padding: 7px 12px;
+        background: linear-gradient(135deg, #7a5af8, #5a3ad8);
+        color: #fff; border: none; border-radius: 10px;
+        font-size: 16px; cursor: pointer; align-self: flex-end;
+      }
+      .sai-send:disabled { opacity: .35; cursor: not-allowed; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
+
+    <div id="saju-ai-tooltip">AI 사주 상담하기</div>
+    <button id="saju-ai-btn" onclick="saiToggle()" title="AI 사주 상담">🔮</button>
+
+    <div id="saju-ai-panel">
+      <div class="sai-head">
+        <div>
+          <div class="sai-head-title">🔮 AI 사주 상담</div>
+          <div class="sai-head-sub" id="sai-sub">입력된 사주 정보를 불러옵니다</div>
+        </div>
+        <button class="sai-close" onclick="saiToggle()">✕</button>
+      </div>
+
+      <!-- 설정 화면 -->
+      <div class="sai-setup" id="sai-setup">
+        <div class="sai-sync-box">
+          <div class="sai-sync-info">
+            <div class="sai-sync-label">사주 앱에서 불러온 정보</div>
+            <div class="sai-sync-val empty" id="sai-sync-val">—</div>
+          </div>
+          <button class="sai-sync-btn" onclick="saiReadDom()">↻ 불러오기</button>
+        </div>
+        <button class="sai-start-btn" id="sai-start-btn" onclick="saiStart()" disabled>상담 시작 →</button>
+      </div>
+
+      <!-- 채팅 화면 -->
+      <div id="sai-chat" style="display:none;flex-direction:column;flex:1;min-height:0">
+        <div class="sai-chat-info" id="sai-chat-info"></div>
+        <div class="sai-messages" id="sai-messages"></div>
+        <div class="sai-quick" id="sai-quick"></div>
+        <div class="sai-input-row">
+          <textarea class="sai-input" id="sai-input" placeholder="궁금한 점..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saiSend()}"></textarea>
+          <button class="sai-send" id="sai-send" onclick="saiSend()">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    const SAI_PROXY = 'https://script.google.com/macros/s/AKfycbxeV4wprFLDXYhuKukpMqvReShFvhOSi9lcQVGCepBTmtvvxWTJ_CVOmwqWdhfhrHmA/exec';
+    const SAI_QUICK = ['올해 운세','재물·직업운','연애·결혼운','건강운','이달 운세'];
+
+    let saiOpen = false;
+    let saiMsgs = [];
+    let saiUser = null;
+    let saiLoading = false;
+    let saiDetected = null;
+
+    setTimeout(() => {
+      const t = document.getElementById('saju-ai-tooltip');
+      if (t) t.style.opacity = '0';
+    }, 3000);
+
+    function saiToggle() {
+      saiOpen = !saiOpen;
+      document.getElementById('saju-ai-panel').classList.toggle('open', saiOpen);
+      document.getElementById('saju-ai-tooltip').style.display = saiOpen ? 'none' : '';
+      if (saiOpen && !saiUser) saiReadDom();
+    }
+
+    // 사주 앱 DOM에서 출생 정보 읽기
+    function saiReadDom() {
+      const root = document.getElementById('root');
+      if (!root) return;
+
+      const r = { year:'', month:'', day:'', hour:'', minute:'', gender:'남', lunar:false };
+
+      // 텍스트 노드로 레이블 찾고 같은 컨테이너의 input 읽기
+      const TARGET = { '연도':'year', '월':'month', '일':'day', '시':'hour', '분':'minute' };
+      root.querySelectorAll('*').forEach(el => {
+        const direct = Array.from(el.childNodes)
+          .filter(n => n.nodeType === 3)
+          .map(n => n.textContent.trim()).join('').trim();
+        const key = TARGET[direct];
+        if (!key) return;
+        // 같은 부모 또는 두 단계 위 컨테이너에서 input 찾기
+        const inp = el.parentElement?.querySelector('input')
+                 || el.parentElement?.parentElement?.querySelector('input');
+        if (inp && inp.value) r[key] = inp.value;
+      });
+
+      // 성별 select
+      root.querySelectorAll('select').forEach(sel => {
+        const v = sel.value;
+        if (v === '남성' || v === '남') r.gender = '남';
+        else if (v === '여성' || v === '여') r.gender = '여';
+      });
+
+      // 음력 체크박스
+      root.querySelectorAll('*').forEach(el => {
+        const txt = el.textContent?.trim();
+        if (txt !== '음력') return;
+        const cb = el.previousElementSibling?.querySelector?.('input[type="checkbox"]')
+                || el.closest('label')?.querySelector('input[type="checkbox"]')
+                || el.parentElement?.querySelector('input[type="checkbox"]');
+        if (cb) r.lunar = cb.checked;
+      });
+
+      const valEl = document.getElementById('sai-sync-val');
+      const btn   = document.getElementById('sai-start-btn');
+
+      if (r.year && r.month && r.day) {
+        saiDetected = r;
+        const timeStr = r.hour ? ` · ${hourToKorean(r.hour)}` : '';
+        const calStr  = r.lunar ? '음력' : '양력';
+        valEl.textContent = `${calStr} ${r.year}.${r.month}.${r.day}${timeStr} · ${r.gender}성`;
+        valEl.classList.remove('empty');
+        btn.disabled = false;
+      } else {
+        saiDetected = null;
+        valEl.textContent = '사주 앱에서 정보를 먼저 입력해주세요';
+        valEl.classList.add('empty');
+        btn.disabled = true;
+      }
+    }
+
+    // 시 숫자 → 한국 시각명
+    function hourToKorean(h) {
+      h = parseInt(h);
+      if (isNaN(h)) return '';
+      const map = [
+        [[23,0,1],'자시'], [[1,2,3],'축시'], [[3,4,5],'인시'],
+        [[5,6,7],'묘시'],  [[7,8,9],'진시'], [[9,10,11],'사시'],
+        [[11,12,13],'오시'],[[13,14,15],'미시'],[[15,16,17],'신시'],
+        [[17,18,19],'유시'],[[19,20,21],'술시'],[[21,22,23],'해시']
+      ];
+      for (const [hrs, name] of map) {
+        if (hrs.includes(h)) return name + '(' + h + '시)';
+      }
+      return h + '시';
+    }
+
+    function saiStart() {
+      if (!saiDetected) return;
+      const d = saiDetected;
+      const calStr  = d.lunar ? '음력' : '양력';
+      const timeStr = d.hour ? hourToKorean(d.hour) : '';
+      const birthStr = `${d.year}년 ${d.month}월 ${d.day}일`;
+
+      saiUser = { gender: d.gender, cal: calStr, birth: birthStr, time: timeStr };
+
+      const sys = `당신은 한국 전통 사주명리학 전문가입니다. 사주팔자·오행·십신·대운·세운을 깊이 이해하며 따뜻하고 명쾌하게 풀이합니다.
+
+내담자: ${d.gender}성 · ${calStr} ${birthStr}${timeStr ? ' · ' + timeStr : ''}${d.minute ? ' ' + d.minute + '분' : ''}
+
+규칙:
+1. 사주 질문에 진지하고 구체적으로 답하세요.
+2. 불확실한 내용은 "~로 보입니다"로 표현하세요.
+3. 부정적 내용도 극복법과 함께 안내하세요.
+4. 답변은 2~3 문단으로 간결하게 하세요.
+5. 한국어로만 답하세요.`;
+
+      saiMsgs = [{ role: 'system', content: sys }];
+
+      document.getElementById('sai-setup').style.display = 'none';
+      document.getElementById('sai-chat').style.display = 'flex';
+
+      const info = `${d.gender}성 · ${calStr} ${birthStr}${timeStr ? ' · ' + timeStr : ''}`;
+      document.getElementById('sai-chat-info').innerHTML = `<b>${info}</b>`;
+      document.getElementById('sai-sub').textContent = info;
+
+      document.getElementById('sai-quick').innerHTML =
+        SAI_QUICK.map(q => `<button class="sai-qb" onclick="saiQuick('${q}')">${q}</button>`).join('');
+
+      saiAddMsg('ai', `사주를 살펴볼게요 🙏\n궁금한 점을 편하게 물어보세요.`);
+    }
+
+    function saiAddMsg(role, text) {
+      const wrap = document.getElementById('sai-messages');
+      const div  = document.createElement('div');
+      div.className = 'sai-msg ' + role;
+      div.innerHTML = text.replace(/\n/g, '<br>');
+      wrap.appendChild(div);
+      wrap.scrollTop = wrap.scrollHeight;
+      return div;
+    }
+
+    function saiQuick(q) {
+      document.getElementById('sai-input').value = q;
+      saiSend();
+    }
+
+    async function saiSend() {
+      if (saiLoading) return;
+      const inp  = document.getElementById('sai-input');
+      const text = inp.value.trim();
+      if (!text) return;
+
+      inp.value = '';
+      saiAddMsg('user', text);
+      saiMsgs.push({ role: 'user', content: text });
+
+      saiLoading = true;
+      document.getElementById('sai-send').disabled = true;
+      const thinking = saiAddMsg('ai thinking', '생각 중...');
+
+      try {
+        const res  = await fetch(SAI_PROXY, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'chat', messages: saiMsgs })
+        });
+        const data = await res.json();
+        thinking.remove();
+        if (data.success) {
+          saiAddMsg('ai', data.content);
+          saiMsgs.push({ role: 'assistant', content: data.content });
+        } else {
+          saiAddMsg('ai', '⚠️ ' + (data.message || '오류'));
+        }
+      } catch(e) {
+        thinking.remove();
+        saiAddMsg('ai', '⚠️ 연결 오류: ' + e.message);
+      }
+
+      saiLoading = false;
+      document.getElementById('sai-send').disabled = false;
+    }
+    </script>
   </body>
 </html>

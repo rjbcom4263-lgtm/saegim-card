@@ -389,7 +389,7 @@ window._loadQrByProduct = window._loadQrList;
         </div>
         <div>
           <label>이미지 Y 보정 mm</label>
-          <input id="artY" type="number" value="2.0" step="0.1">
+          <input id="artY" type="number" value="1" step="0.1">
         </div>
       </div>
       <div class="row">
@@ -407,7 +407,7 @@ window._loadQrByProduct = window._loadQrList;
           <input id="qrVisualY" type="number" value="1.0" step="0.1">
         </div>
       </div>
-      <div class="hint">위로 쏠려 보이는 도안은 원 중심과 시각중심이 달라서 생깁니다. 권장값은 이미지 크기 97%, 이미지 Y +2.0mm, QR Y 추가 +1.0mm입니다.</div>
+      <div class="hint">위로 쏠려 보이는 도안은 원 중심과 시각중심이 달라서 생깁니다. 권장값은 이미지 크기 97%, 이미지 Y +1mm, QR Y 추가 +1.0mm입니다.</div>
       <label>맞춤 방식</label>
       <select id="artFit">
         <option value="cover" selected>원 가득 채우기</option>
@@ -1063,6 +1063,21 @@ function drawOne(pos, idx) {
     ctx.strokeStyle = "#111";
     ctx.lineWidth = Math.max(1, mmToPx(0.12));
     ctx.stroke();
+    ctx.restore();
+  }
+
+  // QR 코드명 — 원 위에 작게 표시 (화면 식별용)
+  const _qrLabel = $("sameQr").checked
+    ? (qrImgs[0] ? qrImgs[0].name.replace(/\.png$/i,'') : '')
+    : (qrImgs[idx] ? qrImgs[idx].name.replace(/\.png$/i,'') : '');
+  if (_qrLabel) {
+    ctx.save();
+    const _fs = Math.max(11, mmToPx(2));
+    ctx.font = `700 ${_fs}px system-ui,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#1565C0';
+    ctx.fillText(_qrLabel, cx, cy - radius - mmToPx(0.8));
     ctx.restore();
   }
 }
