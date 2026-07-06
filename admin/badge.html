@@ -142,6 +142,7 @@
   .qr-pick-status { font-size:11px; white-space:nowrap; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -255,6 +256,18 @@ window._selectFrom = function(startIdx) {
   checkboxes.forEach((cb, i) => {
     cb.checked = (i >= startIdx && i < startIdx + 9);
   });
+
+  // 선택한 항목의 번호를 시작 번호에 자동 세팅
+  const item = _filteredQrList[startIdx];
+  if (item) {
+    const code = String(item.code || item.id || '');
+    const numStr = code.split('-')[1];
+    if (numStr) {
+      const el = document.getElementById('batchStart');
+      if (el) { el.value = parseInt(numStr); window._updateBatchInfo(); }
+    }
+  }
+
   window._applySelected();
 };
 
@@ -277,6 +290,259 @@ window._applySelected = function() {
 };
 
 window._loadQrByProduct = window._loadQrList;
+
+// ── 자동 범위 출력 ──────────────────────────────────────────────────
+let _batchCancelled = false;
+
+window._updateBatchInfo = function() {
+  const info = document.getElementById('batchRangeInfo');
+  if (!info) return;
+  const s = parseInt((document.getElementById('batchStart')||{}).value);
+  const cnt = parseInt((document.getElementById('batchCount')||{}).value);
+  if (!s || !cnt || cnt < 1) { info.textContent = ''; return; }
+  const prod = _selectedProd || 'CD';
+  const endNum = s + cnt * 9 - 1;
+  const sCode = prod + '-' + String(s).padStart(4, '0');
+  const eCode = prod + '-' + String(endNum).padStart(4, '0');
+  info.textContent = `${sCode} ~ ${eCode} · 총 ${cnt * 9}개 · PNG ${cnt}개 저장`;
+};
+
+window._cancelAutoBatch = function() {
+  _batchCancelled = true;
+  const m = document.getElementById('batchProgressModal');
+  if (m) m.style.display = 'none';
+};
+
+// ── 페이지 넘기기 미리보기 ─────────────────────────────────────────
+let _batchPages = [];
+let _batchCurrentPage = 0;
+let _batchProdPrefix = 'CD';
+let _batchLoading = false;
+
+window._startBatchPreview = async function() {
+  if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
+  if (!_allQrItems.length) { alert('QR 목록을 먼저 불러오세요.'); return; }
+
+  const startNum = parseInt((document.getElementById('batchStart')||{}).value);
+  const batchCount = parseInt((document.getElementById('batchCount')||{}).value);
+  if (!startNum || !batchCount || batchCount < 1) { alert('시작 번호와 묶음 수를 입력하세요.'); return; }
+
+  const prod = _selectedProd || 'CD';
+  _batchProdPrefix = prod;
+  _batchPages = [];
+
+  for (let b = 0; b < batchCount; b++) {
+    const bStart = startNum + b * 9;
+    const bEnd = bStart + 8;
+    const items = [];
+    for (let n = bStart; n <= bEnd; n++) {
+      const code = prod + '-' + String(n).padStart(4, '0');
+      const item = _allQrItems.find(it => String(it.code || it.id || '') === code);
+      if (item) items.push(item);
+    }
+    _batchPages.push({ bStart, bEnd, items });
+  }
+
+  document.getElementById('batchNavBar').style.display = 'block';
+  window.showStep(3); // ③ 출력 탭으로 자동 이동
+  _batchCurrentPage = 0;
+  await window._loadBatchPage(0);
+};
+
+window._loadBatchPage = async function(idx) {
+  if (idx < 0 || idx >= _batchPages.length || _batchLoading) return;
+  _batchLoading = true;
+  _batchCurrentPage = idx;
+
+  const page = _batchPages[idx];
+  const total = _batchPages.length;
+  const prod = _batchProdPrefix;
+  const sCode = prod + '-' + String(page.bStart).padStart(4, '0');
+  const eCode = prod + '-' + String(page.bEnd).padStart(4, '0');
+
+  document.getElementById('batchNavLabel').textContent = `묶음 ${idx+1} / ${total}`;
+  document.getElementById('batchNavRange').textContent = `${sCode} ~ ${eCode}`;
+  document.getElementById('batchNavStatus').textContent = '로딩 중...';
+  document.getElementById('batchPrevBtn').disabled = true;
+  document.getElementById('batchNextBtn').disabled = true;
+
+  if (page.items.length > 0) {
+    await window._generateQrImagesAndWait(page.items);
+    const missing = 9 - page.items.length;
+    document.getElementById('batchNavStatus').textContent = missing ? `⚠ ${missing}개 없음` : '';
+  } else {
+    document.getElementById('batchNavStatus').textContent = '⚠ 이 묶음에 해당하는 QR 없음';
+  }
+
+  document.getElementById('batchPrevBtn').disabled = idx === 0;
+  document.getElementById('batchNextBtn').disabled = idx === total - 1;
+  _batchLoading = false;
+};
+
+window._batchNav = async function(dir) {
+  await window._loadBatchPage(_batchCurrentPage + dir);
+};
+
+window._saveCurrentBatch = function() {
+  const page = _batchPages[_batchCurrentPage];
+  if (!page) return;
+  const prod = _batchProdPrefix;
+  const a = document.createElement('a');
+  a.download = `${prod}_${String(page.bStart).padStart(4,'0')}-${String(page.bEnd).padStart(4,'0')}.png`;
+  a.href = document.getElementById('canvas').toDataURL('image/png');
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+};
+
+window._saveAllBatches = async function() {
+  const modal = document.getElementById('batchProgressModal');
+  if (modal) modal.style.display = 'flex';
+  _batchCancelled = false;
+  let downloaded = 0;
+
+  for (let b = 0; b < _batchPages.length; b++) {
+    if (_batchCancelled) break;
+    await window._loadBatchPage(b);
+    if (_batchCancelled) break;
+
+    const pct = Math.round(((b+1) / _batchPages.length) * 100);
+    document.getElementById('batchProgressBar').style.width = pct + '%';
+    document.getElementById('batchProgressText').textContent = `저장 중: 묶음 ${b+1} / ${_batchPages.length}`;
+    document.getElementById('batchProgressSub').innerHTML = '';
+
+    window._saveCurrentBatch();
+    downloaded++;
+    await new Promise(r => setTimeout(r, 600));
+  }
+
+  if (modal) modal.style.display = 'none';
+  if (!_batchCancelled) alert(`✅ ${downloaded}개 저장 완료`);
+};
+
+window._exitBatchPreview = function() {
+  document.getElementById('batchNavBar').style.display = 'none';
+  _batchPages = [];
+  window.showStep(1); // 다시 ① 탭으로
+};
+
+window._saveBatchPdf = async function() {
+  if (!_batchPages.length) { alert('먼저 범위 출력을 시작하세요.'); return; }
+
+  const modal = document.getElementById('batchProgressModal');
+  if (modal) modal.style.display = 'flex';
+  _batchCancelled = false;
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const canvas = document.getElementById('canvas');
+
+  for (let b = 0; b < _batchPages.length; b++) {
+    if (_batchCancelled) break;
+
+    const pct = Math.round((b / _batchPages.length) * 100);
+    document.getElementById('batchProgressBar').style.width = pct + '%';
+    document.getElementById('batchProgressText').textContent = `PDF 생성 중: 묶음 ${b+1} / ${_batchPages.length}`;
+    document.getElementById('batchProgressSub').innerHTML = '';
+
+    await window._loadBatchPage(b);
+    if (_batchCancelled) break;
+
+    if (b > 0) pdf.addPage();
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  document.getElementById('batchProgressBar').style.width = '100%';
+  await new Promise(r => setTimeout(r, 200));
+  if (modal) modal.style.display = 'none';
+
+  if (!_batchCancelled) {
+    const prod = _batchProdPrefix;
+    const first = _batchPages[0];
+    const last = _batchPages[_batchPages.length - 1];
+    const fname = `${prod}_${String(first.bStart).padStart(4,'0')}-${String(last.bEnd).padStart(4,'0')}.pdf`;
+    try {
+      pdf.save(fname);
+    } catch(e) {
+      alert('PDF 저장 오류: ' + e.message);
+    }
+  }
+};
+
+window._startAutoBatch = async function() {
+  if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
+  if (!_allQrItems.length) { alert('QR 목록을 먼저 불러오세요.'); return; }
+
+  const startNum = parseInt((document.getElementById('batchStart')||{}).value);
+  const batchCount = parseInt((document.getElementById('batchCount')||{}).value);
+  if (!startNum || !batchCount || batchCount < 1) { alert('시작 번호와 묶음 수를 입력하세요.'); return; }
+  const endNum = startNum + batchCount * 9 - 1;
+
+  const prod = _selectedProd || 'CD';
+
+  // 범위 내 아이템 수집 + 없는 코드 파악
+  const rangeItems = [];
+  const missingCodes = [];
+  for (let n = startNum; n <= endNum; n++) {
+    const code = prod + '-' + String(n).padStart(4, '0');
+    const item = _allQrItems.find(it => String(it.code || it.id || '') === code);
+    if (item) rangeItems.push({n, item});
+    else missingCodes.push(code);
+  }
+
+  const totalBatches = Math.ceil((endNum - startNum + 1) / 9);
+  const modal = document.getElementById('batchProgressModal');
+  modal.style.display = 'flex';
+  _batchCancelled = false;
+  let downloaded = 0;
+
+  for (let b = 0; b < totalBatches; b++) {
+    if (_batchCancelled) break;
+
+    const bStart = startNum + b * 9;
+    const bEnd   = Math.min(bStart + 8, endNum);
+    const batchItems = rangeItems.filter(r => r.n >= bStart && r.n <= bEnd).map(r => r.item);
+
+    const sCode = prod + '-' + String(bStart).padStart(4, '0');
+    const eCode = prod + '-' + String(bEnd).padStart(4, '0');
+    const pct   = Math.round((b / totalBatches) * 100);
+
+    document.getElementById('batchProgressBar').style.width = pct + '%';
+    document.getElementById('batchProgressText').textContent =
+      `묶음 ${b+1} / ${totalBatches}  ·  ${sCode} ~ ${eCode}`;
+    const missing = (bEnd - bStart + 1) - batchItems.length;
+    document.getElementById('batchProgressSub').innerHTML = missing
+      ? `<span style="color:#e53935">⚠ ${missing}개 없음</span>`
+      : `<span style="color:#4caf50">✅ 모두 있음</span>`;
+
+    if (batchItems.length > 0) {
+      await window._generateQrImagesAndWait(batchItems);
+      if (_batchCancelled) break;
+
+      const a = document.createElement('a');
+      a.download = `${prod}_${String(bStart).padStart(4,'0')}-${String(bEnd).padStart(4,'0')}.png`;
+      a.href = document.getElementById('canvas').toDataURL('image/png');
+      a.click();
+      downloaded++;
+      await new Promise(r => setTimeout(r, 600));
+    } else {
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
+
+  // 완료
+  document.getElementById('batchProgressBar').style.width = '100%';
+  await new Promise(r => setTimeout(r, 300));
+  modal.style.display = 'none';
+
+  if (!_batchCancelled) {
+    const msg = missingCodes.length
+      ? `✅ ${downloaded}개 저장 완료\n\n없는 코드 (${missingCodes.length}개):\n${missingCodes.join(', ')}`
+      : `✅ ${downloaded}개 저장 완료`;
+    alert(msg);
+  }
+};
 </script>
 </head>
 <body>
@@ -317,6 +583,22 @@ window._loadQrByProduct = window._loadQrList;
       <div class="check"><input id="appendNoQrArt" type="checkbox" checked><span>QR 미사용 이미지도 기존 목록에 누적 추가</span></div>
       <div class="check"><input id="sameNoQrArt" type="checkbox"><span>첫 번째 QR 미사용 이미지를 모든 원에 반복 적용</span></div>
       <div class="check"><input id="blankMissingNoQrArt" type="checkbox" checked><span>QR 미사용 이미지가 없는 배지는 빈 원으로 유지</span></div>
+    </div>
+
+    <div class="group">
+      <h2>🚀 자동 범위 출력</h2>
+      <div class="row">
+        <div>
+          <label>시작 번호</label>
+          <input id="batchStart" type="number" min="1" placeholder="예: 40" oninput="window._updateBatchInfo()">
+        </div>
+        <div>
+          <label>묶음 수 (×9개)</label>
+          <input id="batchCount" type="number" min="1" placeholder="예: 6" oninput="window._updateBatchInfo()">
+        </div>
+      </div>
+      <div id="batchRangeInfo" style="font-size:12px;color:#1a4a1a;font-weight:700;margin-top:6px;min-height:18px"></div>
+      <button onclick="window._startBatchPreview()" style="background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;margin-top:8px">🚀 자동 범위 출력 시작</button>
     </div>
 
     <div class="group">
@@ -541,13 +823,31 @@ window._loadQrByProduct = window._loadQrList;
   <!-- ③ 출력 -->
   <div id="step3" class="step-panel">
     <div class="group">
-      <h2>저장 · 출력</h2>
+      <h2>출력</h2>
       <button id="renderBtn">미리보기 갱신</button>
-      <button id="downloadBtn" class="secondary">PNG 저장</button>
-      <button id="printBtn" class="secondary">인쇄 / PDF 저장</button>
       <button id="clearBtn" class="warn">업로드 파일 초기화</button>
-      <div class="hint">PDF 저장은 브라우저 인쇄창에서 "PDF로 저장"을 선택하면 됩니다. 이 템플릿은 첨부된 9개 원형 PDF 배치 좌표를 기준으로 고정되어 있습니다.</div>
     </div>
+
+    <!-- 배치 미리보기 네비게이션 -->
+    <div id="batchNavBar" style="display:none">
+      <div class="group" style="background:#1a3a1a;border-color:#2d5a2d">
+        <!-- 페이지 네비게이션 -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <button id="batchPrevBtn" onclick="window._batchNav(-1)" style="width:auto;margin:0;padding:10px 18px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;font-size:18px;font-weight:700">←</button>
+          <div style="flex:1;text-align:center">
+            <div id="batchNavLabel" style="font-size:15px;font-weight:800;color:#fff">묶음 1 / 6</div>
+            <div id="batchNavRange" style="font-size:11px;color:#81c784;margin-top:2px">CD-0009 ~ CD-0017</div>
+            <div id="batchNavStatus" style="font-size:11px;color:#a5d6a7;margin-top:2px;min-height:14px"></div>
+          </div>
+          <button id="batchNextBtn" onclick="window._batchNav(1)" style="width:auto;margin:0;padding:10px 18px;background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:8px;font-size:18px;font-weight:700">→</button>
+        </div>
+        <!-- 저장 버튼들 -->
+        <button onclick="window._saveCurrentBatch()" style="background:#4caf50;color:#fff;border:none;margin-bottom:6px">💾 이 페이지 저장</button>
+        <button onclick="window._saveBatchPdf()" style="background:#1565c0;color:#fff;border:none;margin-bottom:6px">📄 일괄 PDF 저장</button>
+        <button onclick="window._exitBatchPreview()" style="background:rgba(255,255,255,.1);color:#ccc;border:1px solid rgba(255,255,255,.2)">✖ 미리보기 종료</button>
+      </div>
+    </div>
+
     <div class="step-nav">
       <button onclick="showStep(2)" class="step-prev">← 이전</button>
     </div>
@@ -560,6 +860,7 @@ window._loadQrByProduct = window._loadQrList;
     <input id="previewScaleTop" class="mini" type="number" value="100" step="5">
     <button id="fitNowBtn" class="secondary" style="width:auto;margin-top:0;padding:8px 12px;">화면맞춤</button>
   </div>
+
   <div id="stage">
     <canvas id="canvas"></canvas>
   </div>
@@ -918,17 +1219,6 @@ canvas.addEventListener("mouseleave", () => {
   if (tooltip) tooltip.style.display = 'none';
 });
 
-$("downloadBtn").addEventListener("click", () => {
-  render();
-  const a = document.createElement("a");
-  a.download = "saegim_badge_qr_auto_sheet.png";
-  a.href = canvas.toDataURL("image/png");
-  a.click();
-});
-$("printBtn").addEventListener("click", () => {
-  render();
-  setTimeout(() => window.print(), 100);
-});
 
 function drawCover(img, x, y, w, h) {
   const s = Math.max(w / img.width, h / img.height);
@@ -1153,4 +1443,108 @@ window._generateQrImages = function(items) {
   let done = 0;
   items.forEach(function(it, i) {
     const url = BASE + '/?code=' + encodeURIComponent(String(it.code || it.id || ''));
-    const w = document.createE
+    const w = document.createElement('div');
+    w.style.cssText = 'position:absolute;left:-9999px';
+    document.body.appendChild(w);
+    try {
+      new QRCode(w, {text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M});
+      setTimeout(function() {
+        const cv = w.querySelector('canvas');
+        if (cv) {
+          loadImage(cv.toDataURL('image/png')).then(function(img) {
+            newQrs[i] = {name: String(it.code || it.id || '') + '.png', img: img};
+            done++;
+            if (done === items.length) {
+              qrImgs = newQrs.filter(Boolean);
+              listQrFiles();
+              render();
+              setStatus('CD QR ' + qrImgs.length + '개 자동 로드 완료');
+            }
+          });
+        }
+        document.body.removeChild(w);
+      }, 300);
+    } catch(ex) {
+      document.body.removeChild(w);
+      done++;
+    }
+  });
+};
+
+// Promise 버전 — 자동 범위 출력에서 await 용으로 사용
+window._generateQrImagesAndWait = function(items) {
+  return new Promise(function(resolve) {
+    const BASE = 'https://saegim-memory.web.app';
+    const newQrs = [];
+    let done = 0;
+    const total = items.length;
+    if (!total) { resolve(); return; }
+    items.forEach(function(it, i) {
+      const url = BASE + '/?code=' + encodeURIComponent(String(it.code || it.id || ''));
+      const w = document.createElement('div');
+      w.style.cssText = 'position:absolute;left:-9999px';
+      document.body.appendChild(w);
+      function finish() {
+        done++;
+        if (done === total) {
+          qrImgs = newQrs.filter(Boolean);
+          listQrFiles();
+          render();
+          resolve();
+        }
+      }
+      try {
+        new QRCode(w, {text: url, width: 200, height: 200, correctLevel: QRCode.CorrectLevel.M});
+        setTimeout(function() {
+          const cv = w.querySelector('canvas');
+          if (cv) {
+            loadImage(cv.toDataURL('image/png')).then(function(img) {
+              newQrs[i] = {name: String(it.code || it.id || '') + '.png', img: img};
+              finish();
+            });
+          } else {
+            finish();
+          }
+          if (w.parentNode) document.body.removeChild(w);
+        }, 300);
+      } catch(ex) {
+        if (w.parentNode) document.body.removeChild(w);
+        finish();
+      }
+    });
+  });
+};
+
+
+function showStep(n) {
+  for (var i = 1; i <= 3; i++) {
+    var panel = document.getElementById('step' + i);
+    var tab = document.getElementById('stepTab' + i);
+    if (panel) panel.classList.toggle('active', i === n);
+    if (tab) tab.classList.toggle('active', i === n);
+  }
+}
+
+render();
+</script>
+<div id="qrTooltip" style="position:fixed;background:#111;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;pointer-events:none;display:none;z-index:9999;letter-spacing:.05em"></div>
+
+<!-- 자동 범위 출력 진행 모달 -->
+<div id="batchProgressModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:20px;padding:32px 28px;min-width:360px;max-width:92vw;box-shadow:0 8px 40px rgba(0,0,0,.3)">
+    <div style="font-size:18px;font-weight:800;margin-bottom:4px">🚀 자동 범위 출력 중</div>
+    <div id="batchProgressText" style="font-size:14px;color:#333;font-weight:700;margin-bottom:14px">준비 중...</div>
+
+    <!-- 프로그레스 바 -->
+    <div style="background:#eee;border-radius:999px;height:16px;overflow:hidden;margin-bottom:8px">
+      <div id="batchProgressBar" style="background:linear-gradient(90deg,#388e3c,#66bb6a);height:100%;width:0%;border-radius:999px;transition:width .4s ease"></div>
+    </div>
+
+    <div id="batchProgressSub" style="font-size:13px;margin-bottom:20px;min-height:20px"></div>
+    <div style="font-size:11px;color:#aaa;margin-bottom:16px">파일이 자동으로 다운로드됩니다. 팝업 차단이 있으면 허용해주세요.</div>
+
+    <button onclick="window._cancelAutoBatch()" style="background:#e53935;width:100%;border-radius:12px;padding:12px;font-size:14px;font-weight:800;color:#fff;border:none;cursor:pointer">✖ 취소</button>
+  </div>
+</div>
+</body>
+</html>
