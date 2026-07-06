@@ -262,6 +262,48 @@ window._applySelected = function() {
 };
 
 window._loadQrByProduct = window._loadQrList;
+
+window._loadQrRange = async function() {
+  if (!window._fbUser) { alert('먼저 로그인하세요.'); return; }
+  const startNum = parseInt(document.getElementById('rangeStart').value);
+  if (!startNum || startNum < 1) { alert('시작 번호를 입력하세요.'); return; }
+  const prod = _selectedProd || 'CD';
+
+  const expected = [];
+  for (let i = 0; i < 9; i++) {
+    expected.push(prod + '-' + String(startNum + i).padStart(4, '0'));
+  }
+
+  const statusEl = document.getElementById('rangeStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = '조회 중...';
+
+  try {
+    let allItems = _allQrItems;
+    if (!allItems.length) {
+      const snap = await getDocs(collection(db, 'qr_cards'));
+      allItems = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      _allQrItems = allItems;
+    }
+
+    const found = [], missing = [];
+    expected.forEach(code => {
+      const item = allItems.find(it => String(it.code || it.id || '') === code);
+      if (item) found.push(item);
+      else missing.push(code);
+    });
+
+    const missingNums = missing.map(c => c.split('-')[1]).join(', ');
+    statusEl.innerHTML =
+      (found.length ? `<span style="color:#1a7a1a">✅ ${found.length}개 있음</span>` : '') +
+      (missing.length ? ` <span style="color:#c0392b">❌ ${missing.length}개 없음 (${missingNums})</span>` : '');
+
+    if (found.length) window._generateQrImages(found);
+    else statusEl.innerHTML = `<span style="color:#c0392b">❌ ${prod} ${startNum}번부터 9개 모두 없음</span>`;
+  } catch(e) {
+    statusEl.innerHTML = `<span style="color:#c0392b">오류: ${e.message}</span>`;
+  }
+};
 </script>
 </head>
 <body>
@@ -306,6 +348,18 @@ window._loadQrByProduct = window._loadQrList;
 
     <div class="group">
       <h2>QR 불러오기</h2>
+
+      <!-- 번호 범위 빠른 불러오기 -->
+      <div style="background:#f0faf0;border:1px solid #81c784;border-radius:10px;padding:10px 12px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:#1a4a1a;margin-bottom:8px">📋 번호 범위로 바로 불러오기</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <input id="rangeStart" type="number" min="1" placeholder="시작 번호" style="width:100px;padding:7px 8px">
+          <span style="font-size:12px;color:#555">번 ~ +9칸</span>
+          <button onclick="window._loadQrRange()" style="width:auto;padding:7px 14px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">불러오기</button>
+        </div>
+        <div id="rangeStatus" style="font-size:12px;margin-top:7px;display:none;line-height:1.6"></div>
+      </div>
+
       <label style="margin-bottom:4px">제품 선택</label>
       <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px" id="prodBtns">
         <button onclick="window._setProd('CD',this)"   style="width:auto;padding:7px 12px;margin:0;background:#1a3a1a;color:#4caf50;border:1px solid #4caf50;border-radius:8px;font-size:12px;font-weight:700">CD</button>
