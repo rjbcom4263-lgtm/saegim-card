@@ -219,6 +219,8 @@ window._loadQrList = async function() {
   }
 };
 
+let _filteredQrList = [];
+
 window._renderQrList = function(items) {
   const listEl = document.getElementById('qrPickerList');
   const countEl = document.getElementById('qrPickerCount');
@@ -228,19 +230,31 @@ window._renderQrList = function(items) {
     const code = String(it.code || it.id || '').toLowerCase();
     return !searchVal || code.includes(searchVal);
   });
+  _filteredQrList = filtered;
   if (countEl) countEl.textContent = filtered.length + '개 표시 / 전체 ' + items.length + '개';
   if (!filtered.length) {
     listEl.innerHTML = '<div style="color:#999;font-size:12px;padding:8px">검색 결과 없음</div>';
     return;
   }
-  listEl.innerHTML = filtered.map(it => {
+  listEl.innerHTML = filtered.map((it, i) => {
     const code = String(it.code || it.id || '');
     const status = it.status || '';
     const sc = status === '사용중' ? '#4caf50' : status === '판매완료' ? '#e53935' : '#aaa';
-    return '<label class="qr-pick-item"><input type="checkbox" value="' + code + '" checked>'
+    return '<label class="qr-pick-item" style="display:flex;align-items:center;gap:4px">'
+      + '<input type="checkbox" value="' + code + '" checked>'
       + '<span class="qr-pick-code">' + code + '</span>'
-      + '<span class="qr-pick-status" style="color:' + sc + '">' + status + '</span></label>';
+      + '<span class="qr-pick-status" style="color:' + sc + ';flex:1">' + status + '</span>'
+      + '<button onclick="window._selectFrom(' + i + ');event.preventDefault()" '
+      + 'style="width:auto;margin:0;padding:2px 7px;font-size:10px;font-weight:700;background:#e8f5e9;color:#1a4a1a;border:1px solid #81c784;border-radius:6px;cursor:pointer;white-space:nowrap">여기서 9개↓</button>'
+      + '</label>';
   }).join('');
+};
+
+window._selectFrom = function(startIdx) {
+  const checkboxes = document.querySelectorAll('#qrPickerList input[type=checkbox]');
+  checkboxes.forEach((cb, i) => {
+    cb.checked = (i >= startIdx && i < startIdx + 9);
+  });
 };
 
 window._filterQrList = function() {
