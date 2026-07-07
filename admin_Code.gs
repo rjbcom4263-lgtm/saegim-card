@@ -1241,6 +1241,10 @@ function doPost(e) {
       const result = updateQrQuickFieldsFromAdmin(payload.code, payload.fields || {});
       return adminJsonResponse_(result);
 
+    } else if (action === 'bulkUpdateQrStatusFromAdmin') {
+      const result = bulkUpdateQrStatusFromAdmin(payload.productType, payload.startNum, payload.endNum, payload.status);
+      return adminJsonResponse_(result);
+
     } else {
       return adminJsonResponse_({ success: false, message: '알 수 없는 action: ' + action });
     }
@@ -1284,6 +1288,43 @@ function updateQrStatusFromAdmin(code, status) {
   }
 
   return updateQrStatus(code, status);
+}
+
+function bulkUpdateQrStatusFromAdmin(productType, startNum, endNum, status) {
+  productType = String(productType || '').trim().toUpperCase();
+  startNum    = parseInt(startNum);
+  endNum      = parseInt(endNum);
+  status      = String(status || '').trim();
+
+  const allowed = ['미등록', '판매완료', '사용중', '중지', '분실'];
+  if (allowed.indexOf(status) < 0)              throw new Error('허용되지 않은 상태값: ' + status);
+  if (!ACTIVE_PRODUCT_TYPES.includes(productType)) throw new Error('현재 운영 제품이 아닙니다: ' + productType);
+  if (isNaN(startNum) || isNaN(endNum))         throw new Error('번호가 올바르지 않습니다.');
+  if (startNum > endNum)                        throw new Error('시작 번호가 끝 번호보다 큽니다.');
+  if (endNum - startNum > 999)                  throw new Error('한 번에 최대 1000개까지만 변경할 수 있습니다.');
+
+  let successCount = 0;
+  let failCount    = 0;
+  const errors     = [];
+
+  for (let n = startNum; n <= endNum; n++) {
+    const code = productType + '-' + String(n).padStart(4, '0');
+    try {
+      updateQrStatus(code, status);
+      successCount++;
+    } catch (err) {
+      failCount++;
+      errors.push(code + ': ' + err.message);
+    }
+  }
+
+  return {
+    success:      true,
+    successCount: successCount,
+    failCount:    failCount,
+    errors:       errors,
+    message:      successCount + '개 변경 완료' + (failCount ? ', ' + failCount + '개 실패' : '')
+  };
 }
 
 function regenerateQrImageFromAdmin(code) {

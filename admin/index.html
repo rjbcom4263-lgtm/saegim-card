@@ -364,6 +364,46 @@ tr:hover td{background:rgba(255,255,255,.03)}
         <div style="margin-bottom:16px">
           <button class="btn btn-ghost" onclick="normalizeFirestoreCards()">Firestore 데이터 보정</button>
         </div>
+
+        <!-- 번호 범위 일괄 상태 변경 -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:12px">📦 번호 범위 일괄 상태 변경</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">제품</div>
+              <select id="bulkProdType" style="padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                <option value="CD">CD · 미아방지</option>
+                <option value="BMT">BMT · 부산메모리</option>
+                <option value="GT">GT · 가든태그</option>
+                <option value="WT">WT · 바램태그</option>
+                <option value="TT">TT · 길동무태그</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">시작 번호</div>
+              <input type="number" id="bulkStartNum" min="1" value="" placeholder="예: 9" style="width:90px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+            </div>
+            <div style="padding-bottom:8px;color:var(--muted)">~</div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">끝 번호</div>
+              <input type="number" id="bulkEndNum" min="1" value="" placeholder="예: 50" style="width:90px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+            </div>
+            <div>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:4px">변경할 상태</div>
+              <select id="bulkStatus" style="padding:8px 12px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                <option value="">상태 선택</option>
+                <option value="미등록">미등록</option>
+                <option value="판매완료">판매완료</option>
+                <option value="사용중">사용중</option>
+                <option value="중지">중지</option>
+                <option value="분실">분실</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="bulkChangeStatus()" style="margin-bottom:1px">일괄 변경</button>
+          </div>
+          <div id="bulkStatusResult" style="margin-top:10px;font-size:13px;display:none"></div>
+        </div>
+
         <div style="overflow-x:auto">
           <div class="table-wrap"><table id="inventoryTable">
             <thead>
@@ -1141,7 +1181,7 @@ window.normalizeFirestoreCards = async function() {
 
 // ── QR 생성 (Apps Script API 연동) ────────────────────
 // admin_Code.gs 새 버전 배포 후 실제 URL로 교체
-const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzmUM4LuNSwYLMmofq1UV2qabUqNk0XQB1-nCy2vLGOswYFhYuuTxV1CFkrA6JMVUw4vA/exec';
+const ADMIN_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpp2nBEe5IsJ1a3lSh7AmOMwnt6ouCTGFG5uOTJZLiwLS2G2DMC68wcsLRCoVQqLnVoQ/exec';
 
 function getAdminApiKey() {
   let key = sessionStorage.getItem('admin_api_key');
@@ -1271,6 +1311,50 @@ window.saveStatus = async function() {
     alert(data.message || code + ' 상태를 [' + status + ']로 변경했습니다.');
   } catch(e) {
     alert('저장 실패: ' + e.message);
+  }
+};
+
+window.bulkChangeStatus = async function() {
+  const prodType = document.getElementById('bulkProdType').value;
+  const startNum = parseInt(document.getElementById('bulkStartNum').value);
+  const endNum   = parseInt(document.getElementById('bulkEndNum').value);
+  const status   = document.getElementById('bulkStatus').value;
+  const resultEl = document.getElementById('bulkStatusResult');
+
+  if (!status)              { alert('변경할 상태를 선택하세요.'); return; }
+  if (isNaN(startNum) || isNaN(endNum)) { alert('번호를 입력하세요.'); return; }
+  if (startNum > endNum)    { alert('시작 번호가 끝 번호보다 큽니다.'); return; }
+
+  const count = endNum - startNum + 1;
+  if (!confirm(prodType + '-' + String(startNum).padStart(4,'0') + ' ~ ' + prodType + '-' + String(endNum).padStart(4,'0') + '\n총 ' + count + '개를 [' + status + ']로 변경할까요?')) return;
+
+  const adminKey = getAdminApiKey();
+  if (!adminKey) return;
+
+  resultEl.style.display = 'block';
+  resultEl.style.color   = 'var(--muted)';
+  resultEl.textContent   = '⏳ 처리 중... (' + count + '개)';
+
+  try {
+    const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
+      method:   'POST',
+      headers:  { 'Content-Type': 'text/plain' },
+      body:     JSON.stringify({ action: 'bulkUpdateQrStatusFromAdmin', admin_key: adminKey, productType: prodType, startNum: startNum, endNum: endNum, status: status }),
+      redirect: 'follow'
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || '일괄 변경 실패');
+
+    resultEl.style.color = data.failCount > 0 ? 'var(--gold)' : 'var(--green)';
+    resultEl.textContent = '✅ ' + data.message;
+    if (data.errors && data.errors.length) {
+      resultEl.textContent += ' — 실패: ' + data.errors.slice(0,5).join(', ') + (data.errors.length > 5 ? '…' : '');
+    }
+    await loadInventory();
+    await loadDashboard();
+  } catch(e) {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = '❌ 오류: ' + e.message;
   }
 };
 
