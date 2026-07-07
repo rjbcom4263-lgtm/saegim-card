@@ -401,7 +401,18 @@ tr:hover td{background:rgba(255,255,255,.03)}
             </div>
             <button class="btn btn-primary" onclick="bulkChangeStatus()" style="margin-bottom:1px">일괄 변경</button>
           </div>
-          <div id="bulkStatusResult" style="margin-top:10px;font-size:13px;display:none"></div>
+          <div id="bulkStatusResult" style="margin-top:10px;font-size:13px;display:none">
+            <div id="bulkProgressWrap" style="display:none;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+                <span id="bulkProgressLabel">처리 중...</span>
+                <span id="bulkProgressPct">0%</span>
+              </div>
+              <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden">
+                <div id="bulkProgressBar" style="height:100%;background:linear-gradient(90deg,#c7a05d,#f0d9a4);border-radius:3px;width:0%;transition:width .3s"></div>
+              </div>
+            </div>
+            <span id="bulkStatusMsg"></span>
+          </div>
         </div>
 
         <div style="overflow-x:auto">
@@ -1331,9 +1342,30 @@ window.bulkChangeStatus = async function() {
   const adminKey = getAdminApiKey();
   if (!adminKey) return;
 
-  resultEl.style.display = 'block';
-  resultEl.style.color   = 'var(--muted)';
-  resultEl.textContent   = '⏳ 처리 중... (' + count + '개)';
+  // 진행 바 초기화
+  const progressWrap = document.getElementById('bulkProgressWrap');
+  const progressBar  = document.getElementById('bulkProgressBar');
+  const progressPct  = document.getElementById('bulkProgressPct');
+  const progressLbl  = document.getElementById('bulkProgressLabel');
+  const msgEl        = document.getElementById('bulkStatusMsg');
+
+  resultEl.style.display  = 'block';
+  progressWrap.style.display = 'block';
+  progressBar.style.width = '0%';
+  progressPct.textContent = '0%';
+  progressLbl.textContent = count + '개 처리 중...';
+  msgEl.textContent       = '';
+
+  // API 응답 전까지 가짜 진행 애니메이션 (0→85%)
+  let fakeProgress = 0;
+  const fakeTimer = setInterval(function() {
+    if (fakeProgress < 85) {
+      fakeProgress += Math.random() * 6;
+      if (fakeProgress > 85) fakeProgress = 85;
+      progressBar.style.width = fakeProgress + '%';
+      progressPct.textContent = Math.round(fakeProgress) + '%';
+    }
+  }, 400);
 
   try {
     const res = await fetch(ADMIN_APPS_SCRIPT_URL, {
@@ -1343,18 +1375,30 @@ window.bulkChangeStatus = async function() {
       redirect: 'follow'
     });
     const data = await res.json();
+    clearInterval(fakeTimer);
+
     if (!data.success) throw new Error(data.message || '일괄 변경 실패');
 
-    resultEl.style.color = data.failCount > 0 ? 'var(--gold)' : 'var(--green)';
-    resultEl.textContent = '✅ ' + data.message;
+    // 완료: 100%
+    progressBar.style.background = data.failCount > 0 ? 'linear-gradient(90deg,#c7a05d,#e6c020)' : 'linear-gradient(90deg,#3a8a4a,#6abe78)';
+    progressBar.style.width      = '100%';
+    progressPct.textContent      = '100%';
+    progressLbl.textContent      = '완료';
+    msgEl.style.color  = data.failCount > 0 ? 'var(--gold)' : 'var(--green)';
+    msgEl.textContent  = '✅ ' + data.message;
     if (data.errors && data.errors.length) {
-      resultEl.textContent += ' — 실패: ' + data.errors.slice(0,5).join(', ') + (data.errors.length > 5 ? '…' : '');
+      msgEl.textContent += ' — 실패: ' + data.errors.slice(0,5).join(', ') + (data.errors.length > 5 ? '…' : '');
     }
     await loadInventory();
     await loadDashboard();
   } catch(e) {
-    resultEl.style.color = 'var(--red)';
-    resultEl.textContent = '❌ 오류: ' + e.message;
+    clearInterval(fakeTimer);
+    progressBar.style.background = '#5a2020';
+    progressBar.style.width      = '100%';
+    progressPct.textContent      = '!';
+    progressLbl.textContent      = '오류';
+    msgEl.style.color  = 'var(--red)';
+    msgEl.textContent  = '❌ ' + e.message;
   }
 };
 
