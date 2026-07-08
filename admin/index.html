@@ -1548,7 +1548,7 @@ window.gtLoadGarden = async function() {
   try {
     const { db } = window;
     if (!db) throw new Error('Firestore 미연결 — 관리자 로그인 후 시도하세요');
-    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
     const snap = await getDoc(doc(db, 'garden_tags', code));
     if (!snap.exists()) {
       detailEl.innerHTML = `<span style="color:var(--red)">❌ ${code} 정원 데이터가 없습니다. (localStorage 사용 중일 수 있음)</span>`;
@@ -1581,7 +1581,7 @@ window.gtGrantItem = async function(type) {
   try {
     const { db } = window;
     if (!db) throw new Error('Firestore 미연결');
-    const { doc, updateDoc, increment } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+    const { doc, updateDoc, increment } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
     const ref = doc(db, 'garden_tags', _gtCurrentCode);
 
     if (type === 'water') {
@@ -1606,7 +1606,7 @@ window.gtGrantItem = async function(type) {
       const seed    = GT_ADMIN_SEEDS[seedId];
       if (!seed) { resultEl.textContent = '❌ 씨앗 정보를 찾을 수 없습니다.'; resultEl.style.color = 'var(--red)'; return; }
 
-      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
       const now = new Date().toISOString();
       const dateTag = now.slice(0,10).replace(/-/g,'');
 
