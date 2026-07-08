@@ -1495,6 +1495,66 @@ const GT_ADMIN_PLACES = [
 
 let _gtActiveTab = 'seeds';
 let _gtCurrentCode = null;
+let _gtCurrentData = null; // 마지막 조회한 정원 메인 문서 캐시
+
+function gtMakeLogId() {
+  const n = new Date();
+  const pad = v => String(v).padStart(2,'0');
+  return `log_${n.getFullYear()}${pad(n.getMonth()+1)}${pad(n.getDate())}_${pad(n.getHours())}${pad(n.getMinutes())}${pad(n.getSeconds())}_${Math.random().toString(36).slice(2,6)}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return value;
+  return d.toLocaleString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+
+async function gtAddAdminLog(code, logData) {
+  const { db } = window;
+  if (!db) return;
+  const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+  const logId = gtMakeLogId();
+  const payload = {
+    log_id: logId,
+    target_code: code,
+    admin_name: '관리자',
+    admin_uid: window._adminUser?.uid || 'local_admin',
+    memo: logData.memo || '',
+    created_at: new Date().toISOString(),
+    ...logData
+  };
+  await setDoc(doc(db, 'garden_tags', code, 'admin_logs', logId), payload, { merge: true });
+  return logId;
+}
+
+async function gtLoadAdminLogs(code) {
+  const box = document.getElementById('gtAdminLogs');
+  if (!box) return;
+  const { db } = window;
+  if (!db) return;
+  const { collection, query, orderBy, limit, getDocs } =
+    await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+  const snap = await getDocs(query(
+    collection(db, 'garden_tags', code, 'admin_logs'),
+    orderBy('created_at', 'desc'),
+    limit(20)
+  ));
+  if (snap.empty) { box.innerHTML = '<span style="color:var(--muted);font-size:13px">지급 이력 없음</span>'; return; }
+  box.innerHTML = snap.docs.map(d => {
+    const log = d.data();
+    const amtText = log.amount ? ` · <b>${log.amount.toLocaleString()}개</b>` : '';
+    const beforeAfter = (log.before_value != null && log.after_value != null)
+      ? ` <span style="color:var(--muted)">(${log.before_value} → ${log.after_value})</span>` : '';
+    return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+      <div style="font-size:13px">${log.label || log.action_type}${amtText}${beforeAfter}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:2px">
+        ${formatDateTime(log.created_at)} · ${log.admin_name||'관리자'}${log.memo ? ' · '+log.memo : ''}
+        ${log.item_ids ? `<br><span style="font-size:10px">item: ${log.item_ids.slice(0,3).join(', ')}${log.item_ids.length>3?'...':''}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
 
 window.gtShowTab = function(tab) {
   _gtActiveTab = tab;
@@ -1601,6 +1661,7 @@ window.gtLoadGarden = async function() {
     const items = itemsSnap.docs.map(x => x.data());
     const visits= visitsSnap.docs.map(x => x.data());
     _gtCurrentCode = code;
+    _gtCurrentData = d;
 
     // 아이템 그룹
     const seeds     = items.filter(i => i.item_type === 'seed'      && i.status === 'owned');
@@ -1699,8 +1760,14 @@ window.gtLoadGarden = async function() {
       </div>
 
       ${visitSection}
+
+      <div style="margin-top:16px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px">🧾 관리자 지급 이력</div>
+        <div id="gtAdminLogs"><span style="color:var(--muted);font-size:13px">불러오는 중...</span></div>
+      </div>
     `;
     actionsEl.style.display = 'block';
+    gtLoadAdminLogs(code);
   } catch(e) {
     detailEl.innerHTML = `<span style="color:var(--red)">오류: ${e.message}</span>`;
   }
@@ -1726,12 +1793,23 @@ window.gtGrantItem = async function(type) {
     }
     if (type === 'fert') {
       const amount = parseInt(document.getElementById('gtAddFert').value) || 1;
+      const before = _gtCurrentData?.fertilizer_basic ?? 0;
       await updateDoc(ref, { fertilizer_basic: increment(amount) });
+      await gtAddAdminLog(_gtCurrentCode, {
+        action_type:'grant_fertilizer', item_type:'fertilizer', item_ref_id:'basic',
+        amount, label:'일반 비료 지급', before_value: before, after_value: before + amount
+      });
       resultEl.textContent = `✅ 🧪 일반 비료 +${amount} 지급 완료`;
     }
     if (type === 'coin') {
       const amount = parseInt(document.getElementById('gtAddCoin').value) || 100;
+      if (amount >= 1000 && !confirm(`${_gtCurrentCode}에게 코인 ${amount}개를 지급하시겠습니까?`)) return;
+      const before = _gtCurrentData?.coin ?? 0;
       await updateDoc(ref, { coin: increment(amount) });
+      await gtAddAdminLog(_gtCurrentCode, {
+        action_type:'grant_coin', item_type:'coin',
+        amount, label:'코인 지급', before_value: before, after_value: before + amount
+      });
       resultEl.textContent = `✅ 🪙 코인 +${amount} 지급 완료`;
     }
     if (type === 'seed') {
@@ -1744,8 +1822,10 @@ window.gtGrantItem = async function(type) {
       const now = new Date().toISOString();
       const dateTag = now.slice(0,10).replace(/-/g,'');
 
+      const itemIds = [];
       for (let i = 0; i < qty; i++) {
         const itemId = `item_admin_${dateTag}_${Math.random().toString(36).slice(2,7)}`;
+        itemIds.push(itemId);
         await setDoc(doc(db, 'garden_items', itemId), {
           item_id:      itemId,
           owner_code:   _gtCurrentCode,
@@ -1763,12 +1843,17 @@ window.gtGrantItem = async function(type) {
           updated_at:   now
         });
       }
+      await gtAddAdminLog(_gtCurrentCode, {
+        action_type:'grant_seed', item_type:'seed', item_ref_id: seedId,
+        item_ids: itemIds, amount: qty, label:`${seed.seed_name} 지급`
+      });
       resultEl.textContent = `✅ 🌱 ${seed.seed_name} × ${qty}개 지급 완료`;
       resultEl.style.color = 'var(--green)';
+      gtLoadAdminLogs(_gtCurrentCode);
       return;
     }
     resultEl.style.color = 'var(--green)';
-    gtLoadGarden(); // 갱신
+    gtLoadAdminLogs(_gtCurrentCode);
   } catch(e) {
     resultEl.textContent = '❌ ' + e.message;
     resultEl.style.color = 'var(--red)';
