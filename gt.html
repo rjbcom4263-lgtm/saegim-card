@@ -578,9 +578,31 @@ function save(){
   }
 }
 
+async function loadGardenAssetsFromFirebase(){
+  if(!gtDb) return;
+  try{
+    const [seedsSnap, resultsSnap] = await Promise.all([
+      gtDb.collection('garden_assets/seeds/items').get(),
+      gtDb.collection('garden_assets/results/items').get(),
+    ]);
+    seedsSnap.forEach(d => {
+      const data = d.data();
+      if(SEEDS[d.id]) Object.assign(SEEDS[d.id], data);
+    });
+    resultsSnap.forEach(d => {
+      const data = d.data();
+      if(RESULTS[d.id]) Object.assign(RESULTS[d.id], data);
+    });
+    console.log("[GT] garden_assets 로드 완료");
+  }catch(e){
+    console.warn("[GT] loadGardenAssetsFromFirebase 실패:", e.message);
+  }
+}
+
 async function load(){
   if(APP_CONFIG.storageMode === "firebase"){
     initFirebase();
+    await loadGardenAssetsFromFirebase();
     const loaded = await loadFromFirebase();
     if(loaded){ migrateState(); return; }
     // Firebase에 데이터 없으면 localStorage 또는 신규 상태로 fallback
