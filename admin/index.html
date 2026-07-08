@@ -780,7 +780,7 @@ window.showPage = function(name, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   el.classList.add('active');
-  if (name === 'garden') { gtRenderSeeds(); }
+  if (name === 'garden') { gtLoadGardenAssets().then(() => gtRenderSeeds()); }
 };
 
 // ── 데이터 로드 ───────────────────────────────────
@@ -2605,7 +2605,7 @@ window.gtGrantItem = async function(type) {
 document.addEventListener('DOMContentLoaded', function() {
   // 페이지 진입 시 씨앗 테이블 미리 채우기
   const observer = new MutationObserver(function() {
-    if (document.getElementById('gtSeedBody')) { gtRenderSeeds(); observer.disconnect(); }
+    if (document.getElementById('gtSeedCards')) { gtLoadGardenAssets().then(() => gtRenderSeeds()); observer.disconnect(); }
   });
   observer.observe(document.body, { childList: true, subtree: true });
 });
