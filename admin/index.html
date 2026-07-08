@@ -700,6 +700,7 @@ const ADMIN_EMAILS = ['rjbcom4263@gmail.com', 'jb2924263@gmail.com'];
 const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db   = getFirestore(app);
+window.db  = db;
 const storage = getStorage(app);
 window._fbStorage = storage;
 window._fbStorageRef = ref;
