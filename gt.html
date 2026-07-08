@@ -308,6 +308,19 @@ const VISIT_PLACES = [
   { place_id:"oryukdo",    name:"오륙도",       icon:"🏝️", seed_id:"oryukdo_seed",   reward_coin:30 },
 ];
 
+// 관광지 QR 방문 마스터 (place 파라미터 기준)
+const GT_PLACES = {
+  gamcheon:   { place_id:"gamcheon",   place_name:"감천문화마을", icon:"🏘️", reward_seed_id:"gamcheon_seed",   reward_coin:30, enabled:true },
+  gwangalli:  { place_id:"gwangalli",  place_name:"광안리",       icon:"🌊", reward_seed_id:"gwangan_seed",    reward_coin:30, enabled:true },
+  haeundae:   { place_id:"haeundae",   place_name:"해운대",       icon:"🏖️", reward_seed_id:"haeundae_seed",   reward_coin:30, enabled:true },
+  taejongdae: { place_id:"taejongdae", place_name:"태종대",       icon:"🪨", reward_seed_id:"taejongdae_seed", reward_coin:30, enabled:true },
+  oryukdo:    { place_id:"oryukdo",    place_name:"오륙도",       icon:"🏝️", reward_seed_id:"oryukdo_seed",    reward_coin:30, enabled:true },
+};
+
+const METHOD_LABELS = {
+  test:"방문 테스트", qr:"관광지 QR 인증", gps:"GPS 인증", qr_gps:"QR + GPS 인증"
+};
+
 // 상점 상품 마스터
 const SHOP_ITEMS = [
   { shop_item_id:"shop_basic_seed", item_name:"일반 씨앗 1개", item_type:"seed", item_ref_id:"basic_seed",    price_coin:100, icon:"🌱" },
@@ -363,6 +376,7 @@ normalizeMasters();
 // URL 예시: garden-tag-v1-1-local-mvp-step4.html?code=GT-0001
 const params = new URLSearchParams(location.search);
 const USER_CODE = (params.get("code") || "GT-0001").trim().toUpperCase();
+const PLACE_PARAM = (params.get("place") || "").trim().toLowerCase();
 
 const APP_CONFIG = {
   version: "V1.1-step6a",
@@ -704,6 +718,43 @@ function doVisit(place){
   };
   save(); renderAll();
   toast(`${place.name} 방문! ${seed.default_icon}${seed.seed_name} +1, 🪙+${place.reward_coin}`);
+}
+
+function grantPlaceReward(place, method){
+  const visitKey = place.place_id + "_" + todayStr();
+  if(!state.user.visit_history) state.user.visit_history = {};
+  if(state.user.visit_history[visitKey]){
+    toast(`오늘 ${place.place_name} 보상은 이미 받았어요. 내일 다시 방문하세요 🗓️`);
+    return false;
+  }
+  const seed = SEEDS[place.reward_seed_id];
+  if(!seed){ toast("보상 씨앗 정보를 찾을 수 없습니다."); return false; }
+  createItem("seed", place.reward_seed_id, "visit", place.place_name+" QR 방문 보상");
+  state.user.coin += Number(place.reward_coin||0);
+  state.user.visit_history[visitKey] = {
+    visit_id: visitKey,
+    place_id: place.place_id,
+    place_name: place.place_name,
+    reward_seed_id: place.reward_seed_id,
+    reward_coin: place.reward_coin,
+    method: method||"qr",
+    date: todayStr(),
+    received_at: new Date().toISOString(),
+    created_at: new Date().toISOString()
+  };
+  save(); renderAll();
+  toast(`${place.icon||"📍"} ${place.place_name} 방문 인증 완료! ${seed.default_icon}${seed.seed_name} +1, 🪙+${place.reward_coin}`);
+  return true;
+}
+
+function handlePlaceQrVisit(){
+  if(!PLACE_PARAM) return;
+  const place = GT_PLACES[PLACE_PARAM];
+  if(!place || !place.enabled){
+    toast("등록되지 않은 관광지 QR입니다. 관리자에게 문의하세요.");
+    return;
+  }
+  grantPlaceReward(place, "qr");
 }
 
 // --- 씨앗 심기 ---
@@ -1174,13 +1225,18 @@ function renderVisit(){
   VISIT_PLACES.forEach(pl=>{
     const seed = SEEDS[pl.seed_id];
     const key = pl.place_id + "_" + todayStr();
-    const done = !!state.user.visit_history[key];
+    const record = state.user.visit_history[key];
+    const done = !!record;
+    const methodLabel = done ? (METHOD_LABELS[record.method] || record.method || "") : "";
     const c = document.createElement("div");
     c.className = "card";
     c.innerHTML = `<div class="list-item" style="border:none;padding:4px 0;">
       <div class="li-icon">${pl.icon}</div>
-      <div class="li-body"><div class="n">${pl.name} ${done?'<span class="pill">오늘 완료</span>':''}</div>
-        <div class="d">${seed.default_icon}${seed.seed_name} +1 · 🪙+${pl.reward_coin} · 하루 1회</div></div>
+      <div class="li-body">
+        <div class="n">${pl.name} ${done?'<span class="pill">오늘 완료</span>':''}</div>
+        <div class="d">${seed.default_icon}${seed.seed_name} +1 · 🪙+${pl.reward_coin} · 하루 1회</div>
+        ${done && methodLabel ? `<div class="d" style="font-size:11px;opacity:.7">${methodLabel}</div>` : ''}
+      </div>
       <button class="b-primary" style="flex:none;padding:8px 14px;" ${done?'disabled':''}>${done?'완료':'방문 테스트'}</button>
     </div>`;
     c.querySelector("button").onclick = ()=> doVisit(pl);
@@ -1294,6 +1350,7 @@ function resetAll(){
 (async()=>{
   await load();
   renderAll();
+  handlePlaceQrVisit(); // place 파라미터 있으면 QR 방문 처리
   // 3초마다 성장 갱신
   setInterval(()=>{
     tickGrowth();
