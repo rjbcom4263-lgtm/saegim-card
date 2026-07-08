@@ -1584,3 +1584,75 @@ function adminQuickSyncQrDbRowToProductSheet_(code) {
 function adminQuickNowText_() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
 }
+
+// ─────────────────────────────────────────────
+// 가든태그 관광지 QR 시트 관리
+// ─────────────────────────────────────────────
+
+const GARDEN_PLACES_SHEET = 'GARDEN_PLACES';
+const BASE_URL = 'https://saegim-memory.web.app/gt.html';
+
+const GARDEN_PLACES_DATA = [
+  { place_id:'gamcheon',   place_name:'감천문화마을', icon:'🏘️', reward_seed:'gamcheon_seed',   reward_coin:30 },
+  { place_id:'gwangalli',  place_name:'광안리',       icon:'🌊', reward_seed:'gwangan_seed',    reward_coin:30 },
+  { place_id:'haeundae',   place_name:'해운대',       icon:'🏖️', reward_seed:'haeundae_seed',   reward_coin:30 },
+  { place_id:'taejongdae', place_name:'태종대',       icon:'🪨', reward_seed:'taejongdae_seed', reward_coin:30 },
+  { place_id:'oryukdo',    place_name:'오륙도',       icon:'🏝️', reward_seed:'oryukdo_seed',    reward_coin:30 },
+];
+
+function initGardenPlacesSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(GARDEN_PLACES_SHEET);
+
+  if (!sheet) {
+    sheet = ss.insertSheet(GARDEN_PLACES_SHEET);
+  } else {
+    sheet.clearContents();
+  }
+
+  // 헤더
+  const headers = [
+    'place_id', 'place_name', 'icon',
+    'public_qr_url', 'reward_seed_id', 'reward_coin',
+    'daily_limit', 'enabled', 'qr_image', 'updated_at'
+  ];
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  // 헤더 스타일
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setBackground('#2a3d20');
+  headerRange.setFontColor('#f5e4b8');
+  headerRange.setFontWeight('bold');
+
+  // 데이터
+  const now = adminQuickNowText_();
+  const rows = GARDEN_PLACES_DATA.map(p => {
+    const publicUrl = BASE_URL + '?place=' + p.place_id;
+    const qrImgFormula = '=IMAGE("https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=' + encodeURIComponent(publicUrl) + '")';
+    return [
+      p.place_id, p.place_name, p.icon,
+      publicUrl, p.reward_seed, p.reward_coin,
+      1, true, qrImgFormula, now
+    ];
+  });
+
+  sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
+
+  // 행 높이 (QR 이미지 표시용)
+  for (let i = 2; i <= rows.length + 1; i++) {
+    sheet.setRowHeight(i, 130);
+  }
+
+  // 열 너비 조정
+  sheet.setColumnWidth(4, 380); // public_qr_url
+  sheet.setColumnWidth(9, 140); // qr_image
+
+  // 교차 행 색상
+  rows.forEach((_, i) => {
+    if (i % 2 === 0) {
+      sheet.getRange(i + 2, 1, 1, headers.length).setBackground('#1a1a1a');
+    }
+  });
+
+  SpreadsheetApp.getUi().alert('GARDEN_PLACES 시트가 생성되었습니다.');
+}
