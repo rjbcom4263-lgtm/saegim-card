@@ -93,5 +93,11 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+
+    // QR 카드 (기존 안심태그 관리)
+    match /qr_cards/{cardId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
   }
 }

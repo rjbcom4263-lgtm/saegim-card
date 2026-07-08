@@ -731,7 +731,8 @@ const ADMIN_EMAILS = ['rjbcom4263@gmail.com', 'jb2924263@gmail.com'];
 const app  = initializeApp(FIREBASE_CONFIG);
 const auth = getAuth(app);
 const db   = getFirestore(app);
-window.db  = db;
+window.db   = db;
+window.auth = auth;
 const storage = getStorage(app);
 window._fbStorage = storage;
 window._fbStorageRef = ref;
@@ -1589,6 +1590,29 @@ async function gtLoadAdminLogs(code) {
   }).join('');
 }
 
+// ── Firestore에서 에셋 데이터 로드 ──────────────────
+window.gtLoadGardenAssets = async function() {
+  try {
+    const { collection, getDocs } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+    const [seedsSnap, resultsSnap] = await Promise.all([
+      getDocs(collection(window.db, 'garden_assets', 'seeds', 'items')),
+      getDocs(collection(window.db, 'garden_assets', 'results', 'items')),
+    ]);
+    seedsSnap.forEach(d => {
+      const data = d.data();
+      if (GT_ADMIN_SEEDS[d.id]) Object.assign(GT_ADMIN_SEEDS[d.id], data);
+      else GT_ADMIN_SEEDS[d.id] = data;
+    });
+    resultsSnap.forEach(d => {
+      const data = d.data();
+      if (GT_ADMIN_RESULTS[d.id]) Object.assign(GT_ADMIN_RESULTS[d.id], data);
+      else GT_ADMIN_RESULTS[d.id] = data;
+    });
+  } catch(e) {
+    console.warn('gtLoadGardenAssets 실패:', e.message);
+  }
+};
+
 window.gtShowTab = function(tab) {
   _gtActiveTab = tab;
   ['seeds','places','garden'].forEach(t => {
@@ -1597,7 +1621,7 @@ window.gtShowTab = function(tab) {
     if (el) el.style.display = (t === tab) ? 'block' : 'none';
     if (btn) btn.className = (t === tab) ? 'btn btn-primary' : 'btn btn-ghost';
   });
-  if (tab === 'seeds')   gtRenderSeeds();
+  if (tab === 'seeds')   gtLoadGardenAssets().then(() => gtRenderSeeds());
   if (tab === 'places')  { gtRenderPlaces(); gtRenderPersonalQrUrl(); }
   if (tab === 'garden')  document.getElementById('gtGardenDetail').textContent = 'QR 코드를 입력하고 조회하세요.';
 };
@@ -1656,7 +1680,10 @@ window.gtUploadSeedImage = async function(seedId) {
     const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
     await setDoc(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
       { seed_id: seedId, seed_image_url: url, updated_at: new Date().toISOString() }, { merge: true });
-    document.getElementById(`seedPreview_${seedId}`).innerHTML = `<img src="${url}">`;
+    document.getElementById(`seedPreview_${seedId}`)?.innerHTML && (document.getElementById(`seedPreview_${seedId}`).innerHTML = `<img src="${url}">`);
+    const thumb = document.getElementById(`seedThumb_${seedId}`);
+    if (thumb) thumb.innerHTML = `<img src="${url}">`;
+    if (GT_ADMIN_SEEDS[seedId]) GT_ADMIN_SEEDS[seedId].seed_image_url = url;
     alert('✅ 씨앗 이미지 업로드 완료');
   } catch(e) { alert('❌ ' + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '업로드'; } }
@@ -1909,7 +1936,7 @@ window.gtSaveSeedAndResultEditor = async function(seedId, resultId) {
 
     alert('✅ 저장 완료');
     gtCloseModal();
-    gtRenderSeeds();
+    gtLoadGardenAssets().then(() => gtRenderSeeds());
   } catch(e) { alert('❌ ' + e.message + '\n\n(auth: ' + (window.auth?.currentUser?.email || '미로그인') + ')'); }
 };
 
