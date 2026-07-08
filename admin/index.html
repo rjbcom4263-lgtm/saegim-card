@@ -1703,8 +1703,22 @@ window.gtLoadGarden = async function() {
     };
 
     // 정원 칸 5×5 그리드
-    const plotByStatus = { empty:'#3a3a3a', growing:'#2a4a2a', ready:'#4a3a0a', harvested:'#2a2a3a' };
-    const plotEmoji = { empty:'　', growing:'🌱', ready:'✨', harvested:'🌾' };
+    const stageColor = { empty:'#3a3a3a', seed:'#2d3a2d', sprout:'#2a4a2a', growing:'#1a3a1a', complete:'#4a3a0a', harvested:'#2a2a3a' };
+    const stageEmoji = { empty:'　', seed:'🌱', sprout:'🌿', growing:'🪴', complete:'✨', harvested:'🌾' };
+    const getAdminStage = (p) => {
+      if(p.status==='empty') return 'empty';
+      if(p.status==='harvested') return 'harvested';
+      if(p.status==='ready') return 'complete';
+      const total = Number(p.total_growth_seconds||0);
+      const grown = Number(p.grown_seconds||0);
+      if(total<=0) return 'seed';
+      const pct = Math.min(100, Math.floor(grown/total*100));
+      if(pct<25) return 'seed';
+      if(pct<60) return 'sprout';
+      return 'growing';
+    };
+    const plotByStatus = stageColor;
+    const plotEmoji = stageEmoji;
     const plotsSorted = [...plots].sort((a,b)=>{
       const na=parseInt((a.plot_id||'').replace('plot_',''),10)||0;
       const nb=parseInt((b.plot_id||'').replace('plot_',''),10)||0;
@@ -1712,18 +1726,20 @@ window.gtLoadGarden = async function() {
     });
     let selectedPlotInfo = '';
     const gridCells = plotsSorted.map((p,i)=>{
-      const pct = p.total_growth_seconds>0
-        ? Math.min(100,Math.round((p.grown_seconds||0)/p.total_growth_seconds*100)) : 0;
-      const tipId = 'gtpc_'+i;
+      const stage = getAdminStage(p);
+      const total = Number(p.total_growth_seconds||0);
+      const grown = Number(p.grown_seconds||0);
+      const pct = total>0 ? Math.min(100,Math.round(grown/total*100)) : 0;
+      const stageNames = {empty:'빈 칸',seed:'씨앗',sprout:'새싹',growing:'성장중',complete:'수확 가능',harvested:'수확 완료'};
       return `<div onclick="document.getElementById('gt-plot-detail').innerHTML=\`
         <b>${gtPlotLabel(p.plot_id)}</b> &nbsp;
-        상태: <b>${gtLabel(p.status)}</b> &nbsp;
+        상태: <b>${stageNames[stage]||stage}</b> &nbsp;
         ${p.result_ref_id ? '결과물: <b>'+gtLabel(p.result_ref_id)+'</b>' : (p.seed_id ? '씨앗: <b>'+gtLabel(p.seed_id)+'</b>' : '')} &nbsp;
-        ${p.status==='growing'? '성장률: <b>'+pct+'%</b>':''}
+        ${stage!=='empty'&&stage!=='harvested'? '성장률: <b>'+pct+'%</b>':''}
       \`" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;
-        background:${plotByStatus[p.status]||'#3a3a3a'};border-radius:6px;cursor:pointer;
-        font-size:18px;border:1px solid rgba(255,255,255,.08)" title="${gtPlotLabel(p.plot_id)}">
-        ${plotEmoji[p.status]||'　'}
+        background:${stageColor[stage]||'#3a3a3a'};border-radius:6px;cursor:pointer;
+        font-size:18px;border:1px solid rgba(255,255,255,.08)" title="${gtPlotLabel(p.plot_id)} · ${stageNames[stage]||stage}">
+        ${stageEmoji[stage]||'　'}
       </div>`;
     }).join('');
 

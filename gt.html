@@ -333,11 +333,15 @@ const FALLBACK_ICON = { seed:"🌱", sprout:"🌿", growing:"🪴", complete:"�
 // - DEV_MODE=false일 때 실제 성장 시간으로 자동 전환
 function normalizeMasters(){
   Object.values(RESULTS).forEach(r=>{
-    r.sprout_image_url = r.sprout_image_url || "";
+    r.seed_image_url    = r.seed_image_url    || "";
+    r.sprout_image_url  = r.sprout_image_url  || "";
     r.growing_image_url = r.growing_image_url || "";
-    r.complete_image_url = r.complete_image_url || "";
-    r.codex_image_url = r.codex_image_url || "";
+    r.complete_image_url= r.complete_image_url|| "";
+    r.codex_image_url   = r.codex_image_url   || "";
     r.home_item_image_url = r.home_item_image_url || "";
+    r.seed_icon    = r.seed_icon    || "🌱";
+    r.sprout_icon  = r.sprout_icon  || "🌿";
+    r.growing_icon = r.growing_icon || "🪴";
     if(r.tradeable_default === undefined) r.tradeable_default = true;
     if(!DEV_MODE){
       r.total_growth_seconds = REAL_GROWTH_SECONDS[r.rarity] || 21600;
@@ -867,6 +871,29 @@ function remainingGrowth(p){
   if(!p) return 0;
   return Math.max(0, Math.ceil((p.total_growth_seconds||0) - (p.grown_seconds||0)));
 }
+/* ---- 성장 4단계 ---- */
+function getGrowthStage(plot){
+  if(!plot || !plot.result_ref_id) return { stage:"empty", stage_label:"빈 칸", percent:0 };
+  const total = Number(plot.total_growth_seconds||0);
+  const grown = Number(plot.grown_seconds||0);
+  if(plot.status==="ready" || (total>0 && grown>=total))
+    return { stage:"complete", stage_label:"완성", percent:100 };
+  if(total<=0) return { stage:"seed", stage_label:"씨앗", percent:0 };
+  const pct = Math.min(100, Math.floor(grown/total*100));
+  if(pct < 25) return { stage:"seed",    stage_label:"씨앗",   percent:pct };
+  if(pct < 60) return { stage:"sprout",  stage_label:"새싹",   percent:pct };
+  return           { stage:"growing", stage_label:"성장중", percent:pct };
+}
+
+function getGrowthStageImage(result, stage){
+  if(!result) return { image_url:"", default_icon:"🌱" };
+  if(stage==="seed")     return { image_url: result.seed_image_url||"",    default_icon: result.seed_icon||"🌱" };
+  if(stage==="sprout")   return { image_url: result.sprout_image_url||"",  default_icon: result.sprout_icon||"🌿" };
+  if(stage==="growing")  return { image_url: result.growing_image_url||"", default_icon: result.growing_icon||"🪴" };
+  if(stage==="complete") return { image_url: result.complete_image_url||"", default_icon: result.default_icon||"✨" };
+  return { image_url:"", default_icon:"🌱" };
+}
+
 function statusLabel(p){
   if(!p) return "-";
   if(p.status==="empty") return "빈 칸";
@@ -925,17 +952,18 @@ function plotView(p){
     return {cls:"plot empty", inner:"빈 칸", pct:"", badge:""};
   }
   const result = RESULTS[p.result_ref_id];
-  const pctNum = p.total_growth_seconds>0 ? Math.min(100, Math.round(p.grown_seconds/p.total_growth_seconds*100)) : 0;
-  let icon, cls="plot";
-  if(p.status==="ready"){
-    icon = iconFor(result.complete_image_url, result.default_icon, result.result_type);
-    return {cls:"plot"+(isWatered(p)?" watered":""), inner:icon, pct:"수확가능", badge:"✅"};
+  const stageInfo = getGrowthStage(p);
+  const visual = getGrowthStageImage(result, stageInfo.stage);
+  const icon = iconFor(visual.image_url, visual.default_icon, stageInfo.stage);
+  const watered = isWatered(p);
+  const cls = "plot" + (watered?" watered":"");
+  if(stageInfo.stage==="complete"){
+    return {cls, inner:icon, pct:"수확가능", badge:"✅"};
   }
-  // planted / growing
-  if(pctNum < 40) icon = iconFor(result&&result.sprout_image_url, "🌿", "sprout");
-  else icon = iconFor(result&&result.growing_image_url, "🪴", "growing");
-  cls += isWatered(p) ? " watered" : "";
-  return {cls, inner:icon, pct:pctNum+"%", badge: isWatered(p)?"💧":""};
+  const pctLabel = stageInfo.stage==="seed" ? "씨앗" :
+                   stageInfo.stage==="sprout" ? "새싹 "+stageInfo.percent+"%" :
+                   "성장중 "+stageInfo.percent+"%";
+  return {cls, inner:icon, pct:pctLabel, badge: watered?"💧":""};
 }
 
 function renderGarden(){
@@ -988,11 +1016,14 @@ function renderPlotDetail(){
   const seed = SEEDS[p.seed_id];
   const result = RESULTS[p.result_ref_id];
   const plantedItem = state.items.find(i=>i.item_id===p.planted_item_id);
-  const pct = p.total_growth_seconds ? Math.min(100, Math.round((p.grown_seconds/p.total_growth_seconds)*100)) : 0;
+  const stageInfo = getGrowthStage(p);
+  const pct = stageInfo.percent;
   const wl = waterLeft(p);
+  const stageNum = {seed:1,sprout:2,growing:3,complete:4}[stageInfo.stage]||0;
   box.innerHTML = `
     <div class="detail-row"><b>칸</b><span class="detail-value">${p.plot_id}</span></div>
     <div class="detail-row"><b>상태</b><span class="detail-value">${statusLabel(p)}</span></div>
+    <div class="detail-row"><b>성장 단계</b><span class="detail-value">${stageNum > 0 ? stageNum+"단계 · "+stageInfo.stage_label : "-"}</span></div>
     <div class="detail-row"><b>씨앗</b><span class="detail-value">${seed ? seed.default_icon+" "+seed.seed_name : "-"}</span></div>
     <div class="detail-row"><b>결과 예정</b><span class="detail-value">${result ? result.default_icon+" "+result.result_name : "-"}</span></div>
     <div class="detail-row"><b>성장률</b><span class="detail-value">${pct}%</span></div>
