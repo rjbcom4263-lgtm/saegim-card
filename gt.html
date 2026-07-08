@@ -501,7 +501,8 @@ async function saveToFirebase(){
       try{
         await gtDb.doc(path).set(data, {merge: true});
       }catch(e2){
-        console.error("[GT] 실패 경로:", path, "데이터:", JSON.stringify(data), "에러:", e2.message);
+        console.error("[GT] 실패 경로:", path, "에러:", e2.message);
+        toast("❌ 실패경로: " + path.split("/").slice(-2).join("/"));
         throw e2;
       }
     }
@@ -1245,7 +1246,7 @@ function buildFirestorePreview(){
 
   // 6. garden_tags/{code}/visits/{visitKey} — 방문 기록
   Object.entries(state.user.visit_history || {}).forEach(([key, visit])=>{
-    docs[`garden_tags/${code}/visits/${key}`] = { code, ...visit };
+    docs[`garden_tags/${code}/visits/${key}`] = { code, visit_id: key, ...visit };
   });
 
   return docs;
