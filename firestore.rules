@@ -1,28 +1,97 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in {
+          "rjbcom4263@gmail.com": true
+        };
+    }
+
+    function hasOnlyAllowedGardenTagFields() {
+      return request.resource.data.keys().hasOnly([
+        "code",
+        "product",
+        "status",
+        "garden_name",
+        "region_focus",
+        "coin",
+        "fertilizer_basic",
+        "fertilizer_good",
+        "fertilizer_gold",
+        "last_checkin_date",
+        "streak_count",
+        "created_at",
+        "updated_at"
+      ]);
+    }
+
     match /garden_tags/{code} {
-      allow read, write: if true;
-      match /{subcollection}/{docId} {
-        allow read, write: if true;
+      allow read: if true;
+
+      allow create, update: if isAdmin()
+        || (
+          request.resource.data.code == code
+          && hasOnlyAllowedGardenTagFields()
+        );
+
+      allow delete: if isAdmin();
+
+      match /plots/{plotId} {
+        allow read: if true;
+        allow create, update: if isAdmin()
+          || request.resource.data.plot_id == plotId;
+        allow delete: if isAdmin();
+      }
+
+      match /codex/{resultId} {
+        allow read: if true;
+        allow create, update: if isAdmin()
+          || request.resource.data.result_id == resultId;
+        allow delete: if isAdmin();
+      }
+
+      match /home_slots/{slotId} {
+        allow read: if true;
+        allow create, update: if isAdmin()
+          || request.resource.data.slot_id == slotId;
+        allow delete: if isAdmin();
+      }
+
+      match /visits/{visitId} {
+        allow read: if true;
+        allow create, update: if isAdmin()
+          || request.resource.data.visit_id == visitId;
+        allow delete: if isAdmin();
+      }
+
+      match /admin_logs/{logId} {
+        allow read: if isAdmin();
+        allow create, update, delete: if isAdmin();
       }
     }
 
     match /garden_items/{itemId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow create, update: if isAdmin()
+        || request.resource.data.item_id == itemId;
+      allow delete: if isAdmin();
     }
 
     match /garden_assets/{docId=**} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isAdmin();
     }
 
     match /garden_places/{placeId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /garden_shop/{docId=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
