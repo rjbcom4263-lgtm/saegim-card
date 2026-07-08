@@ -1437,6 +1437,36 @@ window.createQrCardsViaApi = async function() {
 // ══════════════════════════════════════════════════════
 
 // gt.html과 동일한 마스터 데이터 (관리자 화면에서 읽기용)
+const GT_LABELS = {
+  // 씨앗
+  basic_seed:'일반 씨앗', gamcheon_seed:'감천 씨앗', gwangan_seed:'바다빛 씨앗',
+  haeundae_seed:'모래빛 씨앗', taejongdae_seed:'절벽 씨앗', oryukdo_seed:'섬바람 씨앗',
+  // 결과물
+  normal_flower:'일반꽃', gold_flower:'황금꽃',
+  gamcheon_roof_flower:'감천 지붕꽃', gold_gamcheon_flower:'황금 감천꽃',
+  gwangan_bridge_flower:'광안대교꽃', wave_flower:'파도꽃',
+  lighthouse_tree:'등대나무', rock_flower:'바위꽃',
+  // 관광지
+  gamcheon:'감천문화마을', gwangalli:'광안리', haeundae:'해운대',
+  taejongdae:'태종대', oryukdo:'오륙도',
+  // 마이홈
+  home_gamcheon_house:'감천 집', home_gwangan_bridge:'광안대교 모형',
+  home_haeundae_beach:'해운대 모래사장', home_taejongdae_lighthouse:'태종대 등대',
+  home_oryukdo_rock:'오륙도 바위',
+  // source_type
+  admin:'관리자 지급', harvest:'수확 보상', visit:'방문 보상',
+  shop:'상점 구매', system:'시스템', checkin:'출석 보상', migration:'마이그레이션',
+  // status
+  owned:'보유중', planted:'심어짐', harvested:'수확됨',
+  ready:'수확 가능', growing:'성장중', empty:'빈 칸',
+};
+const gtLabel = (key) => GT_LABELS[key] || key;
+const gtPlotLabel = (plotId) => {
+  const n = parseInt((plotId||'').replace('plot_',''),10);
+  if(isNaN(n)) return plotId;
+  return `${Math.ceil(n/5)}행 ${((n-1)%5)+1}열`;
+};
+
 const GT_ADMIN_SEEDS = {
   basic_seed:    { seed_id:'basic_seed',     seed_name:'일반 씨앗',   category:'basic', place_id:'', results:['normal_flower(85)','gold_flower(15)'] },
   gamcheon_seed: { seed_id:'gamcheon_seed',  seed_name:'감천 씨앗',   category:'local', place_id:'gamcheon', results:['gamcheon_roof_flower(80)','gold_gamcheon_flower(20)'] },
@@ -1572,61 +1602,103 @@ window.gtLoadGarden = async function() {
     const visits= visitsSnap.docs.map(x => x.data());
     _gtCurrentCode = code;
 
-    // 아이템 그룹 분류
-    const seeds    = items.filter(i => i.item_type === 'seed'      && i.status === 'owned');
-    const planted  = items.filter(i => i.item_type === 'seed'      && i.status === 'planted');
-    const results  = items.filter(i => i.item_type === 'result'    && i.status === 'owned');
-    const homeItems= items.filter(i => i.item_type === 'home_item' && i.status === 'owned');
+    // 아이템 그룹
+    const seeds     = items.filter(i => i.item_type === 'seed'      && i.status === 'owned');
+    const planted   = items.filter(i => i.item_type === 'seed'      && i.status === 'planted');
+    const results   = items.filter(i => i.item_type === 'result'    && i.status === 'owned');
+    const homeItems = items.filter(i => i.item_type === 'home_item' && i.status === 'owned');
 
-    // 정원 칸 상태 표시 헬퍼
-    const plotStatusBadge = s => ({
-      empty:'<span style="color:var(--muted)">빈 칸</span>',
-      growing:'<span style="color:var(--green)">🌱 성장 중</span>',
-      ready:'<span style="color:var(--gold)">✨ 수확 가능</span>',
-      harvested:'<span style="color:var(--muted)">수확 완료</span>'
-    }[s] || s);
+    // 아이템 종류별 수량 집계
+    const countBy = (arr) => {
+      const m = {};
+      arr.forEach(i => { m[i.item_ref_id] = (m[i.item_ref_id]||0)+1; });
+      return m;
+    };
+    const summaryRows = (counts) => Object.entries(counts)
+      .sort((a,b)=>b[1]-a[1])
+      .map(([id,cnt])=>`<tr><td>${gtLabel(id)}</td><td style="text-align:right;color:var(--gold);font-weight:700">${cnt.toLocaleString()}개</td></tr>`)
+      .join('');
+    const devRows = (arr) => arr
+      .map(it=>`<tr style="font-size:11px">
+        <td style="color:var(--muted)">${it.item_id||'-'}</td>
+        <td>${gtLabel(it.item_ref_id)}</td>
+        <td style="color:var(--muted)">${gtLabel(it.source_type||'-')}</td>
+        <td style="color:var(--muted)">${gtLabel(it.status||'-')}</td>
+      </tr>`).join('');
 
-    const itemRow = (it) =>
-      `<tr><td style="font-size:11px;color:var(--muted)">${it.item_id||'-'}</td><td>${it.name||it.item_ref_id||'-'}</td><td>${it.source_type||'-'}</td></tr>`;
-
-    const plotRow = (p) => {
-      const growPct = p.total_growth_seconds > 0
-        ? Math.min(100, Math.round((p.grown_seconds||0) / p.total_growth_seconds * 100)) : 0;
-      return `<tr>
-        <td style="font-size:11px;color:var(--muted)">${p.plot_id}</td>
-        <td>${plotStatusBadge(p.status)}</td>
-        <td style="font-size:12px;color:var(--muted)">${p.result_ref_id||p.seed_id||'-'}</td>
-        <td>${p.status==='growing'? growPct+'%' : '-'}</td>
-      </tr>`;
+    const summarySection = (title, arr) => {
+      if(!arr.length) return '';
+      const counts = countBy(arr);
+      return `<div style="margin-top:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">${title} <span style="font-weight:400;color:var(--muted)">(총 ${arr.length.toLocaleString()}개)</span></div>
+        <table style="width:100%;font-size:13px"><tbody>${summaryRows(counts)}</tbody></table>
+        <details style="margin-top:6px"><summary style="font-size:11px;color:var(--muted);cursor:pointer">개별 item_id 보기</summary>
+          <div style="overflow-x:auto;margin-top:6px"><table style="width:100%">
+            <thead><tr>${['item_id','이름','출처','상태'].map(h=>`<th style="text-align:left;font-size:11px;color:var(--muted);font-weight:400;padding:3px 6px">${h}</th>`).join('')}</tr></thead>
+            <tbody>${devRows(arr)}</tbody>
+          </table></div>
+        </details>
+      </div>`;
     };
 
-    const visitRow = (v) =>
-      `<tr><td>${v.place_id||'-'}</td><td style="color:var(--muted)">${(v.date||v.created_at||'').slice(0,10)}</td><td style="font-size:12px;color:var(--muted)">${v.reward_seed_id||'-'} · 🪙${v.reward_coin||0}</td></tr>`;
+    // 정원 칸 5×5 그리드
+    const plotByStatus = { empty:'#3a3a3a', growing:'#2a4a2a', ready:'#4a3a0a', harvested:'#2a2a3a' };
+    const plotEmoji = { empty:'　', growing:'🌱', ready:'✨', harvested:'🌾' };
+    const plotsSorted = [...plots].sort((a,b)=>{
+      const na=parseInt((a.plot_id||'').replace('plot_',''),10)||0;
+      const nb=parseInt((b.plot_id||'').replace('plot_',''),10)||0;
+      return na-nb;
+    });
+    let selectedPlotInfo = '';
+    const gridCells = plotsSorted.map((p,i)=>{
+      const pct = p.total_growth_seconds>0
+        ? Math.min(100,Math.round((p.grown_seconds||0)/p.total_growth_seconds*100)) : 0;
+      const tipId = 'gtpc_'+i;
+      return `<div onclick="document.getElementById('gt-plot-detail').innerHTML=\`
+        <b>${gtPlotLabel(p.plot_id)}</b> &nbsp;
+        상태: <b>${gtLabel(p.status)}</b> &nbsp;
+        ${p.result_ref_id ? '결과물: <b>'+gtLabel(p.result_ref_id)+'</b>' : (p.seed_id ? '씨앗: <b>'+gtLabel(p.seed_id)+'</b>' : '')} &nbsp;
+        ${p.status==='growing'? '성장률: <b>'+pct+'%</b>':''}
+      \`" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+        background:${plotByStatus[p.status]||'#3a3a3a'};border-radius:6px;cursor:pointer;
+        font-size:18px;border:1px solid rgba(255,255,255,.08)" title="${gtPlotLabel(p.plot_id)}">
+        ${plotEmoji[p.status]||'　'}
+      </div>`;
+    }).join('');
 
-    const section = (title, rows, headers) => rows.length === 0 ? '' : `
-      <div style="margin-top:14px">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:600">${title} (${rows.length})</div>
-        <div style="overflow-x:auto"><table style="width:100%;font-size:12px">
-          <thead><tr>${headers.map(h=>`<th style="text-align:left;padding:4px 6px;color:var(--muted);font-weight:400">${h}</th>`).join('')}</tr></thead>
-          <tbody>${rows}</tbody>
-        </table></div>
+    // 방문 기록 한글
+    const visitSection = visits.length === 0 ? '' : `
+      <div style="margin-top:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:6px">📍 방문 기록 (${visits.length}회)</div>
+        ${visits.map(v=>`<div style="font-size:13px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+          <b>${gtLabel(v.place_id||'-')}</b>
+          <span style="color:var(--muted);margin-left:8px">${(v.date||v.created_at||'').slice(0,10)}</span><br>
+          <span style="font-size:12px;color:var(--muted)">보상: ${gtLabel(v.reward_seed_id||'-')} + 🪙${v.reward_coin||0}</span>
+        </div>`).join('')}
       </div>`;
 
     detailEl.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:13px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:13px;margin-bottom:14px">
         <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">정원 이름</span><br><b>${d.garden_name||'-'}</b></div>
-        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">코인</span><br><b style="color:var(--gold)">🪙 ${d.coin??0}</b></div>
-        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">비료(기본/좋/황금)</span><br><b>${d.fertilizer_basic??0} / ${d.fertilizer_good??0} / ${d.fertilizer_gold??0}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">코인</span><br><b style="color:var(--gold)">🪙 ${(d.coin??0).toLocaleString()}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">비료 일반/좋음/황금</span><br><b>${d.fertilizer_basic??0} / ${d.fertilizer_good??0} / ${d.fertilizer_gold??0}</b></div>
         <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">출석 연속</span><br><b>${d.streak_count??0}일 · ${d.last_checkin_date||'-'}</b></div>
-        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">도감</span><br><b>${codexSnap.size}개</b></div>
-        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">마이홈 / 방문</span><br><b>${homeSlotsSnap.size}개 / ${visitsSnap.size}회</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">도감 / 마이홈 / 방문</span><br><b>${codexSnap.size}개 · ${homeSlotsSnap.size}개 · ${visitsSnap.size}회</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">보유 아이템</span><br><b>${items.length.toLocaleString()}개</b></div>
       </div>
-      ${section('🌱 보유 씨앗', seeds.map(itemRow).join(''), ['item_id','이름','출처'])}
-      ${section('🌿 심어진 씨앗', planted.map(itemRow).join(''), ['item_id','이름','출처'])}
-      ${section('🌼 수확 결과물', results.map(itemRow).join(''), ['item_id','이름','출처'])}
-      ${section('🏡 마이홈 장식', homeItems.map(itemRow).join(''), ['item_id','이름','출처'])}
-      ${section('🌾 정원 칸 상태', plots.map(plotRow).join(''), ['칸','상태','씨앗/결과물','성장률'])}
-      ${section('📍 방문 기록', visits.map(visitRow).join(''), ['관광지','날짜','보상'])}
+
+      ${summarySection('🌱 보유 씨앗', seeds)}
+      ${summarySection('🌿 심어진 씨앗', planted)}
+      ${summarySection('🌼 수확 결과물', results)}
+      ${summarySection('🏡 마이홈 장식', homeItems)}
+
+      <div style="margin-top:12px">
+        <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:8px">🌾 정원 상태</div>
+        <div style="display:grid;grid-template-columns:repeat(5,44px);gap:4px">${gridCells}</div>
+        <div id="gt-plot-detail" style="margin-top:8px;font-size:12px;color:var(--muted);min-height:18px"></div>
+      </div>
+
+      ${visitSection}
     `;
     actionsEl.style.display = 'block';
   } catch(e) {
