@@ -1063,8 +1063,8 @@ document.addEventListener('keydown', function(e) {
     var el = document.getElementById(id);
     if (el && el.classList.contains('open')) el.classList.remove('open');
   });
-  const gtM = document.getElementById('gtModal');
-  if (gtM && gtM.style.display !== 'none') gtCloseModal();
+  const gtM = document.getElementById('gtModalOverlay');
+  if (gtM && gtM.classList.contains('show')) gtCloseModal();
 });
 
 function getBackupStatus(item){
@@ -1732,15 +1732,55 @@ function gtRenderSeeds() {
 }
 
 // ── 씨앗 에디터 모달 ──────────────────────────────────
+// ── 에셋 이미지 렌더 헬퍼 ────────────────────────────
+function gtRenderAssetImage(url, fallback, alt) {
+  if (url) return `<img src="${url}" alt="${alt||''}" style="max-width:100%;max-height:100%;object-fit:contain">`;
+  return `<span style="font-size:2em">${fallback||'🌱'}</span>`;
+}
+
+// ── 성장 단계 업로드 행 렌더 헬퍼 ────────────────────
+function gtRenderResultStageUploadRow(resultId, stage, label, imageUrl, fallbackIcon) {
+  const previewId = `resultPreview_${resultId}_${stage}`;
+  return `
+    <div class="gt-upload-row">
+      <div class="gt-upload-thumb" id="${previewId}">
+        ${gtRenderAssetImage(imageUrl, fallbackIcon, label)}
+      </div>
+      <div style="flex:1">
+        <div class="gt-upload-label">${label}</div>
+        <input type="file" accept="image/png,image/jpeg,image/webp" id="resultFile_${resultId}_${stage}"
+          style="font-size:11px;color:var(--muted);width:100%;border:none;background:transparent;padding:0"
+          onchange="gtPreviewLocalImage(this,'${previewId}')">
+      </div>
+      <button class="btn btn-ghost" style="font-size:11px;white-space:nowrap"
+        onclick="gtUploadResultImage('${resultId}','${stage}')">업로드</button>
+      <button class="btn" style="font-size:10px;color:var(--red);background:transparent;border:1px solid #5a1a1a;white-space:nowrap"
+        onclick="gtClearResultImage('${resultId}','${stage}')">제거</button>
+    </div>`;
+}
+
+// ── 씨앗+결과물 통합 에디터 모달 ─────────────────────
 window.gtOpenSeedEditor = function(seedId) {
   const s = GT_ADMIN_SEEDS[seedId];
   if (!s) return;
-  const imgHtml = s.seed_image_url
-    ? `<img src="${s.seed_image_url}">`
-    : (s.default_icon || '🌱');
+  const resultId = s.result_ref_id || (s.results?.[0] || '').replace(/\(\d+\)$/, '').trim();
+  const r = GT_ADMIN_RESULTS[resultId] || {};
+
+  const stageRows = resultId
+    ? RESULT_IMAGE_STAGES.map(st =>
+        gtRenderResultStageUploadRow(resultId, st.key, st.label, r[st.field],
+          st.key === 'seed' ? (s.default_icon || '🌱') : '🌿')
+      ).join('')
+    : '';
+
   gtOpenModal(`
     <h2>🌱 씨앗 수정</h2>
-    <div class="gt-editor-preview" id="gtSeedEditorPreview">${imgHtml}</div>
+
+    <div class="gt-editor-preview" id="seedPreview_${s.seed_id}">
+      ${gtRenderAssetImage(s.seed_image_url, s.default_icon||'🌱', s.seed_name)}
+    </div>
+
+    <h3 style="color:var(--gold);margin:14px 0 8px">1. 씨앗 기본 정보</h3>
     <label>씨앗 ID</label>
     <input value="${s.seed_id}" readonly style="opacity:.5">
     <label>씨앗 이름</label>
@@ -1754,36 +1794,118 @@ window.gtOpenSeedEditor = function(seedId) {
       <option value="event" ${s.category==='event'?'selected':''}>이벤트 씨앗</option>
       <option value="rare"  ${s.category==='rare'?'selected':''}>희귀 씨앗</option>
     </select>
+    <label>지역 ID</label>
+    <input id="gtEditSeedRegion" value="${s.region_id||'busan'}">
     <label>관광지 ID</label>
     <input id="gtEditSeedPlace" value="${s.place_id||''}">
-    <hr style="border-color:var(--line);margin:14px 0">
-    <label>씨앗 이미지 업로드 <span style="color:var(--muted);font-size:11px">PNG 권장 · 128px · 2MB 이하</span></label>
-    <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-      <input type="file" accept="image/png,image/jpeg,image/webp" id="gtEditSeedFile"
-        style="flex:1;font-size:12px;color:var(--muted)"
-        onchange="gtPreviewLocalImage(this,'gtSeedEditorPreview')">
-      <button class="btn btn-ghost" style="white-space:nowrap" onclick="gtUploadSeedImageFromEditor('${seedId}')">업로드</button>
-      <button class="btn" style="font-size:11px;color:var(--red);background:transparent;border:1px solid #5a1a1a;white-space:nowrap" onclick="gtClearSeedImage('${seedId}')">제거</button>
+    <label>연결 결과물 ID</label>
+    <input value="${resultId||'없음'}" readonly style="opacity:.5">
+    <div style="margin-top:8px">
+      <label>씨앗 이미지 <span style="color:var(--muted);font-size:11px">PNG 권장 · 2MB 이하</span></label>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+        <input type="file" accept="image/png,image/jpeg,image/webp" id="seedFile_${s.seed_id}"
+          style="flex:1;font-size:12px;color:var(--muted)"
+          onchange="gtPreviewLocalImage(this,'seedPreview_${s.seed_id}')">
+        <button class="btn btn-ghost" style="white-space:nowrap" onclick="gtUploadSeedImage('${s.seed_id}')">업로드</button>
+        <button class="btn" style="font-size:11px;color:var(--red);background:transparent;border:1px solid #5a1a1a;white-space:nowrap" onclick="gtClearSeedImage('${s.seed_id}')">제거</button>
+      </div>
     </div>
+
+    ${resultId ? `
+    <hr style="border-color:var(--line);margin:16px 0">
+    <h3 style="color:var(--gold);margin:0 0 8px">2. 연결 결과물 정보</h3>
+    <label>결과물 ID</label>
+    <input value="${resultId}" readonly style="opacity:.5">
+    <label>결과물 이름</label>
+    <input id="gtEditResultName" value="${r.result_name||''}">
+    <label>결과물 종류</label>
+    <select id="gtEditResultType">
+      <option value="plant"    ${r.result_type==='plant'?'selected':''}>식물</option>
+      <option value="landmark" ${r.result_type==='landmark'?'selected':''}>랜드마크</option>
+      <option value="flower"   ${r.result_type==='flower'?'selected':''}>꽃</option>
+    </select>
+    <label>등급</label>
+    <select id="gtEditResultRarity">
+      <option value="common" ${r.rarity==='common'?'selected':''}>common</option>
+      <option value="rare"   ${r.rarity==='rare'?'selected':''}>rare</option>
+      <option value="local"  ${r.rarity==='local'?'selected':''}>local</option>
+      <option value="epic"   ${r.rarity==='epic'?'selected':''}>epic</option>
+    </select>
+    <label>성장 시간(초)</label>
+    <input id="gtEditResultGrowth" type="number" value="${r.total_growth_seconds||21600}">
+    <label>보상 코인</label>
+    <input id="gtEditResultCoin" type="number" value="${r.reward_coin||0}">
+    <label>마이홈 보상 ID</label>
+    <input id="gtEditResultHomeItem" value="${r.reward_home_item_id||''}">
+
+    <hr style="border-color:var(--line);margin:16px 0">
+    <h3 style="color:var(--gold);margin:0 0 8px">3. 성장 단계 이미지</h3>
+    ${stageRows}
+    ` : ''}
+
+    <hr style="border-color:var(--line);margin:16px 0">
+    <label style="display:flex;align-items:center;gap:8px">
+      <input id="gtEditSeedEnabled" type="checkbox" ${s.enabled!==false?'checked':''}>
+      씨앗 사용중
+    </label>
+    ${resultId ? `<label style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <input id="gtEditResultEnabled" type="checkbox" ${r.enabled!==false?'checked':''}>
+      결과물 사용중
+    </label>` : ''}
+
     <div class="gt-modal-actions" style="margin-top:18px">
-      <button class="btn btn-primary" onclick="gtSaveSeedEditor('${seedId}')">저장</button>
+      <button class="btn btn-primary" onclick="gtSaveSeedAndResultEditor('${s.seed_id}','${resultId||''}')">저장</button>
       <button class="btn btn-ghost"   onclick="gtCloseModal()">닫기</button>
     </div>
   `);
 };
 
-window.gtSaveSeedEditor = async function(seedId) {
+window.gtSaveSeedAndResultEditor = async function(seedId, resultId) {
   const name     = document.getElementById('gtEditSeedName')?.value.trim();
   const icon     = document.getElementById('gtEditSeedIcon')?.value.trim() || '🌱';
   const category = document.getElementById('gtEditSeedCategory')?.value || 'basic';
+  const region   = document.getElementById('gtEditSeedRegion')?.value.trim() || 'busan';
   const place    = document.getElementById('gtEditSeedPlace')?.value.trim() || '';
+  const seedEnabled = document.getElementById('gtEditSeedEnabled')?.checked !== false;
   if (!name) { alert('씨앗 이름을 입력하세요.'); return; }
+
   try {
-    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
-    await setDoc(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
-      { seed_id: seedId, seed_name: name, default_icon: icon, category, place_id: place,
-        updated_at: new Date().toISOString() }, { merge: true });
-    if (GT_ADMIN_SEEDS[seedId]) Object.assign(GT_ADMIN_SEEDS[seedId], { seed_name: name, default_icon: icon, category, place_id: place });
+    const { doc, writeBatch } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+    const batch = writeBatch(window.db);
+
+    batch.set(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
+      { seed_id: seedId, seed_name: name, default_icon: icon, category,
+        region_id: region, place_id: place, result_ref_id: resultId || null,
+        enabled: seedEnabled, updated_at: new Date().toISOString() }, { merge: true });
+
+    if (resultId) {
+      const rName    = document.getElementById('gtEditResultName')?.value.trim();
+      const rType    = document.getElementById('gtEditResultType')?.value || 'plant';
+      const rRarity  = document.getElementById('gtEditResultRarity')?.value || 'common';
+      const rGrowth  = Number(document.getElementById('gtEditResultGrowth')?.value || 21600);
+      const rCoin    = Number(document.getElementById('gtEditResultCoin')?.value || 0);
+      const rHome    = document.getElementById('gtEditResultHomeItem')?.value.trim() || '';
+      const rEnabled = document.getElementById('gtEditResultEnabled')?.checked !== false;
+      if (!rName) { alert('결과물 이름을 입력하세요.'); return; }
+
+      batch.set(doc(window.db, 'garden_assets', 'results', 'items', resultId),
+        { result_id: resultId, result_name: rName, result_type: rType, rarity: rRarity,
+          region_id: region, place_id: place,
+          total_growth_seconds: rGrowth, reward_coin: rCoin,
+          reward_home_item_id: rHome || null, enabled: rEnabled,
+          updated_at: new Date().toISOString() }, { merge: true });
+
+      if (GT_ADMIN_RESULTS[resultId]) Object.assign(GT_ADMIN_RESULTS[resultId],
+        { result_name: rName, result_type: rType, rarity: rRarity,
+          total_growth_seconds: rGrowth, reward_coin: rCoin, reward_home_item_id: rHome||null });
+    }
+
+    await batch.commit();
+
+    if (GT_ADMIN_SEEDS[seedId]) Object.assign(GT_ADMIN_SEEDS[seedId],
+      { seed_name: name, default_icon: icon, category, region_id: region, place_id: place,
+        result_ref_id: resultId||null, enabled: seedEnabled });
+
     alert('✅ 저장 완료');
     gtCloseModal();
     gtRenderSeeds();
