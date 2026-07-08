@@ -591,10 +591,10 @@ tr:hover td{background:rgba(255,255,255,.03)}
                   <button class="btn btn-ghost" style="flex:1" onclick="gtGrantItem('coin')">지급</button>
                 </div>
               </div>
-              <div>
+              <div style="grid-column:1/-1">
                 <div style="font-size:11px;color:var(--muted);margin-bottom:4px">🌱 씨앗 지급</div>
-                <div style="display:flex;gap:6px">
-                  <select id="gtGrantSeedId" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:12px">
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <select id="gtGrantSeedId" style="flex:2;min-width:140px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:12px">
                     <option value="basic_seed">일반 씨앗</option>
                     <option value="gamcheon_seed">감천 씨앗</option>
                     <option value="gwangan_seed">바다빛 씨앗</option>
@@ -602,7 +602,8 @@ tr:hover td{background:rgba(255,255,255,.03)}
                     <option value="taejongdae_seed">절벽 씨앗</option>
                     <option value="oryukdo_seed">섬바람 씨앗</option>
                   </select>
-                  <button class="btn btn-ghost" onclick="gtGrantItem('seed')">지급</button>
+                  <input type="number" id="gtGrantSeedQty" min="1" max="99" value="1" style="width:60px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                  <button class="btn btn-primary" onclick="gtGrantItem('seed')">지급</button>
                 </div>
               </div>
             </div>
@@ -1599,11 +1600,36 @@ window.gtGrantItem = async function(type) {
       resultEl.textContent = `✅ 🪙 코인 +${amount} 지급 완료`;
     }
     if (type === 'seed') {
-      const seedId = document.getElementById('gtGrantSeedId').value;
-      const seedName = GT_ADMIN_SEEDS[seedId]?.seed_name || seedId;
-      // 씨앗은 garden_items에 아이템 생성 필요 → 현재는 안내만
-      resultEl.textContent = `⚠️ 씨앗 지급은 Firebase 함수 연결 후 지원됩니다. (${seedName})`;
-      resultEl.style.color = 'var(--gold)';
+      const seedId  = document.getElementById('gtGrantSeedId').value;
+      const qty     = Math.min(99, Math.max(1, parseInt(document.getElementById('gtGrantSeedQty').value) || 1));
+      const seed    = GT_ADMIN_SEEDS[seedId];
+      if (!seed) { resultEl.textContent = '❌ 씨앗 정보를 찾을 수 없습니다.'; resultEl.style.color = 'var(--red)'; return; }
+
+      const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+      const now = new Date().toISOString();
+      const dateTag = now.slice(0,10).replace(/-/g,'');
+
+      for (let i = 0; i < qty; i++) {
+        const itemId = `item_admin_${dateTag}_${Math.random().toString(36).slice(2,7)}`;
+        await setDoc(doc(db, 'garden_items', itemId), {
+          item_id:      itemId,
+          owner_code:   _gtCurrentCode,
+          item_type:    'seed',
+          item_ref_id:  seedId,
+          name:         seed.seed_name,
+          region_id:    'busan',
+          place_id:     seed.place_id || '',
+          rarity:       seed.category === 'local' ? 'local' : 'common',
+          tradeable:    true,
+          status:       'owned',
+          source_type:  'admin',
+          source_label: '관리자 지급',
+          created_at:   now,
+          updated_at:   now
+        });
+      }
+      resultEl.textContent = `✅ 🌱 ${seed.seed_name} × ${qty}개 지급 완료`;
+      resultEl.style.color = 'var(--green)';
       return;
     }
     resultEl.style.color = 'var(--green)';
