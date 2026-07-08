@@ -1635,16 +1635,16 @@ async function gtUploadImageToStorage(file, storagePath) {
   return await getDownloadURL(storageRef);
 }
 
-function gtPreviewLocalImage(inputEl, previewId) {
+window.gtPreviewLocalImage = function(inputEl, previewId) {
   const file = inputEl?.files?.[0];
   const el = document.getElementById(previewId);
   if (!file || !el) return;
   const reader = new FileReader();
   reader.onload = e => { el.innerHTML = `<img src="${e.target.result}">`; };
   reader.readAsDataURL(file);
-}
+};
 
-async function gtUploadSeedImage(seedId) {
+window.gtUploadSeedImage = async function(seedId) {
   const input = document.getElementById(`seedFile_${seedId}`);
   const file = input?.files?.[0];
   if (!gtValidateImageFile(file)) return;
@@ -1660,18 +1660,20 @@ async function gtUploadSeedImage(seedId) {
     alert('✅ 씨앗 이미지 업로드 완료');
   } catch(e) { alert('❌ ' + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '업로드'; } }
-}
+};
 
-async function gtClearSeedImage(seedId) {
+window.gtClearSeedImage = async function(seedId) {
   if (!confirm('씨앗 이미지 URL을 비울까요?')) return;
-  const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
-  await setDoc(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
-    { seed_id: seedId, seed_image_url: '', updated_at: new Date().toISOString() }, { merge: true });
-  document.getElementById(`seedPreview_${seedId}`).innerHTML = '🌱';
-  alert('제거 완료');
-}
+  try {
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+    await setDoc(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
+      { seed_id: seedId, seed_image_url: '', updated_at: new Date().toISOString() }, { merge: true });
+    document.getElementById(`seedPreview_${seedId}`)?.innerHTML && (document.getElementById(`seedPreview_${seedId}`).innerHTML = '🌱');
+    alert('제거 완료');
+  } catch(e) { alert('❌ ' + e.message); }
+};
 
-async function gtUploadResultImage(resultId, stage) {
+window.gtUploadResultImage = async function(resultId, stage) {
   const stageInfo = RESULT_IMAGE_STAGES.find(s => s.key === stage);
   if (!stageInfo) return;
   const input = document.getElementById(`resultFile_${resultId}_${stage}`);
@@ -1689,17 +1691,19 @@ async function gtUploadResultImage(resultId, stage) {
     alert('✅ 이미지 업로드 완료');
   } catch(e) { alert('❌ ' + e.message); }
   finally { if (btn) { btn.disabled = false; btn.textContent = '업로드'; } }
-}
+};
 
-async function gtClearResultImage(resultId, stage) {
+window.gtClearResultImage = async function(resultId, stage) {
   const stageInfo = RESULT_IMAGE_STAGES.find(s => s.key === stage);
   if (!stageInfo || !confirm('이미지 URL을 비울까요?')) return;
-  const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
-  await setDoc(doc(window.db, 'garden_assets', 'results', 'items', resultId),
-    { result_id: resultId, [stageInfo.field]: '', updated_at: new Date().toISOString() }, { merge: true });
-  document.getElementById(`resultPreview_${resultId}_${stage}`).innerHTML = '🌱';
-  alert('제거 완료');
-}
+  try {
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+    await setDoc(doc(window.db, 'garden_assets', 'results', 'items', resultId),
+      { result_id: resultId, [stageInfo.field]: '', updated_at: new Date().toISOString() }, { merge: true });
+    document.getElementById(`resultPreview_${resultId}_${stage}`)?.innerHTML && (document.getElementById(`resultPreview_${resultId}_${stage}`).innerHTML = '🌿');
+    alert('제거 완료');
+  } catch(e) { alert('❌ ' + e.message); }
+};
 
 
 function gtRenderSeeds() {
@@ -1870,13 +1874,16 @@ window.gtSaveSeedAndResultEditor = async function(seedId, resultId) {
   if (!name) { alert('씨앗 이름을 입력하세요.'); return; }
 
   try {
-    const { doc, writeBatch } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
-    const batch = writeBatch(window.db);
+    const { doc, setDoc } = await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
 
-    batch.set(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
+    await setDoc(doc(window.db, 'garden_assets', 'seeds', 'items', seedId),
       { seed_id: seedId, seed_name: name, default_icon: icon, category,
         region_id: region, place_id: place, result_ref_id: resultId || null,
         enabled: seedEnabled, updated_at: new Date().toISOString() }, { merge: true });
+
+    if (GT_ADMIN_SEEDS[seedId]) Object.assign(GT_ADMIN_SEEDS[seedId],
+      { seed_name: name, default_icon: icon, category, region_id: region, place_id: place,
+        result_ref_id: resultId||null, enabled: seedEnabled });
 
     if (resultId) {
       const rName    = document.getElementById('gtEditResultName')?.value.trim();
@@ -1888,7 +1895,7 @@ window.gtSaveSeedAndResultEditor = async function(seedId, resultId) {
       const rEnabled = document.getElementById('gtEditResultEnabled')?.checked !== false;
       if (!rName) { alert('결과물 이름을 입력하세요.'); return; }
 
-      batch.set(doc(window.db, 'garden_assets', 'results', 'items', resultId),
+      await setDoc(doc(window.db, 'garden_assets', 'results', 'items', resultId),
         { result_id: resultId, result_name: rName, result_type: rType, rarity: rRarity,
           region_id: region, place_id: place,
           total_growth_seconds: rGrowth, reward_coin: rCoin,
@@ -1900,16 +1907,10 @@ window.gtSaveSeedAndResultEditor = async function(seedId, resultId) {
           total_growth_seconds: rGrowth, reward_coin: rCoin, reward_home_item_id: rHome||null });
     }
 
-    await batch.commit();
-
-    if (GT_ADMIN_SEEDS[seedId]) Object.assign(GT_ADMIN_SEEDS[seedId],
-      { seed_name: name, default_icon: icon, category, region_id: region, place_id: place,
-        result_ref_id: resultId||null, enabled: seedEnabled });
-
     alert('✅ 저장 완료');
     gtCloseModal();
     gtRenderSeeds();
-  } catch(e) { alert('❌ ' + e.message); }
+  } catch(e) { alert('❌ ' + e.message + '\n\n(auth: ' + (window.auth?.currentUser?.email || '미로그인') + ')'); }
 };
 
 window.gtUploadSeedImageFromEditor = async function(seedId) {
