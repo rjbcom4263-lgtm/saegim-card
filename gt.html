@@ -499,7 +499,7 @@ async function loadFromFirebase(){
       gtDb.collection(`garden_tags/${code}/codex`).get(),
       gtDb.collection(`garden_tags/${code}/home_slots`).orderBy("slot_index").get(),
       gtDb.collection(`garden_tags/${code}/visits`).get(),
-      gtDb.collection("garden_items").where("owner_id","==",code).get()
+      gtDb.collection("garden_items").where("owner_code","==",code).get()
     ]);
 
     const plots = plotsSnap.docs.map(d => d.data());
@@ -597,7 +597,7 @@ function createItem(item_type, item_ref_id, source_type, source_label){
 
   const it = {
     item_id: nextItemId(),
-    owner_id: state.user.user_id,
+    owner_code: state.user.user_id,
     item_type, item_ref_id,
     name, region_id, place_id, rarity, tradeable,
     status:"owned",

@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /garden_tags/{code} {
+      allow read, write: if true;
+      match /{subcollection}/{docId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /garden_items/{itemId} {
+      allow read, write: if true;
+    }
+
+    match /garden_assets/{docId=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /garden_places/{placeId} {
+      allow read, write: if true;
+    }
+
+    match /garden_shop/{docId=**} {
+      allow read, write: if true;
+    }
+  }
+}
