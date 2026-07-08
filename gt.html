@@ -44,7 +44,7 @@
     color:var(--green-d); font-weight:700;}
   .plot .ready-badge{position:absolute; top:2px; right:2px; font-size:11px;}
   .plot.empty{font-size:14px; color:#a99; }
-  .plot img{width:65%; height:65%; object-fit:contain;}
+  .plot img{width:80%; height:80%; object-fit:contain; background:transparent;}
   /* Buttons */
   .btn-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
   button{font-family:inherit; font-size:14px; border:none; border-radius:10px;
@@ -675,7 +675,7 @@ function hasHomeItemRef(homeItemId){
 
 /* ---------- 이미지/아이콘 표시 규칙 ---------- */
 function iconFor(imageUrl, defaultIcon, fallbackType){
-  if(imageUrl) return `<img src="${imageUrl}" alt="">`;
+  if(imageUrl) return `<img src="${imageUrl}" alt="" style="mix-blend-mode:multiply;">`;
   if(defaultIcon) return defaultIcon;
   return FALLBACK_ICON[fallbackType] || "❔";
 }
