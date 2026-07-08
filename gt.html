@@ -375,8 +375,19 @@ normalizeMasters();
    } */
 // URL 예시: garden-tag-v1-1-local-mvp-step4.html?code=GT-0001
 const params = new URLSearchParams(location.search);
-const USER_CODE = (params.get("code") || "GT-0001").trim().toUpperCase();
 const PLACE_PARAM = (params.get("place") || "").trim().toLowerCase();
+
+function saveCurrentGardenCode(code){
+  if(!code) return;
+  localStorage.setItem("gardentag_current_code", String(code).trim().toUpperCase());
+}
+function getCurrentGardenCode(){
+  return localStorage.getItem("gardentag_current_code") || "";
+}
+
+const _URL_CODE = (params.get("code") || "").trim().toUpperCase();
+if(_URL_CODE) saveCurrentGardenCode(_URL_CODE);
+const USER_CODE = _URL_CODE || getCurrentGardenCode() || "GT-0001";
 
 const APP_CONFIG = {
   version: "V1.1-step6a",
@@ -747,8 +758,47 @@ function grantPlaceReward(place, method){
   return true;
 }
 
+function showNeedGardenCodeScreen(placeId){
+  const place = GT_PLACES[placeId];
+  const placeName = place ? place.place_name : "관광지";
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f4f7f2">
+      <div style="width:100%;max-width:420px;background:#fff;border:1px solid #e2e8dd;border-radius:20px;padding:32px 24px;text-align:center;box-shadow:0 8px 24px rgba(40,60,30,.08)">
+        <div style="font-size:48px;margin-bottom:16px">🌱</div>
+        <h2 style="margin:0 0 12px;font-size:20px;color:#2a3d20">가든태그 코드가 필요합니다</h2>
+        <p style="color:#666;font-size:14px;line-height:1.6;margin:0 0 24px">
+          <b>${placeName}</b> 보상을 받으려면<br>먼저 본인의 가든태그 QR을 스캔해야 합니다.<br>
+          <span style="font-size:12px;color:#aaa">또는 아래에 직접 코드를 입력하세요.</span>
+        </p>
+        <input id="manualGardenCodeInput" placeholder="예: GT-0001"
+          style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:14px;border-radius:12px;border:1px solid #ccc;font-size:16px;text-align:center">
+        <button onclick="submitGardenCodeForPlace()"
+          style="width:100%;padding:14px;border-radius:12px;background:#4c9a52;color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer">
+          이 코드로 보상 받기
+        </button>
+        <p style="margin-top:16px;font-size:12px;color:#aaa">
+          개인 가든태그 QR을 먼저 스캔하면 다음부터 자동으로 보상이 연결됩니다.
+        </p>
+      </div>
+    </div>`;
+}
+
+function submitGardenCodeForPlace(){
+  const input = document.getElementById("manualGardenCodeInput");
+  const code = (input?.value||"").trim().toUpperCase();
+  if(!code){ alert("가든태그 코드를 입력하세요."); return; }
+  saveCurrentGardenCode(code);
+  const url = new URL(location.href);
+  url.searchParams.set("code", code);
+  location.href = url.toString();
+}
+
 function handlePlaceQrVisit(){
   if(!PLACE_PARAM) return;
+  if(!_URL_CODE && !getCurrentGardenCode()){
+    showNeedGardenCodeScreen(PLACE_PARAM);
+    return;
+  }
   const place = GT_PLACES[PLACE_PARAM];
   if(!place || !place.enabled){
     toast("등록되지 않은 관광지 QR입니다. 관리자에게 문의하세요.");
