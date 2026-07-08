@@ -1196,12 +1196,22 @@ function buildFirestorePreview(){
   const code = state.user.user_id;
   const docs = {};
 
-  // 1. garden_tags/{code} — 메인 문서
-  const mainDoc = {...state.user};
-  delete mainDoc.codex;
-  delete mainDoc.home_items;
-  delete mainDoc.visit_history;
-  docs[`garden_tags/${code}`] = mainDoc;
+  // 1. garden_tags/{code} — 메인 문서 (rules의 허용 필드만)
+  docs[`garden_tags/${code}`] = {
+    code,
+    product:            state.user.product            || "",
+    status:             state.user.status             || "active",
+    garden_name:        state.user.garden_name        || code+"의 부산 정원",
+    region_focus:       state.user.region_focus       || "busan",
+    coin:               state.user.coin               || 0,
+    fertilizer_basic:   state.user.fertilizer_basic   || 0,
+    fertilizer_good:    state.user.fertilizer_good    || 0,
+    fertilizer_gold:    state.user.fertilizer_gold    || 0,
+    last_checkin_date:  state.user.last_checkin_date  || null,
+    streak_count:       state.user.streak_count       || 0,
+    created_at:         state.user.created_at         || new Date().toISOString(),
+    updated_at:         state.user.updated_at         || new Date().toISOString(),
+  };
 
   // 2. garden_tags/{code}/plots/{plotId} — 정원 칸별
   state.plots.forEach(p=>{
