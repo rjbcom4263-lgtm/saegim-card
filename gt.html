@@ -1146,4 +1146,299 @@ function renderPlotDetail(){
     <div class="detail-row"><b>상태</b><span class="detail-value">${statusLabel(p)}</span></div>
     <div class="detail-row"><b>성장 단계</b><span class="detail-value">${stageNum > 0 ? stageNum+"단계 · "+stageInfo.stage_label : "-"}</span></div>
     <div class="detail-row"><b>씨앗</b><span class="detail-value">${seed ? seed.default_icon+" "+seed.seed_name : "-"}</span></div>
-    <div class="detail-row"><b>결과 예정
+    <div class="detail-row"><b>결과 예정</b><span class="detail-value">${result ? result.default_icon+" "+result.result_name : "-"}</span></div>
+    <div class="detail-row"><b>성장률</b><span class="detail-value">${pct}%</span></div>
+    <div class="progressbar" style="margin:8px 0 10px;"><i style="width:${pct}%"></i></div>
+    <div class="detail-row"><b>남은 성장 시간</b><span class="detail-value">${fmtTime(remainingGrowth(p))}</span></div>
+    <div class="detail-row"><b>물 상태</b><span class="detail-value">${wl>0 ? "촉촉함 · "+fmtTime(wl)+" 남음" : "말라 있음"}</span></div>
+    <div class="detail-row"><b>심은 아이템 ID</b><span class="detail-value small-code">${plantedItem ? plantedItem.item_id : "-"}</span></div>
+  `;
+}
+
+function renderInventory(){
+  const box = document.getElementById("inventoryList");
+  if(!box) return;
+  const groups = {
+    seed: state.items.filter(i=>i.item_type==="seed" && i.status==="owned"),
+    planted: state.items.filter(i=>i.status==="planted"),
+    result: state.items.filter(i=>i.item_type==="result" && i.status==="owned"),
+    home_item: state.items.filter(i=>i.item_type==="home_item" && i.status==="owned"),
+    harvested: state.items.filter(i=>i.status==="harvested")
+  };
+  const section = (title, arr) => {
+    if(!arr.length) return `<div class="inv-group"><h4>${title}</h4><div class="muted">없음</div></div>`;
+    return `<div class="inv-group"><h4>${title}</h4>` + arr.map(it =>
+      `<span class="inv-chip ${it.locked?'locked':''}">${itemIcon(it)} ${itemName(it)} <span class="small-code">/${it.item_id}</span></span>`
+    ).join("") + `</div>`;
+  };
+  box.innerHTML =
+    section("보유 씨앗", groups.seed) +
+    section("심어진 아이템", groups.planted) +
+    section("수확 결과물", groups.result) +
+    section("마이홈 장식", groups.home_item) +
+    section("수확 완료 씨앗 기록", groups.harvested);
+}
+
+function htmlEscapeText(txt){
+  return String(txt).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+function exportState(){
+  const dump = JSON.stringify(state, null, 2);
+  openSheet(`<h3>개발용 데이터 확인</h3><p class="muted">코워크 오류 확인용입니다. 필요하면 이 내용을 복사해서 전달하세요.</p><div class="state-dump">${htmlEscapeText(dump)}</div>`);
+}
+
+function buildFirestorePreview(){
+  // Step5 확정 구조: garden_tags/{code} 기준
+  const code = state.user.user_id;
+  const docs = {};
+
+  // 1. garden_tags/{code} — 메인 문서 (rules의 허용 필드만)
+  docs[`garden_tags/${code}`] = {
+    code,
+    product:            state.user.product            || "",
+    status:             state.user.status             || "active",
+    garden_name:        state.user.garden_name        || code+"의 부산 정원",
+    region_focus:       state.user.region_focus       || "busan",
+    coin:               state.user.coin               || 0,
+    fertilizer_basic:   state.user.fertilizer_basic   || 0,
+    fertilizer_good:    state.user.fertilizer_good    || 0,
+    fertilizer_gold:    state.user.fertilizer_gold    || 0,
+    last_checkin_date:  state.user.last_checkin_date  || null,
+    streak_count:       state.user.streak_count       || 0,
+    created_at:         state.user.created_at         || new Date().toISOString(),
+    updated_at:         state.user.updated_at         || new Date().toISOString(),
+  };
+
+  // 2. garden_tags/{code}/plots/{plotId} — 정원 칸별
+  state.plots.forEach(p=>{
+    const copy = {...p};
+    delete copy._lastCalc;
+    docs[`garden_tags/${code}/plots/${p.plot_id}`] = copy;
+  });
+
+  // 3. garden_items/{itemId} — 개별 아이템 (garden_user_items → garden_items)
+  state.items.forEach(it=>{
+    docs[`garden_items/${it.item_id}`] = {...it};
+  });
+
+  // 4. garden_tags/{code}/codex/{resultId} — 도감 (결과물별 개별 문서)
+  (state.user.codex || []).forEach(resultId=>{
+    docs[`garden_tags/${code}/codex/${resultId}`] = {
+      code,
+      result_id: resultId,
+      registered_at: state.user.updated_at
+    };
+  });
+
+  // 5. garden_tags/{code}/home_slots/{slotId} — 마이홈 슬롯
+  (state.user.home_items || []).forEach((itemId, idx)=>{
+    const slotId = "slot_" + String(idx+1).padStart(2,"0");
+    docs[`garden_tags/${code}/home_slots/${slotId}`] = {
+      code,
+      slot_id: slotId,
+      item_instance_id: itemId,
+      slot_index: idx,
+      updated_at: state.user.updated_at
+    };
+  });
+
+  // 6. garden_tags/{code}/visits/{visitKey} — 방문 기록
+  Object.entries(state.user.visit_history || {}).forEach(([key, visit])=>{
+    docs[`garden_tags/${code}/visits/${key}`] = { code, ...visit };
+  });
+
+  return docs;
+}
+
+function exportFirestorePreview(){
+  const preview = buildFirestorePreview();
+  const dump = JSON.stringify(preview, null, 2);
+  openSheet(`<h3>Firestore 저장 구조 미리보기</h3>
+    <p class="muted">Firebase 연결 전, 현재 localStorage 상태가 Firestore에 어떤 문서 경로로 저장될지 확인하는 화면입니다.</p>
+    <div class="state-dump">${htmlEscapeText(dump)}</div>`);
+}
+
+function openFirebaseGuide(){
+  const guide = `Step4 Firebase 연결 준비
+
+1. Firebase Console에서 Web App 설정값을 만든다.
+2. APP_CONFIG.firebase 안에 apiKey, projectId 등을 입력한다.
+3. APP_CONFIG.storageMode를 "firebase"로 변경한다.
+4. save() 함수 안에서 buildFirestorePreview() 결과를 Firestore setDoc으로 저장한다.
+5. load() 함수는 Firestore에서 garden_tags/{code}, /plots, /codex, /home_slots, /visits + garden_items를 읽어 state로 재구성한다.
+
+현재 파일은 안전하게 localStorage만 사용합니다.
+QR 코드별 테스트 예시:
+- ?code=GT-0001
+- ?code=GT-0002
+- ?code=GT-GAMCHEON-001`;
+  const snippet = `const APP_CONFIG = {
+  version: "V1.1-step4",
+  storageMode: "firebase",
+  firebase: {
+    apiKey: "여기에 입력",
+    authDomain: "여기에 입력",
+    projectId: "여기에 입력",
+    storageBucket: "여기에 입력",
+    messagingSenderId: "여기에 입력",
+    appId: "여기에 입력"
+  }
+};`;
+  openSheet(`<h3>Firebase 연결 안내</h3>
+    <p class="muted">${htmlEscapeText(guide).replace(/\n/g,"<br>")}</p>
+    <div class="guide-code">${htmlEscapeText(snippet)}</div>`);
+}
+
+function renderCheckin(){
+  document.getElementById("streak").textContent = state.user.streak_count;
+  document.getElementById("lastCheckin").textContent = state.user.last_checkin_date || "-";
+  const done = state.user.last_checkin_date === todayStr();
+  const btn = document.getElementById("checkinBtn");
+  btn.disabled = done;
+  btn.textContent = done ? "오늘 출석 완료 ✅" : "출석하고 보상 받기";
+}
+
+function renderVisit(){
+  const box = document.getElementById("visitList");
+  box.innerHTML = "";
+  VISIT_PLACES.forEach(pl=>{
+    const seed = SEEDS[pl.seed_id];
+    const key = pl.place_id + "_" + todayStr();
+    const record = state.user.visit_history[key];
+    const done = !!record;
+    const methodLabel = done ? (METHOD_LABELS[record.method] || record.method || "") : "";
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = `<div class="list-item" style="border:none;padding:4px 0;">
+      <div class="li-icon">${pl.icon}</div>
+      <div class="li-body">
+        <div class="n">${pl.name} ${done?'<span class="pill">오늘 완료</span>':''}</div>
+        <div class="d">${seed.default_icon}${seed.seed_name} +1 · 🪙+${pl.reward_coin} · 하루 1회</div>
+        ${done && methodLabel ? `<div class="d" style="font-size:11px;opacity:.7">${methodLabel}</div>` : ''}
+      </div>
+      <button class="b-primary" style="flex:none;padding:8px 14px;" ${done?'disabled':''}>${done?'완료':'방문 테스트'}</button>
+    </div>`;
+    c.querySelector("button").onclick = ()=> doVisit(pl);
+    box.appendChild(c);
+  });
+}
+
+function renderCodex(){
+  const total = Object.keys(RESULTS).length;
+  const got = state.user.codex.length;
+  const rate = total>0 ? Math.round(got/total*100) : 0;
+  document.getElementById("codexRate").textContent = rate+"% ("+got+"/"+total+")";
+  document.getElementById("codexBar").style.width = rate+"%";
+  const box = document.getElementById("codexCats");
+  box.innerHTML = "";
+  // 카테고리별
+  const byCat = {};
+  Object.values(RESULTS).forEach(r=>{ (byCat[r.result_type]=byCat[r.result_type]||[]).push(r); });
+  Object.keys(byCat).forEach(cat=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    let cells = "";
+    byCat[cat].forEach(r=>{
+      const unlocked = state.user.codex.includes(r.result_id);
+      cells += `<div class="cx-cell ${unlocked?'':'locked'}">
+        <div>${unlocked ? iconFor(r.codex_image_url,r.default_icon,r.result_type) : "🔒"}</div>
+        <div class="cn">${unlocked ? r.result_name : "???"}</div></div>`;
+    });
+    card.innerHTML = `<h3>${CODEX_CATS[cat]||cat}</h3><div class="cx-grid">${cells}</div>`;
+    box.appendChild(card);
+  });
+}
+
+function renderHome(){
+  const box = document.getElementById("homeSlots");
+  box.innerHTML = "";
+  const ownedIds = state.user.home_items || [];
+  const owned = ownedIds
+    .map(itemId=>state.items.find(i=>i.item_id===itemId && i.item_type==="home_item" && i.status==="owned"))
+    .filter(Boolean);
+  const SLOTS = 6;
+  for(let i=0;i<SLOTS;i++){
+    const el = document.createElement("div");
+    if(i < owned.length){
+      const item = owned[i];
+      const h = HOME_ITEMS[item.item_ref_id];
+      el.className = "slot filled";
+      el.innerHTML = `<div>${iconFor(h.home_item_image_url,h.default_icon,'landmark')}</div>
+        <span class="sn">${h.home_item_name}</span>`;
+    } else {
+      el.className = "slot";
+      el.innerHTML = `<div style="opacity:.3">＋</div><span class="sn">비어 있음</span>`;
+    }
+    box.appendChild(el);
+  }
+}
+
+function renderShop(){
+  const box = document.getElementById("shopList");
+  box.innerHTML = "";
+  SHOP_ITEMS.forEach(s=>{
+    const c = document.createElement("div");
+    c.className = "card";
+    const afford = state.user.coin >= s.price_coin;
+    c.innerHTML = `<div class="list-item" style="border:none;padding:4px 0;">
+      <div class="li-icon">${s.icon}</div>
+      <div class="li-body"><div class="n">${s.item_name}</div>
+        <div class="d">🪙 ${s.price_coin} 코인</div></div>
+      <button class="b-gold" style="flex:none;padding:8px 14px;" ${afford?'':'disabled'}>구매</button>
+    </div>`;
+    c.querySelector("button").onclick = ()=> buy(s);
+    box.appendChild(c);
+  });
+}
+
+/* =====================================================================
+   UI 헬퍼 (탭 / 시트 / 토스트)
+   ===================================================================== */
+function switchTab(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("v-"+name).classList.add("active");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===name));
+  if(name==="garden") renderGarden();
+}
+function openSheet(html){
+  document.getElementById("sheet").innerHTML = html;
+  document.getElementById("overlay").classList.add("show");
+}
+function closeSheet(){ document.getElementById("overlay").classList.remove("show"); }
+let toastTimer;
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+function resetAll(){
+  if(confirm("모든 데이터를 초기화할까요? (테스트용)")){
+    localStorage.removeItem(LS_KEY);
+    selectedPlotId=null; itemSeq=0;
+    state = newState();
+    save();
+    renderAll();
+    toast("초기화 완료 🌱");
+  }
+}
+
+/* =====================================================================
+   초기화 + 실시간 갱신 루프
+   ===================================================================== */
+(async()=>{
+  await load();
+  renderAll();
+  handlePlaceQrVisit(); // place 파라미터 있으면 QR 방문 처리
+  // 3초마다 성장 갱신
+  setInterval(()=>{
+    tickGrowth();
+    if(document.getElementById("v-garden").classList.contains("active")){ renderGarden(); renderPlotDetail(); }
+    renderInventory();
+    renderTop();
+  }, 3000);
+})();
+</script>
+</body>
+</html>
