@@ -1581,4 +1581,64 @@ function adminQuickSyncQrDbRowToProductSheet_(code) {
     if (col) rowValues[col - 1] = masterData[key];
   });
 
-  productSheet.getRange(productRow, 1, 1, lastCol).setValues([
+  productSheet.getRange(productRow, 1, 1, lastCol).setValues([rowValues]);
+  return true;
+}
+
+function adminQuickNowText_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+}
+
+// ─────────────────────────────────────────────
+// 관광지 QR Drive 저장 + 시트 업데이트
+// ─────────────────────────────────────────────
+
+function saveGardenPlaceQr_(placeId, b64) {
+  try {
+    placeId = String(placeId || '').trim();
+    if (!placeId) return { success: false, message: 'place_id 없음' };
+    if (!b64)     return { success: false, message: 'QR 이미지 데이터 없음' };
+
+    const raw  = b64.replace(/^data:image\/png;base64,/, '');
+    const blob = Utilities.newBlob(Utilities.base64Decode(raw), 'image/png', placeId + '_qr.png');
+
+    // Drive 폴더 준비
+    const folderName = '새김_GARDEN_QR';
+    const folders = DriveApp.getFoldersByName(folderName);
+    const folder  = folders.hasNext() ? folders.next() : DriveApp.createFolder(folderName);
+
+    // 기존 파일 삭제
+    const existing = folder.getFilesByName(placeId + '_qr.png');
+    while (existing.hasNext()) existing.next().setTrashed(true);
+
+    // 저장 + 공개 설정
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const driveUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+
+    // GARDEN_PLACES 시트 업데이트
+    const ss      = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet   = ss.getSheetByName('GARDEN_PLACES');
+    if (sheet) {
+      const data       = sheet.getDataRange().getValues();
+      const headers    = data[0];
+      const pidCol     = headers.indexOf('place_id');
+      const qrUrlCol   = headers.indexOf('qr_file_url');
+      const updatedCol = headers.indexOf('updated_at');
+      if (pidCol >= 0 && qrUrlCol >= 0) {
+        for (var i = 1; i < data.length; i++) {
+          if (String(data[i][pidCol]).trim() === placeId) {
+            sheet.getRange(i + 1, qrUrlCol + 1).setValue(driveUrl);
+            if (updatedCol >= 0) sheet.getRange(i + 1, updatedCol + 1).setValue(adminQuickNowText_());
+            break;
+          }
+        }
+      }
+    }
+
+    Logger.log('QR Drive 저장 완료: ' + placeId + ' → ' + driveUrl);
+    return { success: true, drive_url: driveUrl };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}

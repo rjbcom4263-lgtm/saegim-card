@@ -940,4 +940,137 @@ function nvidiaProxy_(params) {
 
   const data = JSON.parse(text);
   const b64 = (data.data && data.data[0]) ? data.data[0].b64_json : null;
-  if (!b64) return { success: false, message: 
+  if (!b64) return { success: false, message: '응답에 이미지 없음: ' + text.slice(0, 200) };
+  return { success: true, b64 };
+}
+
+// ─── 관광지 QR Drive 저장 + 시트 업데이트 ────────────────────────────────────
+function saveGardenPlaceQr_(params) {
+  try {
+    const placeId  = String(params.place_id  || '').trim();
+    const b64      = String(params.b64       || '').trim(); // base64 PNG (data:image/png;base64,... 또는 순수 b64)
+    const driveUrl = params.drive_url ? String(params.drive_url).trim() : '';
+
+    if (!placeId) return { success: false, message: 'place_id 없음' };
+
+    let fileUrl = driveUrl;
+
+    // b64가 있으면 Drive에 저장
+    if (b64) {
+      const raw = b64.replace(/^data:image\/png;base64,/, '');
+      const blob = Utilities.newBlob(Utilities.base64Decode(raw), 'image/png', placeId + '_qr.png');
+
+      const folder = getOrCreateDriveFolder_('새김_GARDEN_QR');
+
+      // 기존 파일 삭제
+      const existing = folder.getFilesByName(placeId + '_qr.png');
+      while (existing.hasNext()) existing.next().setTrashed(true);
+
+      const file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      fileUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+    }
+
+    if (!fileUrl) return { success: false, message: 'Drive URL 없음' };
+
+    // GARDEN_PLACES 시트 업데이트
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('GARDEN_PLACES');
+    if (sheet) {
+      const data = sheet.getDataRange().getValues();
+      const headers = data[0];
+      const placeIdCol = headers.indexOf('place_id');
+      const qrUrlCol   = headers.indexOf('qr_file_url');
+      const updatedCol = headers.indexOf('updated_at');
+      if (placeIdCol >= 0 && qrUrlCol >= 0) {
+        for (var i = 1; i < data.length; i++) {
+          if (String(data[i][placeIdCol]).trim() === placeId) {
+            sheet.getRange(i + 1, qrUrlCol + 1).setValue(fileUrl);
+            if (updatedCol >= 0) sheet.getRange(i + 1, updatedCol + 1).setValue(nowText_());
+            break;
+          }
+        }
+      }
+    }
+
+    return { success: true, drive_url: fileUrl };
+  } catch (err) {
+    return { success: false, message: String(err) };
+  }
+}
+
+// ─── GARDEN_PLACES 시트 초기화 (QR Drive 저장) ───────────────────────────────
+function initGardenPlacesSheet() {
+  const GARDEN_SHEET_NAME = 'GARDEN_PLACES';
+  const BASE = 'https://saegim-memory.web.app/gt.html';
+  const QR_FOLDER_NAME = '새김_GARDEN_QR';
+  const QR_SIZE = '300x300';
+
+  const PLACES = [
+    { place_id:'gamcheon',   place_name:'감천문화마을', icon:'🏘️', reward_seed:'gamcheon_seed',   reward_coin:30 },
+    { place_id:'gwangalli',  place_name:'광안리',       icon:'🌊', reward_seed:'gwangan_seed',    reward_coin:30 },
+    { place_id:'haeundae',   place_name:'해운대',       icon:'🏖️', reward_seed:'haeundae_seed',   reward_coin:30 },
+    { place_id:'taejongdae', place_name:'태종대',       icon:'🪨', reward_seed:'taejongdae_seed', reward_coin:30 },
+    { place_id:'oryukdo',    place_name:'오륙도',       icon:'🏝️', reward_seed:'oryukdo_seed',    reward_coin:30 },
+  ];
+
+  // 1. QR 저장 폴더 준비
+  const folder = getOrCreateDriveFolder_(QR_FOLDER_NAME);
+
+  // 2. 시트 준비
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(GARDEN_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(GARDEN_SHEET_NAME);
+  } else {
+    sheet.clearContents();
+  }
+
+  const headers = ['place_id','place_name','icon','public_qr_url','reward_seed_id','reward_coin','daily_limit','enabled','qr_file_url','updated_at'];
+  sheet.getRange(1,1,1,headers.length).setValues([headers]);
+
+  const hRange = sheet.getRange(1,1,1,headers.length);
+  hRange.setBackground('#2a3d20');
+  hRange.setFontColor('#f5e4b8');
+  hRange.setFontWeight('bold');
+
+  const now = nowText_();
+
+  // 3. 각 관광지별 QR 생성 → Drive 저장 → 시트에 실제 이미지 삽입
+  PLACES.forEach(function(p, idx) {
+    const row = idx + 2;
+    const placeUrl = BASE + '?place=' + p.place_id;
+    const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + QR_SIZE + '&data=' + encodeURIComponent(placeUrl);
+
+    // Drive에서 기존 파일 삭제
+    const existing = folder.getFilesByName(p.place_id + '_qr.png');
+    while (existing.hasNext()) existing.next().setTrashed(true);
+
+    // QR 이미지 fetch → Drive 저장
+    const blob = UrlFetchApp.fetch(qrApiUrl).getBlob().setName(p.place_id + '_qr.png');
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const driveUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
+
+    // 데이터 행 작성 (qr_file_url 열에 Drive URL 저장)
+    sheet.getRange(row, 1, 1, headers.length).setValues([[
+      p.place_id, p.place_name, p.icon, placeUrl,
+      p.reward_seed, p.reward_coin, 1, true, driveUrl, now
+    ]]);
+
+    sheet.setRowHeight(row, 40);
+    Utilities.sleep(500); // API 과부하 방지
+  });
+
+  sheet.setColumnWidth(4, 380);
+  sheet.setColumnWidth(9, 180);
+
+  Logger.log('GARDEN_PLACES 시트 생성 완료 — QR Drive 저장 완료');
+}
+
+function getOrCreateDriveFolder_(name) {
+  const folders = DriveApp.getFoldersByName(name);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(name);
+}
+
