@@ -247,6 +247,30 @@ tr:hover td{background:rgba(255,255,255,.03)}
   .detail-grid{grid-template-columns:100px 1fr}
   .detail-label,.detail-value{font-size:12px;padding:9px 10px}
 }
+/* 관광지 카드 */
+.gt-place-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.gt-place-card{border:1px solid #3a3120;border-radius:16px;background:#151515;padding:16px;cursor:pointer;transition:transform .15s,border-color .15s}
+.gt-place-card:hover{transform:translateY(-2px);border-color:var(--gold)}
+.gt-place-card .gt-pi{font-size:34px;margin-bottom:8px}
+.gt-place-card .gt-pn{font-size:16px;font-weight:800;color:#f5e4b8}
+.gt-place-card .gt-pr{margin-top:5px;font-size:12px;color:#b9aa8a}
+.gt-place-card .gt-pa{display:flex;gap:6px;margin-top:12px}
+/* 관광지 모달 */
+.gt-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:none;align-items:center;justify-content:center;padding:20px}
+.gt-modal-overlay.show{display:flex}
+.gt-modal-card{width:min(600px,100%);max-height:88vh;overflow:auto;background:#151515;border:1px solid #4a3b22;border-radius:20px;padding:22px}
+.gt-modal-card h2{margin:0 0 14px;font-size:18px;color:var(--gold)}
+.gt-modal-card label{display:block;font-size:11px;color:var(--muted);margin:12px 0 4px}
+.gt-modal-card input,.gt-modal-card select{width:100%;box-sizing:border-box;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px}
+.gt-modal-card select option{background:#111}
+.gt-qr-box{text-align:center;margin:16px 0}
+.gt-qr-box img{width:200px;height:200px;background:#fff;padding:8px;border-radius:12px}
+.gt-qr-box p{margin:6px 0 0;font-size:12px;color:var(--muted)}
+.gt-url-row{display:flex;gap:6px;align-items:center;margin-top:4px}
+.gt-url-row input{flex:1;font-family:monospace;font-size:11px;color:var(--muted)}
+.gt-modal-actions{display:flex;gap:8px;margin-top:18px}
+.gt-modal-actions button{flex:1}
+details summary{cursor:pointer;font-size:12px;color:var(--muted);margin-top:14px}
 </style>
 </head>
 <body>
@@ -536,34 +560,19 @@ tr:hover td{background:rgba(255,255,255,.03)}
         <!-- 관광지 -->
         <div id="gt-tab-places" style="display:none">
           <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-              <span style="font-weight:700;color:var(--gold)">📍 관광지 목록</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-weight:700;color:var(--gold)">📍 관광지 관리</span>
               <button class="btn btn-primary" onclick="gtOpenAddPlaceForm()">+ 관광지 추가</button>
             </div>
-            <div style="overflow-x:auto">
-              <table id="gtPlaceTable">
-                <thead>
-                  <tr>
-                    <th>ID</th><th>이름</th><th>아이콘</th><th>지급 씨앗</th><th>코인 보상</th>
-                  </tr>
-                </thead>
-                <tbody id="gtPlaceBody"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- 관광지 공용 QR -->
-          <div class="card" style="margin-top:16px">
-            <div style="font-weight:700;color:var(--gold);margin-bottom:4px">🏷️ 관광지 공용 QR URL</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:14px">관광지에 실제로 붙이는 QR입니다. code는 포함하지 않습니다.<br>고객은 먼저 개인 가든태그 QR을 스캔한 뒤 이 QR을 스캔합니다.</div>
-            <div id="gtPlaceQrList"></div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px">카드를 클릭하면 QR 이미지와 수정 화면이 열립니다.</div>
+            <div class="gt-place-grid" id="gtPlaceGrid"></div>
           </div>
 
           <!-- 개인 가든태그 QR -->
           <div class="card" style="margin-top:16px">
             <div style="font-weight:700;color:var(--gold);margin-bottom:4px">🌱 개인 가든태그 QR URL</div>
-            <div style="font-size:12px;color:var(--muted);margin-bottom:14px">고객 개인 제품에 넣는 QR입니다. 가든태그 코드를 저장합니다.</div>
-            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:12px">
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">고객 개인 제품에 넣는 QR입니다. 스캔하면 가든태그 코드가 저장됩니다.</div>
+            <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
               <div>
                 <div style="font-size:11px;color:var(--muted);margin-bottom:4px">QR 코드</div>
                 <input type="text" id="gtQrCodeInput" placeholder="예: GT-0001" value="GT-0001"
@@ -573,15 +582,11 @@ tr:hover td{background:rgba(255,255,255,.03)}
             </div>
             <div id="gtPersonalQrUrl"></div>
           </div>
+        </div>
 
-          <!-- 테스트용 개별 URL -->
-          <div class="card" style="margin-top:16px">
-            <details>
-              <summary style="font-weight:700;color:var(--muted);cursor:pointer;font-size:13px">🔧 개발 테스트용 개별 URL (code+place 조합)</summary>
-              <div style="font-size:12px;color:var(--muted);margin:10px 0 14px">실제 운영에는 사용하지 않습니다. QR 코드를 입력하세요.</div>
-              <div id="gtTestQrList"></div>
-            </details>
-          </div>
+        <!-- 관광지 편집 모달 -->
+        <div id="gtModalOverlay" class="gt-modal-overlay" onclick="if(event.target===this)gtCloseModal()">
+          <div class="gt-modal-card" id="gtModalCard"></div>
         </div>
 
         <!-- 개별 정원 조회 -->
@@ -1517,10 +1522,10 @@ const GT_ADMIN_RESULTS = {
   rock_flower:          { result_id:'rock_flower',          result_name:'바위꽃',       result_type:'plant',    rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_oryukdo_rock' },
 };
 const GT_ADMIN_PLACES = [
-  { place_id:'gamcheon',   name:'감천문화마을', icon:'🏘️', seed_id:'gamcheon_seed',   reward_coin:30 },
-  { place_id:'gwangalli',  name:'광안리',       icon:'🌊', seed_id:'gwangan_seed',    reward_coin:30 },
-  { place_id:'haeundae',   name:'해운대',       icon:'🏖️', seed_id:'haeundae_seed',   reward_coin:30 },
-  { place_id:'taejongdae', name:'태종대',       icon:'🪨', seed_id:'taejongdae_seed', reward_coin:30 },
+  { place_id:'gamcheon',   name:'감천문화마을', icon:'🏘️', seed_id:'gamcheon_seed',   reward_coin:30, daily_limit:1, enabled:true },
+  { place_id:'gwangalli',  name:'광안리',       icon:'🌊', seed_id:'gwangan_seed',    reward_coin:30, daily_limit:1, enabled:true },
+  { place_id:'haeundae',   name:'해운대',       icon:'🏖️', seed_id:'haeundae_seed',   reward_coin:30, daily_limit:1, enabled:true },
+  { place_id:'taejongdae', name:'태종대',       icon:'🪨', seed_id:'taejongdae_seed', reward_coin:30, daily_limit:1, enabled:true },
   { place_id:'oryukdo',    name:'오륙도',       icon:'🏝️', seed_id:'oryukdo_seed',    reward_coin:30 },
 ];
 
@@ -1630,69 +1635,162 @@ function gtRenderSeeds() {
     </tr>`).join('');
 }
 
+// ── 관광지 헬퍼 ────────────────────────────────────────
+function gtGetPlace(placeId) {
+  return GT_ADMIN_PLACES.find(p => p.place_id === placeId) || null;
+}
+function gtMakePublicPlaceUrl(placeId) {
+  return `https://saegim-memory.web.app/gt.html?place=${encodeURIComponent(placeId)}`;
+}
+function gtMakeQrImageUrl(url) {
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+}
+function gtMakeTestPlaceUrl(code, placeId) {
+  return `https://saegim-memory.web.app/gt.html?code=${encodeURIComponent(code)}&place=${encodeURIComponent(placeId)}`;
+}
+async function gtCopyText(text) {
+  try { await navigator.clipboard.writeText(text); alert('복사되었습니다.'); }
+  catch(e) { prompt('아래 주소를 복사하세요.', text); }
+}
+
+// ── 관광지 카드 렌더 ─────────────────────────────────
 function gtRenderPlaces() {
-  const tbody = document.getElementById('gtPlaceBody');
-  if (!tbody) return;
-  tbody.innerHTML = GT_ADMIN_PLACES.map(p => `
-    <tr>
-      <td><code style="font-size:11px;color:var(--muted)">${p.place_id}</code></td>
-      <td style="font-weight:600">${p.name}</td>
-      <td style="font-size:18px">${p.icon}</td>
-      <td style="font-size:12px;color:var(--muted)">${GT_ADMIN_SEEDS[p.seed_id]?.seed_name||p.seed_id}</td>
-      <td style="color:var(--gold)">🪙${p.reward_coin}</td>
-    </tr>`).join('');
-  gtRenderPlaceQrUrls();
-}
-
-function _gtUrlRow(url, label) {
-  return `<div style="padding:10px 0;border-bottom:1px solid var(--line)">
-    ${label ? `<div style="font-size:12px;font-weight:600;margin-bottom:6px">${label}</div>` : ''}
-    <div style="display:flex;gap:6px;align-items:center">
-      <input type="text" value="${url}" readonly
-        style="flex:1;padding:7px 10px;border-radius:7px;border:1px solid var(--line);background:#0d0d0d;color:var(--muted);font-size:11px;font-family:monospace"
-        onclick="this.select()">
-      <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;white-space:nowrap"
-        onclick="navigator.clipboard.writeText('${url}').then(()=>{this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='복사',1500)})">복사</button>
-    </div>
-  </div>`;
-}
-
-function gtRenderPlaceQrUrls() {
-  const box = document.getElementById('gtPlaceQrList');
-  if (!box) return;
-  const base = 'https://saegim-memory.web.app/gt.html';
-  box.innerHTML = GT_ADMIN_PLACES.map(p => {
-    const url = `${base}?place=${p.place_id}`;
-    return `<div style="padding:12px 0;border-bottom:1px solid var(--line)">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-        <span style="font-size:18px">${p.icon}</span>
-        <span style="font-weight:600">${p.name}</span>
-        <span style="font-size:11px;color:var(--muted)">씨앗+1 · 🪙+${p.reward_coin} · 하루 1회</span>
+  const grid = document.getElementById('gtPlaceGrid');
+  if (!grid) return;
+  grid.innerHTML = GT_ADMIN_PLACES.map(p => {
+    const seedName = Object.values(GT_ADMIN_SEEDS).find(s => s.seed_id === p.seed_id)?.seed_name || p.seed_id;
+    return `<div class="gt-place-card" onclick="gtOpenPlaceEditor('${p.place_id}')">
+      <div class="gt-pi">${p.icon}</div>
+      <div class="gt-pn">${p.name}</div>
+      <div class="gt-pr">${seedName} · 🪙${p.reward_coin} · ${p.daily_limit||1}회/일</div>
+      <div class="gt-pa">
+        <button class="btn btn-ghost" style="flex:1;font-size:12px;padding:6px 0"
+          onclick="event.stopPropagation();gtOpenPlaceEditor('${p.place_id}')">QR · 수정</button>
       </div>
-      ${_gtUrlRow(url, '')}
     </div>`;
   }).join('');
-  gtRenderTestQrList();
 }
 
+// ── 관광지 상세 모달 ──────────────────────────────────
+window.gtOpenPlaceEditor = function(placeId) {
+  const place = gtGetPlace(placeId);
+  if (!place) { alert('관광지 정보를 찾을 수 없습니다.'); return; }
+  const publicUrl = gtMakePublicPlaceUrl(place.place_id);
+  const qrImg    = gtMakeQrImageUrl(publicUrl);
+  const testCode = (document.getElementById('gtQrCodeInput')?.value || 'GT-0001').trim().toUpperCase() || 'GT-0001';
+  const testUrl  = gtMakeTestPlaceUrl(testCode, place.place_id);
+  const seedOptions = Object.values(GT_ADMIN_SEEDS).map(s =>
+    `<option value="${s.seed_id}" ${s.seed_id === place.seed_id ? 'selected' : ''}>${s.seed_name}</option>`
+  ).join('');
+  gtOpenModal(`
+    <h2>${place.icon} ${place.name}</h2>
+    <div class="gt-qr-box">
+      <img src="${qrImg}" alt="${place.name} QR">
+      <p>관광지 공용 QR (code 미포함)</p>
+    </div>
+    <label>공용 QR URL</label>
+    <div class="gt-url-row">
+      <input value="${publicUrl}" readonly onclick="this.select()">
+      <button class="btn btn-ghost" style="white-space:nowrap" onclick="gtCopyText('${publicUrl}')">복사</button>
+    </div>
+    <div style="margin-top:8px">
+      <button class="btn btn-ghost" style="font-size:12px" onclick="window.open('${qrImg}','_blank')">QR 이미지 열기</button>
+    </div>
+    <hr style="border-color:var(--line);margin:16px 0">
+    <label>관광지 이름</label>
+    <input id="gtPlaceName" value="${place.name}">
+    <label>아이콘</label>
+    <input id="gtPlaceIcon" value="${place.icon}">
+    <label>지급 씨앗</label>
+    <select id="gtPlaceRewardSeed">${seedOptions}</select>
+    <label>코인 보상</label>
+    <input id="gtPlaceRewardCoin" type="number" value="${place.reward_coin}">
+    <label>하루 제한</label>
+    <input id="gtPlaceDailyLimit" type="number" value="${place.daily_limit||1}">
+    <label style="display:flex;align-items:center;gap:6px;margin-top:12px">
+      <input id="gtPlaceEnabled" type="checkbox" style="width:auto" ${place.enabled!==false?'checked':''}>
+      사용중
+    </label>
+    <div class="gt-modal-actions">
+      <button class="btn btn-primary" onclick="gtSavePlace('${place.place_id}')">저장</button>
+      <button class="btn btn-ghost"   onclick="gtCloseModal()">닫기</button>
+    </div>
+    <details style="margin-top:14px">
+      <summary>개발 테스트용 URL (code+place)</summary>
+      <div class="gt-url-row" style="margin-top:8px">
+        <input value="${testUrl}" readonly onclick="this.select()">
+        <button class="btn btn-ghost" style="white-space:nowrap" onclick="gtCopyText('${testUrl}')">복사</button>
+      </div>
+    </details>
+  `);
+};
+
+// ── 관광지 저장 ───────────────────────────────────────
+window.gtSavePlace = async function(placeId) {
+  const name        = document.getElementById('gtPlaceName')?.value.trim() || '';
+  const icon        = document.getElementById('gtPlaceIcon')?.value.trim() || '📍';
+  const rewardSeedId= document.getElementById('gtPlaceRewardSeed')?.value || '';
+  const rewardCoin  = Number(document.getElementById('gtPlaceRewardCoin')?.value || 0);
+  const dailyLimit  = Number(document.getElementById('gtPlaceDailyLimit')?.value || 1);
+  const enabled     = document.getElementById('gtPlaceEnabled')?.checked !== false;
+  if (!name)         { alert('관광지 이름을 입력하세요.'); return; }
+  if (!rewardSeedId) { alert('지급 씨앗을 선택하세요.'); return; }
+
+  const idx = GT_ADMIN_PLACES.findIndex(p => p.place_id === placeId);
+  if (idx >= 0) {
+    Object.assign(GT_ADMIN_PLACES[idx], { name, icon, seed_id: rewardSeedId, reward_coin: rewardCoin, daily_limit: dailyLimit, enabled });
+  }
+
+  if (window.db) {
+    await window.db.collection('garden_places').doc(placeId).set({
+      place_id: placeId, place_name: name, icon,
+      reward_seed_id: rewardSeedId, reward_coin: rewardCoin,
+      daily_limit: dailyLimit, enabled,
+      public_qr_url: gtMakePublicPlaceUrl(placeId),
+      updated_at: new Date().toISOString()
+    }, { merge: true });
+  }
+
+  alert('저장되었습니다.');
+  gtCloseModal();
+  gtRenderPlaces();
+};
+
+// ── 모달 공통 ─────────────────────────────────────────
+function gtOpenModal(html) {
+  const card = document.getElementById('gtModalCard');
+  if (card) card.innerHTML = html;
+  document.getElementById('gtModalOverlay')?.classList.add('show');
+}
+window.gtCloseModal = function() {
+  document.getElementById('gtModalOverlay')?.classList.remove('show');
+};
+
+// ── 개인 QR URL ───────────────────────────────────────
+function _gtUrlRow(url) {
+  return `<div style="display:flex;gap:6px;align-items:center">
+    <input type="text" value="${url}" readonly onclick="this.select()"
+      style="flex:1;padding:7px 10px;border-radius:7px;border:1px solid var(--line);background:#0d0d0d;color:var(--muted);font-size:11px;font-family:monospace">
+    <button class="btn btn-ghost" style="font-size:12px;padding:6px 12px;white-space:nowrap"
+      onclick="gtCopyText('${url}')">복사</button>
+  </div>`;
+}
 function gtRenderPersonalQrUrl() {
   const box = document.getElementById('gtPersonalQrUrl');
   if (!box) return;
   const code = (document.getElementById('gtQrCodeInput')?.value || 'GT-0001').trim().toUpperCase() || 'GT-0001';
-  const url = `https://saegim-memory.web.app/gt.html?code=${code}`;
-  box.innerHTML = _gtUrlRow(url, '');
-  gtRenderTestQrList();
-}
-
-function gtRenderTestQrList() {
-  const box = document.getElementById('gtTestQrList');
-  if (!box) return;
-  const code = (document.getElementById('gtQrCodeInput')?.value || 'GT-0001').trim().toUpperCase() || 'GT-0001';
-  const base = 'https://saegim-memory.web.app/gt.html';
-  box.innerHTML = GT_ADMIN_PLACES.map(p => {
-    const url = `${base}?code=${code}&place=${p.place_id}`;
-    return _gtUrlRow(url, `${p.icon} ${p.name}`);
-  }).join('');
+  const url  = `https://saegim-memory.web.app/gt.html?code=${code}`;
+  const qrImg = gtMakeQrImageUrl(url);
+  box.innerHTML = `
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <img src="${qrImg}" style="width:120px;height:120px;background:#fff;padding:6px;border-radius:10px" alt="개인 QR">
+      <div style="flex:1;min-width:200px">
+        ${_gtUrlRow(url)}
+        <div style="margin-top:8px">
+          <button class="btn btn-ghost" style="font-size:12px" onclick="window.open('${qrImg}','_blank')">QR 이미지 열기</button>
+        </div>
+      </div>
+    </div>`;
 }
 
 window.gtOpenAddSeedForm = function() {
@@ -1702,7 +1800,7 @@ window.gtOpenAddResultForm = function() {
   alert('결과물 추가 기능은 Firebase 연결(Step6A) 후 활성화됩니다.\n현재는 gt.html 코드에서 RESULTS 객체를 직접 수정하세요.');
 };
 window.gtOpenAddPlaceForm = function() {
-  alert('관광지 추가 기능은 Firebase 연결(Step6A) 후 활성화됩니다.\n현재는 gt.html 코드에서 VISIT_PLACES 배열을 직접 수정하세요.');
+  alert('관광지 추가 기능은 Firebase 연결 후 활성화됩니다.\n현재는 관리자 코드에서 GT_ADMIN_PLACES 배열을 직접 수정하세요.');
 };
 
 window.gtLoadGarden = async function() {
