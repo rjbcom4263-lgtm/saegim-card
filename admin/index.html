@@ -2039,14 +2039,18 @@ window.gtResetGarden = async function() {
     const db = window.db;
     if (!db) throw new Error('Firestore 연결 없음');
 
-    const tagRef = db.collection('garden_tags').doc(code);
+    const { collection, doc, getDocs, writeBatch, setDoc, query, where } =
+      await import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js');
+
+    const tagRef = doc(db, 'garden_tags', code);
 
     // 서브컬렉션 일괄 삭제 헬퍼
     async function deleteSubcollection(colName) {
-      const snap = await tagRef.collection(colName).get();
-      const batch = db.batch();
+      const snap = await getDocs(collection(db, 'garden_tags', code, colName));
+      if (snap.empty) return;
+      const batch = writeBatch(db);
       snap.docs.forEach(d => batch.delete(d.ref));
-      if (!snap.empty) await batch.commit();
+      await batch.commit();
     }
 
     await Promise.all([
@@ -2056,15 +2060,15 @@ window.gtResetGarden = async function() {
     ]);
 
     // garden_items 삭제 (owner_code == code)
-    const itemsSnap = await db.collection('garden_items').where('owner_code', '==', code).get();
+    const itemsSnap = await getDocs(query(collection(db, 'garden_items'), where('owner_code', '==', code)));
     if (!itemsSnap.empty) {
-      const batch = db.batch();
+      const batch = writeBatch(db);
       itemsSnap.docs.forEach(d => batch.delete(d.ref));
       await batch.commit();
     }
 
     // garden_tags 문서 초기화
-    await tagRef.set({
+    await setDoc(tagRef, {
       code,
       coin: 0,
       fertilizer_basic: 0,
@@ -2079,7 +2083,7 @@ window.gtResetGarden = async function() {
 
     resultEl.style.color = 'var(--green)';
     resultEl.textContent = `✅ [${code}] 정원 초기화 완료`;
-    gtLoadGarden(); // 조회 새로고침
+    gtLoadGarden();
   } catch(e) {
     resultEl.style.color = 'var(--red)';
     resultEl.textContent = '❌ 초기화 실패: ' + e.message;
