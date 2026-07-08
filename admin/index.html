@@ -279,6 +279,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
       <div class="nav-item" onclick="showPage('inventory',this)">QR 재고</div>
       <div class="nav-item" onclick="showPage('create',this)">QR 생성</div>
       <div class="nav-item" onclick="showPage('sticker',this)">뱃지 도안 생성</div>
+      <div class="nav-item" onclick="showPage('garden',this)">🌱 가든태그</div>
       <div class="nav-item" onclick="window.open('/saju/','_blank')">사주 ↗</div>
     </div>
     <div class="content">
@@ -484,6 +485,133 @@ tr:hover td{background:rgba(255,255,255,.03)}
 
       </div>
 
+      <!-- 가든태그 관리 -->
+      <div class="page" id="page-garden">
+        <h2>🌱 가든태그 관리</h2>
+
+        <!-- 서브탭 -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px">
+          <button class="btn btn-primary" id="gtab-seeds" onclick="gtShowTab('seeds')">🌿 씨앗 &amp; 결과물</button>
+          <button class="btn btn-ghost"   id="gtab-places" onclick="gtShowTab('places')">📍 관광지</button>
+          <button class="btn btn-ghost"   id="gtab-garden" onclick="gtShowTab('garden')">🏡 개별 정원 조회</button>
+        </div>
+
+        <!-- 씨앗 & 결과물 -->
+        <div id="gt-tab-seeds">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <span style="font-weight:700;color:var(--gold)">🌱 씨앗 목록</span>
+              <button class="btn btn-primary" onclick="gtOpenAddSeedForm()">+ 씨앗 추가</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table id="gtSeedTable">
+                <thead>
+                  <tr>
+                    <th>ID</th><th>이름</th><th>분류</th><th>관광지</th><th>가중치</th><th>상태</th>
+                  </tr>
+                </thead>
+                <tbody id="gtSeedBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <span style="font-weight:700;color:var(--gold)">🌼 결과물(식물/랜드마크) 목록</span>
+              <button class="btn btn-primary" onclick="gtOpenAddResultForm()">+ 결과물 추가</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table id="gtResultTable">
+                <thead>
+                  <tr>
+                    <th>ID</th><th>이름</th><th>유형</th><th>등급</th><th>성장시간</th><th>코인</th><th>마이홈</th>
+                  </tr>
+                </thead>
+                <tbody id="gtResultBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 관광지 -->
+        <div id="gt-tab-places" style="display:none">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+              <span style="font-weight:700;color:var(--gold)">📍 관광지 목록</span>
+              <button class="btn btn-primary" onclick="gtOpenAddPlaceForm()">+ 관광지 추가</button>
+            </div>
+            <div style="overflow-x:auto">
+              <table id="gtPlaceTable">
+                <thead>
+                  <tr>
+                    <th>ID</th><th>이름</th><th>아이콘</th><th>지급 씨앗</th><th>코인 보상</th>
+                  </tr>
+                </thead>
+                <tbody id="gtPlaceBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 개별 정원 조회 -->
+        <div id="gt-tab-garden" style="display:none">
+          <div class="card">
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">QR 코드</div>
+                <input type="text" id="gtGardenCode" placeholder="예: GT-0001" style="padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:14px;width:160px" onkeydown="if(event.key==='Enter')gtLoadGarden()">
+              </div>
+              <button class="btn btn-primary" onclick="gtLoadGarden()">조회</button>
+            </div>
+            <div id="gtGardenDetail" style="color:var(--muted);font-size:13px">QR 코드를 입력하고 조회하세요.</div>
+          </div>
+
+          <!-- 정원 수정 패널 (조회 후 노출) -->
+          <div id="gtGardenActions" class="card" style="display:none;margin-top:0">
+            <div style="font-weight:700;color:var(--gold);margin-bottom:14px">⚙️ 정원 운영자 수정</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">💧 물 추가</div>
+                <div style="display:flex;gap:6px">
+                  <input type="number" id="gtAddWater" min="1" max="50" value="3" style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                  <button class="btn btn-ghost" style="flex:1" onclick="gtGrantItem('water')">지급</button>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">🧪 비료 추가</div>
+                <div style="display:flex;gap:6px">
+                  <input type="number" id="gtAddFert" min="1" max="50" value="1" style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                  <button class="btn btn-ghost" style="flex:1" onclick="gtGrantItem('fert')">지급</button>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">🪙 코인 추가</div>
+                <div style="display:flex;gap:6px">
+                  <input type="number" id="gtAddCoin" min="1" max="9999" value="100" style="width:70px;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:13px">
+                  <button class="btn btn-ghost" style="flex:1" onclick="gtGrantItem('coin')">지급</button>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:4px">🌱 씨앗 지급</div>
+                <div style="display:flex;gap:6px">
+                  <select id="gtGrantSeedId" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--line);background:#111;color:var(--text);font-size:12px">
+                    <option value="basic_seed">일반 씨앗</option>
+                    <option value="gamcheon_seed">감천 씨앗</option>
+                    <option value="gwangan_seed">바다빛 씨앗</option>
+                    <option value="haeundae_seed">모래빛 씨앗</option>
+                    <option value="taejongdae_seed">절벽 씨앗</option>
+                    <option value="oryukdo_seed">섬바람 씨앗</option>
+                  </select>
+                  <button class="btn btn-ghost" onclick="gtGrantItem('seed')">지급</button>
+                </div>
+              </div>
+            </div>
+            <div id="gtActionResult" style="font-size:13px;min-height:20px;color:var(--green)"></div>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </div>
 </div>
@@ -618,6 +746,7 @@ window.showPage = function(name, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   el.classList.add('active');
+  if (name === 'garden') { gtRenderSeeds(); }
 };
 
 // ── 데이터 로드 ───────────────────────────────────
@@ -1300,6 +1429,199 @@ window.createQrCardsViaApi = async function() {
 
   if (successCount > 0) { await loadInventory(); await loadDashboard(); }
 };
+
+// ══════════════════════════════════════════════════════
+// 🌱 가든태그 관리
+// ══════════════════════════════════════════════════════
+
+// gt.html과 동일한 마스터 데이터 (관리자 화면에서 읽기용)
+const GT_ADMIN_SEEDS = {
+  basic_seed:    { seed_id:'basic_seed',     seed_name:'일반 씨앗',   category:'basic', place_id:'', results:['normal_flower(85)','gold_flower(15)'] },
+  gamcheon_seed: { seed_id:'gamcheon_seed',  seed_name:'감천 씨앗',   category:'local', place_id:'gamcheon', results:['gamcheon_roof_flower(80)','gold_gamcheon_flower(20)'] },
+  gwangan_seed:  { seed_id:'gwangan_seed',   seed_name:'바다빛 씨앗', category:'local', place_id:'gwangalli', results:['gwangan_bridge_flower(100)'] },
+  haeundae_seed: { seed_id:'haeundae_seed',  seed_name:'모래빛 씨앗', category:'local', place_id:'haeundae', results:['wave_flower(100)'] },
+  taejongdae_seed:{seed_id:'taejongdae_seed',seed_name:'절벽 씨앗',  category:'local', place_id:'taejongdae', results:['lighthouse_tree(100)'] },
+  oryukdo_seed:  { seed_id:'oryukdo_seed',   seed_name:'섬바람 씨앗', category:'local', place_id:'oryukdo', results:['rock_flower(100)'] },
+};
+const GT_ADMIN_RESULTS = {
+  normal_flower:        { result_id:'normal_flower',        result_name:'일반꽃',       result_type:'plant',    rarity:'common', total_growth_seconds:3600,  reward_coin:20, reward_home_item_id:null },
+  gold_flower:          { result_id:'gold_flower',          result_name:'황금꽃',       result_type:'plant',    rarity:'rare',   total_growth_seconds:7200,  reward_coin:80, reward_home_item_id:null },
+  gamcheon_roof_flower: { result_id:'gamcheon_roof_flower', result_name:'감천 지붕꽃', result_type:'landmark', rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_gamcheon_house' },
+  gold_gamcheon_flower: { result_id:'gold_gamcheon_flower', result_name:'황금 감천꽃', result_type:'plant',    rarity:'epic',   total_growth_seconds:43200, reward_coin:200, reward_home_item_id:'home_gamcheon_house' },
+  gwangan_bridge_flower:{ result_id:'gwangan_bridge_flower',result_name:'광안대교꽃',  result_type:'landmark', rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_gwangan_bridge' },
+  wave_flower:          { result_id:'wave_flower',          result_name:'파도꽃',       result_type:'plant',    rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_haeundae_beach' },
+  lighthouse_tree:      { result_id:'lighthouse_tree',      result_name:'등대나무',     result_type:'landmark', rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_taejongdae_lighthouse' },
+  rock_flower:          { result_id:'rock_flower',          result_name:'바위꽃',       result_type:'plant',    rarity:'local',  total_growth_seconds:21600, reward_coin:100, reward_home_item_id:'home_oryukdo_rock' },
+};
+const GT_ADMIN_PLACES = [
+  { place_id:'gamcheon',   name:'감천문화마을', icon:'🏘️', seed_id:'gamcheon_seed',   reward_coin:30 },
+  { place_id:'gwangalli',  name:'광안리',       icon:'🌊', seed_id:'gwangan_seed',    reward_coin:30 },
+  { place_id:'haeundae',   name:'해운대',       icon:'🏖️', seed_id:'haeundae_seed',   reward_coin:30 },
+  { place_id:'taejongdae', name:'태종대',       icon:'🪨', seed_id:'taejongdae_seed', reward_coin:30 },
+  { place_id:'oryukdo',    name:'오륙도',       icon:'🏝️', seed_id:'oryukdo_seed',    reward_coin:30 },
+];
+
+let _gtActiveTab = 'seeds';
+let _gtCurrentCode = null;
+
+window.gtShowTab = function(tab) {
+  _gtActiveTab = tab;
+  ['seeds','places','garden'].forEach(t => {
+    const el = document.getElementById('gt-tab-' + t);
+    const btn = document.getElementById('gtab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
+    if (btn) {
+      btn.className = (t === tab) ? 'btn btn-primary' : 'btn btn-ghost';
+    }
+  });
+  if (tab === 'seeds')   gtRenderSeeds();
+  if (tab === 'places')  gtRenderPlaces();
+  if (tab === 'garden')  document.getElementById('gtGardenDetail').textContent = 'QR 코드를 입력하고 조회하세요.';
+};
+
+function gtRenderSeeds() {
+  const tbody = document.getElementById('gtSeedBody');
+  if (!tbody) return;
+  tbody.innerHTML = Object.values(GT_ADMIN_SEEDS).map(s => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--muted)">${s.seed_id}</code></td>
+      <td style="font-weight:600">${s.seed_name}</td>
+      <td><span class="badge badge-${s.category==='local'?'사용중':'미등록'}">${s.category}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${s.place_id||'공통'}</td>
+      <td style="font-size:11px;color:var(--muted)">${s.results.join(', ')}</td>
+      <td><span class="badge badge-사용중">활성</span></td>
+    </tr>`).join('');
+
+  const tbody2 = document.getElementById('gtResultBody');
+  if (!tbody2) return;
+  const rarityColor = {common:'미등록',rare:'판매완료',local:'사용중',epic:'분실'};
+  tbody2.innerHTML = Object.values(GT_ADMIN_RESULTS).map(r => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--muted)">${r.result_id}</code></td>
+      <td style="font-weight:600">${r.result_name}</td>
+      <td style="font-size:12px">${r.result_type}</td>
+      <td><span class="badge badge-${rarityColor[r.rarity]||'미등록'}">${r.rarity}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${Math.round(r.total_growth_seconds/3600)}시간</td>
+      <td style="color:var(--gold)">🪙${r.reward_coin}</td>
+      <td style="font-size:11px;color:var(--muted)">${r.reward_home_item_id||'-'}</td>
+    </tr>`).join('');
+}
+
+function gtRenderPlaces() {
+  const tbody = document.getElementById('gtPlaceBody');
+  if (!tbody) return;
+  tbody.innerHTML = GT_ADMIN_PLACES.map(p => `
+    <tr>
+      <td><code style="font-size:11px;color:var(--muted)">${p.place_id}</code></td>
+      <td style="font-weight:600">${p.name}</td>
+      <td style="font-size:18px">${p.icon}</td>
+      <td style="font-size:12px;color:var(--muted)">${GT_ADMIN_SEEDS[p.seed_id]?.seed_name||p.seed_id}</td>
+      <td style="color:var(--gold)">🪙${p.reward_coin}</td>
+    </tr>`).join('');
+}
+
+window.gtOpenAddSeedForm = function() {
+  alert('씨앗 추가 기능은 Firebase 연결(Step6A) 후 활성화됩니다.\n현재는 gt.html 코드에서 SEEDS 객체를 직접 수정하세요.');
+};
+window.gtOpenAddResultForm = function() {
+  alert('결과물 추가 기능은 Firebase 연결(Step6A) 후 활성화됩니다.\n현재는 gt.html 코드에서 RESULTS 객체를 직접 수정하세요.');
+};
+window.gtOpenAddPlaceForm = function() {
+  alert('관광지 추가 기능은 Firebase 연결(Step6A) 후 활성화됩니다.\n현재는 gt.html 코드에서 VISIT_PLACES 배열을 직접 수정하세요.');
+};
+
+window.gtLoadGarden = async function() {
+  const codeInput = document.getElementById('gtGardenCode');
+  const code = (codeInput?.value || '').trim().toUpperCase();
+  if (!code) { alert('QR 코드를 입력하세요.'); return; }
+
+  const detailEl   = document.getElementById('gtGardenDetail');
+  const actionsEl  = document.getElementById('gtGardenActions');
+  const resultEl   = document.getElementById('gtActionResult');
+  detailEl.innerHTML = '<span style="color:var(--muted)">조회 중...</span>';
+  actionsEl.style.display = 'none';
+  if (resultEl) resultEl.textContent = '';
+  _gtCurrentCode = null;
+
+  try {
+    const { db } = window;
+    if (!db) throw new Error('Firestore 미연결 — 관리자 로그인 후 시도하세요');
+    const { doc, getDoc } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+    const snap = await getDoc(doc(db, 'garden_tags', code));
+    if (!snap.exists()) {
+      detailEl.innerHTML = `<span style="color:var(--red)">❌ ${code} 정원 데이터가 없습니다. (localStorage 사용 중일 수 있음)</span>`;
+      return;
+    }
+    const d = snap.data();
+    _gtCurrentCode = code;
+
+    detailEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">정원 이름</span><br><b>${d.garden_name||'-'}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">코인</span><br><b style="color:var(--gold)">🪙 ${d.coin??'-'}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">비료(기본/좋음/황금)</span><br><b>${d.fertilizer_basic??0} / ${d.fertilizer_good??0} / ${d.fertilizer_gold??0}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">출석 연속</span><br><b>${d.streak_count??0}일 · 마지막 ${d.last_checkin_date||'-'}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">생성일</span><br><b>${(d.created_at||'').slice(0,10)||'-'}</b></div>
+        <div style="padding:8px;background:rgba(255,255,255,.04);border-radius:8px"><span style="color:var(--muted)">마지막 수정</span><br><b>${(d.updated_at||'').slice(0,10)||'-'}</b></div>
+      </div>`;
+    actionsEl.style.display = 'block';
+  } catch(e) {
+    detailEl.innerHTML = `<span style="color:var(--red)">오류: ${e.message}</span>`;
+  }
+};
+
+window.gtGrantItem = async function(type) {
+  if (!_gtCurrentCode) { alert('먼저 정원을 조회하세요.'); return; }
+  const resultEl = document.getElementById('gtActionResult');
+  resultEl.textContent = '처리 중...';
+  resultEl.style.color = 'var(--muted)';
+
+  try {
+    const { db } = window;
+    if (!db) throw new Error('Firestore 미연결');
+    const { doc, updateDoc, increment } = await import('https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js');
+    const ref = doc(db, 'garden_tags', _gtCurrentCode);
+
+    if (type === 'water') {
+      // gt.html은 물을 별도 필드로 관리하지 않음 — 비료로 대체 안내
+      resultEl.textContent = '💧 물은 gt.html에서 시간 기반으로 관리됩니다. 비료를 지급하세요.';
+      resultEl.style.color = 'var(--gold)';
+      return;
+    }
+    if (type === 'fert') {
+      const amount = parseInt(document.getElementById('gtAddFert').value) || 1;
+      await updateDoc(ref, { fertilizer_basic: increment(amount) });
+      resultEl.textContent = `✅ 🧪 일반 비료 +${amount} 지급 완료`;
+    }
+    if (type === 'coin') {
+      const amount = parseInt(document.getElementById('gtAddCoin').value) || 100;
+      await updateDoc(ref, { coin: increment(amount) });
+      resultEl.textContent = `✅ 🪙 코인 +${amount} 지급 완료`;
+    }
+    if (type === 'seed') {
+      const seedId = document.getElementById('gtGrantSeedId').value;
+      const seedName = GT_ADMIN_SEEDS[seedId]?.seed_name || seedId;
+      // 씨앗은 garden_items에 아이템 생성 필요 → 현재는 안내만
+      resultEl.textContent = `⚠️ 씨앗 지급은 Firebase 함수 연결 후 지원됩니다. (${seedName})`;
+      resultEl.style.color = 'var(--gold)';
+      return;
+    }
+    resultEl.style.color = 'var(--green)';
+    gtLoadGarden(); // 갱신
+  } catch(e) {
+    resultEl.textContent = '❌ ' + e.message;
+    resultEl.style.color = 'var(--red)';
+  }
+};
+
+// 가든태그 탭 초기 렌더
+document.addEventListener('DOMContentLoaded', function() {
+  // 페이지 진입 시 씨앗 테이블 미리 채우기
+  const observer = new MutationObserver(function() {
+    if (document.getElementById('gtSeedBody')) { gtRenderSeeds(); observer.disconnect(); }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+});
 
 window.saveStatus = async function() {
   const code   = document.getElementById('modalCode').value;
