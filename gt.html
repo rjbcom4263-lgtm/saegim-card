@@ -396,19 +396,6 @@
     });
 
     let state = loadState();
-
-    // URL ?code=GT-0001 로 접근 시 자동 등록
-    if (URL_CODE && !state.registered) {
-      state.registered = true;
-      state.keyId = URL_CODE;
-      state.gardenName = URL_CODE + '의 정원';
-      state.linkedDesigns = ['basic'];
-      state.activeTheme = 'basic';
-      state.auth.managed = true;
-      addInventory('dandelion', 1, '시작 보상');
-      saveState();
-    }
-
     let activeTab = state.registered ? 'garden' : 'registration';
     let activeCollectionType = '기본';
     let renderTimer = null;
@@ -1279,12 +1266,4 @@
     el('lockButton').addEventListener('click',()=>state.auth.managed?lockManagement():requestPin());
     qsa('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>setActiveTab(btn.dataset.tab)));
 
-    renderAll();
-    renderTimer=setInterval(()=>{
-      const changed=updateGrowth();
-      if(state.registered && activeTab==='garden' && (changed || state.plots.some(p=>p?.status==='growing'))) renderGarden();
-    },1000);
-  })();
-  </script>
-</body>
-</html>
+    // URL ?code=GT
