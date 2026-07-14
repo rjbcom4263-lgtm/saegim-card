@@ -1274,4 +1274,17 @@
     function renderAll(){renderChrome();if(!state.registered){setActiveTab('registration');return;}setActiveTab(activeTab==='registration'?'garden':activeTab);}
 
     el('modalClose').addEventListener('click',closeModal);
-    el('moda
+    el('modalBackdrop').addEventListener('click',e=>{if(e.target===el('modalBackdrop'))closeModal();});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+    el('lockButton').addEventListener('click',()=>state.auth.managed?lockManagement():requestPin());
+    qsa('.nav-btn').forEach(btn=>btn.addEventListener('click',()=>setActiveTab(btn.dataset.tab)));
+
+    renderAll();
+    renderTimer=setInterval(()=>{
+      const changed=updateGrowth();
+      if(state.registered && activeTab==='garden' && (changed || state.plots.some(p=>p?.status==='growing'))) renderGarden();
+    },1000);
+  })();
+  </script>
+</body>
+</html>
