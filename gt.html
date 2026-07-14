@@ -1,1445 +1,1277 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>가든태그 V1.1.1 · 나의 부산 정원</title>
-<style>
-  :root{
-    --bg:#f4f7f2; --card:#ffffff; --line:#e2e8dd; --ink:#22311f; --sub:#6b7a63;
-    --green:#4c9a52; --green-d:#3a7a40; --green-l:#e6f3e5; --soil:#b98a5e;
-    --soil-l:#e8d3ba; --gold:#e0a63a; --blue:#4a90c2; --danger:#c9563f;
-    --shadow:0 2px 8px rgba(40,60,30,.08);
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
-  body{
-    font-family:-apple-system,BlinkMacSystemFont,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
-    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.5;
-  }
-  #app{max-width:460px; margin:0 auto; min-height:100vh; background:var(--bg);
-    display:flex; flex-direction:column; position:relative; padding-bottom:70px;}
-  /* Top bar */
-  .topbar{position:sticky; top:0; z-index:20; background:var(--green);
-    color:#fff; padding:12px 16px; display:flex; align-items:center; gap:12px;}
-  .topbar h1{font-size:16px; margin:0; font-weight:700; flex:1;}
-  .stats{display:flex; gap:10px; font-size:13px;}
-  .stat{background:rgba(255,255,255,.18); padding:3px 9px; border-radius:20px; white-space:nowrap;}
-  /* Views */
-  .view{display:none; padding:14px; animation:fade .2s;}
-  .view.active{display:block;}
-  @keyframes fade{from{opacity:0; transform:translateY(4px);}to{opacity:1; transform:none;}}
-  h2.title{font-size:17px; margin:2px 0 12px;}
-  .muted{color:var(--sub); font-size:13px;}
-  /* Garden grid */
-  .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:7px; margin:10px 0;}
-  .plot{aspect-ratio:1; background:var(--soil-l); border:2px solid var(--soil);
-    border-radius:12px; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; font-size:26px; cursor:pointer; position:relative;
-    transition:transform .1s, box-shadow .1s; overflow:hidden;}
-  .plot:active{transform:scale(.95);}
-  .plot.sel{outline:3px solid var(--green); outline-offset:1px;}
-  .plot.watered{background:#cbe6cf;}
-  .plot .pct{position:absolute; bottom:2px; left:0; right:0; font-size:9px;
-    color:var(--green-d); font-weight:700;}
-  .plot .ready-badge{position:absolute; top:2px; right:2px; font-size:11px;}
-  .plot.empty{font-size:14px; color:#a99; }
-  .plot img{width:80%; height:80%; object-fit:contain; background:transparent;}
-  /* Buttons */
-  .btn-row{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
-  button{font-family:inherit; font-size:14px; border:none; border-radius:10px;
-    padding:11px 14px; cursor:pointer; font-weight:600; transition:filter .1s, transform .1s;}
-  button:active{transform:scale(.97);}
-  button:disabled{opacity:.45; cursor:not-allowed;}
-  .b-primary{background:var(--green); color:#fff; flex:1;}
-  .b-water{background:var(--blue); color:#fff; flex:1;}
-  .b-soil{background:var(--soil); color:#fff; flex:1;}
-  .b-gold{background:var(--gold); color:#fff;}
-  .b-ghost{background:#fff; color:var(--ink); border:1px solid var(--line);}
-  .b-lg{width:100%; padding:14px;}
-  /* Cards */
-  .card{background:var(--card); border:1px solid var(--line); border-radius:14px;
-    padding:14px; margin-bottom:12px; box-shadow:var(--shadow);}
-  .card h3{margin:0 0 8px; font-size:15px;}
-  .list-item{display:flex; align-items:center; gap:12px; padding:10px 0;
-    border-bottom:1px solid var(--line);}
-  .list-item:last-child{border-bottom:none;}
-  .li-icon{font-size:26px; width:40px; text-align:center;}
-  .li-body{flex:1;}
-  .li-body .n{font-weight:600;}
-  .li-body .d{font-size:12px; color:var(--sub);}
-  .pill{display:inline-block; font-size:11px; padding:2px 8px; border-radius:20px;
-    background:var(--green-l); color:var(--green-d); font-weight:600;}
-  .pill.gray{background:#eef0ec; color:var(--sub);}
-  /* Codex grid */
-  .cx-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
-  .cx-cell{aspect-ratio:1; border:1px solid var(--line); border-radius:12px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    background:#fff; font-size:26px; position:relative;}
-  .cx-cell.locked{filter:grayscale(1); opacity:.4;}
-  .cx-cell .cn{font-size:9px; color:var(--sub); margin-top:2px; text-align:center; line-height:1.1;}
-  /* Home slots */
-  .slots{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
-  .slot{aspect-ratio:1; border:2px dashed var(--line); border-radius:14px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-size:30px; background:#fff; position:relative;}
-  .slot.filled{border-style:solid; border-color:var(--green); background:var(--green-l);}
-  .slot .sn{font-size:9px; color:var(--sub); position:absolute; bottom:4px;}
-  /* Tab bar */
-  .tabbar{position:fixed; bottom:0; left:0; right:0; max-width:460px; margin:0 auto;
-    background:#fff; border-top:1px solid var(--line); display:flex; z-index:30;}
-  .tab{flex:1; text-align:center; padding:8px 0 9px; font-size:10px; color:var(--sub);
-    cursor:pointer; border:none; background:none; border-radius:0;}
-  .tab .ico{font-size:20px; display:block; line-height:1.3;}
-  .tab.on{color:var(--green); font-weight:700;}
-  /* Modal / toast */
-  .overlay{position:fixed; inset:0; background:rgba(20,30,15,.45); z-index:50;
-    display:none; align-items:flex-end; justify-content:center;}
-  .overlay.show{display:flex;}
-  .sheet{background:#fff; width:100%; max-width:460px; border-radius:18px 18px 0 0;
-    padding:18px 16px 24px; max-height:75vh; overflow:auto; animation:up .25s;}
-  @keyframes up{from{transform:translateY(100%);}to{transform:none;}}
-  .sheet h3{margin:0 0 12px; font-size:16px;}
-  .toast{position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-    background:var(--ink); color:#fff; padding:11px 18px; border-radius:24px;
-    font-size:13px; z-index:60; opacity:0; transition:opacity .2s, transform .2s;
-    max-width:90%; text-align:center; pointer-events:none;}
-  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
-  .grid-choose{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  .choose{border:1px solid var(--line); border-radius:12px; padding:12px;
-    text-align:center; cursor:pointer;}
-  .choose:active{background:var(--green-l);}
-  .choose .ci{font-size:28px; width:52px; height:52px; margin:0 auto; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:8px; background:var(--bg);}
-  .choose .ci img{width:100%; height:100%; object-fit:contain;}
-  .choose .cn{font-size:13px; font-weight:600; margin-top:4px;}
-  .choose .cq{font-size:11px; color:var(--sub);}
-  .empty-note{text-align:center; color:var(--sub); padding:30px 10px; font-size:13px;}
-  .progressbar{height:6px; background:#eef0ec; border-radius:6px; overflow:hidden; margin-top:6px;}
-  .progressbar > i{display:block; height:100%; background:var(--green); width:0;}
-  .devbar{font-size:11px; color:var(--sub); text-align:center; padding:6px;}
-  .devbar b{color:var(--danger); cursor:pointer;}
-
-  .detail-row{display:flex; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid var(--line);}
-  .detail-row:last-child{border-bottom:none;}
-  .detail-row b{color:var(--ink);}
-  .detail-value{text-align:right; color:var(--sub);}
-  .small-code{font-size:10px; color:var(--sub); word-break:break-all;}
-  .inv-group{margin-bottom:10px;}
-  .inv-group h4{margin:0 0 6px; font-size:13px; color:var(--green-d);}
-  .inv-chip{display:inline-block; margin:3px 4px 3px 0; padding:5px 8px; border-radius:999px; border:1px solid var(--line); background:#fff; font-size:12px;}
-  .inv-chip.locked{opacity:.45;}
-  .state-dump{white-space:pre-wrap; font-size:11px; background:#f6f7f4; border:1px solid var(--line); border-radius:10px; padding:10px; max-height:55vh; overflow:auto;}\n  .guide-code{white-space:pre-wrap; font-size:11px; background:#17211a; color:#eef8ed; border-radius:10px; padding:10px; overflow:auto;}
-
-</style>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#3f6547" />
+  <title>가든태그 MVP</title>
+  <style>
+    :root {
+      --ink: #243027;
+      --muted: #6f7c71;
+      --paper: #f7f3e8;
+      --card: #fffdf7;
+      --green: #3f6547;
+      --green-2: #6f9274;
+      --green-3: #dbe8d7;
+      --gold: #c79a45;
+      --orange: #d9763e;
+      --red: #bb584d;
+      --blue: #5e8694;
+      --line: #d8d3c5;
+      --shadow: 0 12px 32px rgba(46, 57, 48, .12);
+      --radius: 22px;
+      --pixel: "Courier New", monospace;
+    }
+    * { box-sizing: border-box; }
+    html { background: #dfe8dd; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 5%, rgba(255,255,255,.72), transparent 34%),
+        linear-gradient(180deg, #dfe8dd 0, #f1eddf 42%, #eee7d6 100%);
+      font-family: Pretendard, "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: not-allowed; opacity: .5; }
+    .app-shell { min-height: 100vh; max-width: 1180px; margin: 0 auto; padding: 18px 18px 104px; }
+    body.theme-basic { --green: #3f6547; --green-2: #6f9274; --green-3: #dbe8d7; --gold: #c79a45; --paper: #f7f3e8; }
+    body.theme-gamcheon { --green: #356f78; --green-2: #5e94a1; --green-3: #d8edf0; --gold: #d48a56; --paper: #f5efe3; }
+    body.theme-artist { --green: #6b4f7d; --green-2: #9272a5; --green-3: #eadff0; --gold: #d7b85e; --paper: #f8f1eb; }
+    .theme-card { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: #fffef9; }
+    .theme-swatch { display: flex; gap: 4px; margin-top: 8px; }
+    .theme-swatch span { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.08); }
+    .theme-card.active { outline: 3px solid rgba(63,101,71,.18); }
+    .demo-start-card { display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: #edf5e9; border: 1px solid #d1e2cf; }
+    .demo-start-card strong { font-size: 15px; }
+    .story-strip { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+    .story-card { padding: 13px; border: 1px solid var(--line); border-radius: 15px; background: #fffef9; }
+    .story-card strong { display: block; margin-bottom: 4px; }
+    .category-tabs { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 8px; margin-bottom: 14px; }
+    .category-tab { border: 1px solid var(--line); border-radius: 15px; background: #fffef9; color: var(--muted); padding: 11px 10px; text-align: left; display: grid; gap: 4px; }
+    .category-tab strong { color: var(--ink); font-size: 13px; }
+    .category-tab span { font-size: 11px; }
+    .category-tab.active { background: var(--green); border-color: var(--green); color: white; }
+    .category-tab.active strong { color: white; }
+    .topbar {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      margin: -18px -18px 18px; padding: 14px 20px;
+      backdrop-filter: blur(16px);
+      background: rgba(247,243,232,.86);
+      border-bottom: 1px solid rgba(63,101,71,.15);
+    }
+    .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .brand-mark {
+      width: 40px; height: 40px; flex: 0 0 auto;
+      display: grid; place-items: center;
+      background: var(--green); color: #fff8d8; border-radius: 13px;
+      box-shadow: inset 0 -4px 0 rgba(0,0,0,.14);
+      font-family: var(--pixel); font-weight: 900;
+    }
+    .brand-copy { min-width: 0; }
+    .brand-copy strong { display: block; font-size: 17px; letter-spacing: -.4px; }
+    .brand-copy small { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .top-actions { display: flex; align-items: center; gap: 8px; }
+    .mode-pill, .status-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      border: 1px solid var(--line); background: rgba(255,255,255,.7); border-radius: 999px;
+      padding: 7px 10px; font-size: 12px; color: var(--muted);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-2); box-shadow: 0 0 0 3px rgba(111,146,116,.15); }
+    .status-dot.view { background: var(--gold); box-shadow: 0 0 0 3px rgba(199,154,69,.15); }
+    .icon-btn {
+      border: 1px solid var(--line); background: var(--card); color: var(--ink);
+      width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center;
+    }
+    .screen { display: none; animation: fadeIn .22s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .hero {
+      padding: 28px; border-radius: 30px; color: #f9f7e9;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.1), transparent 40%),
+        var(--green);
+      box-shadow: var(--shadow); overflow: hidden; position: relative;
+    }
+    .hero:after {
+      content: ""; position: absolute; width: 220px; height: 220px; right: -80px; bottom: -110px;
+      border-radius: 50%; border: 28px solid rgba(255,255,255,.08);
+    }
+    .hero h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 46px); letter-spacing: -1.6px; line-height: 1.08; }
+    .hero p { margin: 0; max-width: 690px; color: rgba(255,255,255,.82); line-height: 1.65; }
+    .hero .eyebrow { color: #e5ce86; font-weight: 800; font-size: 12px; letter-spacing: .12em; margin-bottom: 12px; }
+    .panel { background: rgba(255,253,247,.94); border: 1px solid rgba(63,101,71,.13); border-radius: var(--radius); box-shadow: var(--shadow); }
+    .section { padding: 20px; }
+    .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    .section-head h2, .section-head h3 { margin: 0; letter-spacing: -.6px; }
+    .section-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; }
+    .stack { display: grid; gap: 14px; }
+    .form-grid { display: grid; gap: 13px; }
+    label.field { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
+    input, textarea, select {
+      width: 100%; border: 1px solid var(--line); background: #fffef9; color: var(--ink);
+      padding: 12px 13px; border-radius: 13px; outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--green-2); box-shadow: 0 0 0 3px rgba(111,146,116,.13); }
+    textarea { resize: vertical; min-height: 88px; line-height: 1.5; }
+    .btn {
+      border: 0; border-radius: 14px; padding: 12px 15px; font-weight: 800;
+      background: var(--green); color: white; box-shadow: inset 0 -3px 0 rgba(0,0,0,.15);
+      transition: .16s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn.secondary { background: #e9efe5; color: var(--green); box-shadow: none; border: 1px solid #cbd9c8; }
+    .btn.ghost { background: transparent; color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
+    .btn.warn { background: var(--orange); }
+    .btn.danger { background: var(--red); }
+    .btn.small { padding: 8px 11px; border-radius: 11px; font-size: 12px; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 9px; }
+    .helper { color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .notice { padding: 12px 14px; border-radius: 14px; background: #f2eddc; color: #665f48; font-size: 12px; line-height: 1.55; border: 1px solid #e4dcc3; }
+    .notice.green { background: #edf5e9; color: #3e6044; border-color: #d1e2cf; }
+    .notice.red { background: #f8e9e6; color: #85493f; border-color: #edcbc5; }
+    .registration-wrap { max-width: 930px; margin: 34px auto; display: grid; grid-template-columns: 1.12fr .88fr; gap: 18px; }
+    .registration-card { padding: 26px; }
+    .demo-code { display: inline-flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: #263b2b; color: #fff2bd; font-family: var(--pixel); font-weight: 800; letter-spacing: .08em; }
+    .seed-preview { display: grid; grid-template-columns: 74px 1fr; gap: 14px; align-items: center; padding: 13px; border-radius: 16px; background: #f2f0e6; }
+    .pixel-canvas { image-rendering: pixelated; image-rendering: crisp-edges; width: 64px; height: 64px; }
+    .garden-layout { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(270px, .62fr); gap: 16px; align-items: start; }
+    .garden-board-wrap { padding: 16px; background: #c9d8bf; border: 1px solid #b2c4aa; border-radius: 24px; box-shadow: inset 0 -8px 0 rgba(64,92,66,.08); }
+    .garden-board { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 8px; aspect-ratio: 1 / 1; }
+    .plot {
+      position: relative; min-width: 0; border: 0; padding: 0; border-radius: 16px;
+      background: #ece6ce; box-shadow: inset 0 -5px 0 rgba(100,80,42,.1); overflow: hidden;
+      display: grid; place-items: center; color: var(--ink);
+    }
+    .plot:hover:not(:disabled) { outline: 3px solid rgba(255,255,255,.72); transform: translateY(-1px); }
+    .plot.locked { background: #aeb6a5; color: #677064; box-shadow: inset 0 -5px 0 rgba(0,0,0,.08); }
+    .plot.empty { background: repeating-linear-gradient(135deg,#e7dfc5,#e7dfc5 8px,#eee8d3 8px,#eee8d3 16px); }
+    .plot.needs-water { box-shadow: inset 0 -5px 0 rgba(63,101,71,.11), 0 0 0 3px rgba(94,134,148,.45); }
+    .plot.complete { box-shadow: inset 0 -5px 0 rgba(63,101,71,.11), 0 0 0 3px rgba(199,154,69,.65); }
+    .plot .pixel-canvas { width: 78%; height: 78%; max-width: 100px; max-height: 100px; }
+    .plot-label { position: absolute; left: 6px; right: 6px; bottom: 5px; font-size: 10px; padding: 3px 5px; border-radius: 7px; background: rgba(255,253,247,.82); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .plot-badge { position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,.85); font-size: 12px; }
+    .garden-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+    .stat { background: #f0eee3; border-radius: 14px; padding: 12px; text-align: center; }
+    .stat strong { display: block; font-size: 20px; color: var(--green); }
+    .stat small { color: var(--muted); font-size: 11px; }
+    .progress { height: 9px; background: #e0dfd5; border-radius: 999px; overflow: hidden; }
+    .progress > span { display: block; height: 100%; background: var(--green-2); border-radius: inherit; transition: width .3s ease; }
+    .card-list { display: grid; gap: 10px; }
+    .item-card { display: grid; grid-template-columns: 62px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 12px; border-radius: 16px; border: 1px solid var(--line); background: #fffef9; }
+    .item-card .pixel-canvas { width: 58px; height: 58px; }
+    .item-card h4 { margin: 0 0 4px; font-size: 14px; }
+    .item-card p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .item-card.empty-inventory { opacity: .56; }
+    .qty { min-width: 42px; min-height: 34px; border-radius: 12px; display: grid; place-items: center; background: #e7eee3; color: var(--green); font-size: 12px; font-weight: 900; padding: 0 8px; white-space: nowrap; }
+    .inventory-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 9px; margin-bottom: 14px; }
+    .inventory-group { display: grid; gap: 9px; }
+    .inventory-group + .inventory-group { margin-top: 16px; }
+    .inventory-group-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 12px; font-weight: 900; }
+    .inventory-group-title span:first-child { color: var(--ink); }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .chip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 5px 8px; font-size: 10px; font-weight: 800; background: #ecebe2; color: #5f695f; }
+    .chip.rare { background: #e4edf0; color: #4c7480; }
+    .chip.special { background: #f2e8c8; color: #896b2f; }
+    .chip.legend { background: #efe0e8; color: #8a4e70; }
+    .shop-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+    .shop-card { padding: 16px; border: 1px solid var(--line); border-radius: 18px; background: #fffef9; display: grid; gap: 12px; }
+    .shop-card.paused { opacity: .6; filter: grayscale(.5); }
+    .seed-map { position: relative; min-height: 360px; overflow: hidden; border-radius: 22px; background: linear-gradient(160deg,#e3ecd9,#f7f1dc 56%,#d9e7e8); border: 1px solid #c8d4bf; box-shadow: inset 0 -8px 0 rgba(63,101,71,.06); }
+    .seed-map:before { content: ""; position: absolute; inset: 11% 8%; border-radius: 42% 55% 36% 48%; border: 18px solid rgba(255,253,247,.62); transform: rotate(-9deg); }
+    .seed-map:after { content: ""; position: absolute; left: 5%; right: 5%; top: 48%; height: 32px; border-radius: 999px; background: rgba(214,188,128,.38); transform: rotate(-7deg); box-shadow: 0 74px 0 rgba(214,188,128,.28), 0 -82px 0 rgba(255,253,247,.34); }
+    .map-lane { position: absolute; left: 11%; right: 14%; height: 12px; border-radius: 999px; background: rgba(88,118,85,.18); transform: rotate(18deg); }
+    .map-lane.one { top: 28%; }
+    .map-lane.two { top: 66%; transform: rotate(-17deg); }
+    .map-label { position: absolute; z-index: 2; left: 18px; top: 16px; padding: 7px 10px; border-radius: 999px; background: rgba(255,253,247,.82); color: var(--green); font-size: 12px; font-weight: 900; }
+    .map-pin { position: absolute; z-index: 4; width: 74px; min-height: 86px; border: 0; border-radius: 18px; background: rgba(255,253,247,.92); color: var(--ink); box-shadow: 0 10px 24px rgba(46,57,48,.16); display: grid; justify-items: center; gap: 4px; padding: 8px 7px; transform: translate(-50%,-50%); }
+    .map-pin:hover { transform: translate(-50%,-54%); }
+    .map-pin .pixel-canvas { width: 38px; height: 38px; }
+    .map-pin strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+    .map-pin small { color: var(--muted); font-size: 9px; }
+    .map-pin.visited { outline: 3px solid rgba(63,101,71,.22); }
+    .map-pin.paused { opacity: .55; filter: grayscale(.6); }
+    .map-pin .pin-check { position: absolute; right: -5px; top: -5px; display: grid; place-items: center; width: 23px; height: 23px; border-radius: 50%; background: var(--green); color: white; font-size: 12px; }
+    .shop-title { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+    .shop-title h3 { margin: 0; font-size: 16px; }
+    .shop-title p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+    .shop-seed { display: flex; gap: 10px; align-items: center; padding: 9px; border-radius: 13px; background: #f1efe4; }
+    .shop-seed .pixel-canvas { width: 46px; height: 46px; }
+    .mission-strip { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .mission { padding: 13px; background: #f4f0e2; border-radius: 15px; border: 1px solid #e1dbc9; }
+    .mission.done { background: #e7f0e3; border-color: #c8dcc5; }
+    .mission strong { display: block; margin-bottom: 4px; }
+    .collection-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+    .collection-card { position: relative; padding: 12px; border-radius: 17px; background: #fffef9; border: 1px solid var(--line); min-width: 0; }
+    .collection-card.unknown { background: #d7d8d1; color: #777d76; }
+    .collection-card .pixel-canvas { width: 100%; height: auto; aspect-ratio: 1; }
+    .collection-card h4 { margin: 7px 0 3px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .collection-card p { margin: 0; color: var(--muted); font-size: 10px; }
+    .record-thumb { width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 11px; margin-top: 9px; background: #e8e5da; }
+    .settings-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .settings-row:last-child { border-bottom: 0; }
+    .settings-row strong { display: block; font-size: 14px; }
+    .settings-row p { margin: 4px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 15px; }
+    table { border-collapse: collapse; width: 100%; min-width: 620px; background: #fffef9; }
+    th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; font-size: 12px; }
+    th { background: #eeece1; color: #5d675d; }
+    tr:last-child td { border-bottom: 0; }
+    .bottom-nav {
+      position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; z-index: 30;
+      width: min(calc(100% - 24px), 780px); display: grid; grid-template-columns: repeat(6,1fr); gap: 6px;
+      padding: 7px; background: rgba(255,253,247,.94); border: 1px solid rgba(63,101,71,.18);
+      border-radius: 22px; box-shadow: 0 14px 44px rgba(33,47,37,.2); backdrop-filter: blur(18px);
+    }
+    .nav-btn { border: 0; background: transparent; color: var(--muted); padding: 8px 4px; border-radius: 15px; display: grid; justify-items: center; gap: 4px; font-size: 10px; }
+    .nav-btn span:first-child { font-size: 20px; line-height: 1; }
+    .nav-btn.active { background: var(--green); color: white; }
+    .modal-backdrop { position: fixed; inset: 0; z-index: 100; display: none; place-items: center; padding: 18px; background: rgba(24,34,27,.54); backdrop-filter: blur(5px); }
+    .modal-backdrop.open { display: grid; }
+    .modal { width: min(100%, 560px); max-height: min(88vh, 760px); overflow-y: auto; background: var(--paper); border-radius: 24px; box-shadow: 0 25px 80px rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.5); }
+    .modal-head { position: sticky; top: 0; z-index: 2; padding: 17px 18px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: rgba(247,243,232,.96); border-bottom: 1px solid var(--line); }
+    .modal-head h3 { margin: 0; }
+    .modal-body { padding: 18px; }
+    .toast-wrap { position: fixed; right: 16px; top: 74px; z-index: 200; display: grid; gap: 8px; width: min(calc(100% - 32px), 360px); }
+    .toast { padding: 12px 14px; border-radius: 14px; background: #263b2b; color: white; box-shadow: var(--shadow); font-size: 13px; animation: slideIn .2s ease; }
+    .toast.error { background: #8b453d; }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(16px); } }
+    .empty-state { text-align: center; padding: 30px 15px; color: var(--muted); }
+    .empty-state strong { display: block; color: var(--ink); margin-bottom: 7px; }
+    .admin-lock { max-width: 460px; margin: 34px auto; }
+    .hidden { display: none !important; }
+    @media (max-width: 860px) {
+      .registration-wrap, .garden-layout, .grid-2 { grid-template-columns: 1fr; }
+      .collection-grid { grid-template-columns: repeat(3,minmax(0,1fr)); }
+      .grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 620px) {
+      .app-shell { padding: 12px 12px 98px; }
+      .topbar { margin: -12px -12px 14px; padding: 10px 12px; }
+      .brand-copy small, .mode-pill { display: none; }
+      .hero { padding: 22px 18px; border-radius: 23px; }
+      .section { padding: 15px; }
+      .registration-wrap { margin: 16px auto; }
+      .registration-card { padding: 19px; }
+      .garden-board-wrap { padding: 9px; border-radius: 19px; }
+      .garden-board { gap: 5px; }
+      .plot { border-radius: 11px; }
+      .plot-label { display: none; }
+      .plot-badge { top: 3px; right: 3px; width: 18px; height: 18px; font-size: 10px; border-radius: 6px; }
+      .seed-map { min-height: 430px; }
+      .map-pin { width: 64px; min-height: 78px; }
+      .shop-grid { grid-template-columns: 1fr; }
+      .mission-strip { grid-template-columns: 1fr; }
+      .story-strip { grid-template-columns: 1fr; }
+      .category-tabs { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .collection-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .item-card { grid-template-columns: 50px minmax(0,1fr) auto; }
+      .inventory-summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+      .bottom-nav { bottom: 8px; width: calc(100% - 16px); border-radius: 19px; }
+      .nav-btn { font-size: 9px; }
+      .nav-btn span:first-child { font-size: 18px; }
+    }
+  </style>
 </head>
 <body>
-<div id="app">
-  <div class="topbar">
-    <h1 id="gardenName">나의 부산 정원</h1>
-    <div class="stats">
-      <span class="stat">🪙 <b id="stCoin">0</b></span>
-      <span class="stat">🧪 <b id="stFert">0</b></span>
-      <span class="stat">📖 <b id="stCodex">0</b></span>
-    </div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">GT</div>
+        <div class="brand-copy">
+          <strong>가든태그</strong>
+          <small id="headerCode">지역을 여행하며 나만의 정원을 키우세요</small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="mode-pill" id="speedPill">테스트 속도</div>
+        <div class="status-pill" id="authPill"><span class="status-dot"></span><span>미등록</span></div>
+        <button class="icon-btn" id="lockButton" title="관리 모드 잠금">🔒</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="registrationScreen" class="screen active"></section>
+      <section id="gardenScreen" class="screen"></section>
+      <section id="inventoryScreen" class="screen"></section>
+      <section id="exploreScreen" class="screen"></section>
+      <section id="collectionScreen" class="screen"></section>
+      <section id="homeScreen" class="screen"></section>
+      <section id="adminScreen" class="screen"></section>
+    </main>
   </div>
 
-  <!-- 1. 정원 -->
-  <section class="view active" id="v-garden">
-    <h2 class="title">🌱 정원</h2>
-    <p class="muted">빈 칸을 눌러 씨앗을 심고, 물을 주면 성장이 진행됩니다.</p>
-    <div class="card" style="padding:10px 12px;margin-bottom:10px;"><div class="muted">현재 QR 코드: <b id="currentCode">GT-0001</b> · 저장 방식: <b id="storageModeLabel">localStorage</b></div></div>
-    <div class="grid" id="gardenGrid"></div>
-    <div class="btn-row">
-      <button class="b-water" onclick="waterAll()">💧 전체 물주기</button>
-      <button class="b-soil" onclick="openPlantPickerForSelected()">🌱 씨앗 심기</button>
-    </div>
-    <div class="btn-row">
-      <button class="b-ghost" style="flex:1" onclick="openFertPicker()">🧪 비료주기</button>
-      <button class="b-primary" onclick="harvestSelected()">🧺 수확하기</button>
-    </div>
-
-    <div class="card" id="plotDetailCard" style="margin-top:12px;">
-      <h3>선택한 칸 정보</h3>
-      <div id="plotDetail" class="muted">정원 칸을 누르면 상태가 표시됩니다.</div>
-    </div>
-
-    <div class="devbar">개발 테스트 · <b onclick="resetAll()">데이터 초기화</b> · <b onclick="exportState()">데이터 보기</b> · <b onclick="exportFirestorePreview()">Firestore 구조 보기</b> · <b onclick="openFirebaseGuide()">Firebase 연결 안내</b></div>
-  </section>
-
-  <!-- 2. 출석 -->
-  <section class="view" id="v-checkin">
-    <h2 class="title">📅 출석</h2>
-    <div class="card">
-      <h3>오늘의 출석 보상</h3>
-      <div class="list-item"><div class="li-icon">🌱</div><div class="li-body"><div class="n">일반 씨앗 1개</div></div></div>
-      <div class="list-item"><div class="li-icon">🧪</div><div class="li-body"><div class="n">일반 비료 1개</div></div></div>
-      <div class="list-item"><div class="li-icon">🪙</div><div class="li-body"><div class="n">코인 50개</div></div></div>
-      <p class="muted">💧 물은 무한 관리 행동이라 보상에서 제외돼요.</p>
-      <button class="b-primary b-lg" id="checkinBtn" onclick="doCheckin()">출석하고 보상 받기</button>
-      <p class="muted" style="text-align:center; margin-bottom:0;">연속 출석 <b id="streak">0</b>일 · 마지막 출석 <span id="lastCheckin">-</span></p>
-    </div>
-  </section>
-
-  <!-- 3. 방문 -->
-  <section class="view" id="v-visit">
-    <h2 class="title">📍 방문</h2>
-    <p class="muted">V1.1은 테스트 버튼으로 방문 보상 흐름만 구현합니다. (실제 GPS/QR은 추후)</p>
-    <div id="visitList"></div>
-  </section>
-
-  <!-- 4. 도감 -->
-  <section class="view" id="v-codex">
-    <h2 class="title">📖 도감</h2>
-    <div class="card">
-      <h3>부산 컬렉션 <span class="pill" id="codexRate">0%</span></h3>
-      <div class="progressbar"><i id="codexBar"></i></div>
-    </div>
-    <div id="codexCats"></div>
-  </section>
-
-  <!-- 5. 마이홈 -->
-  <section class="view" id="v-home">
-    <h2 class="title">🏠 마이홈</h2>
-    <p class="muted">수확 보상으로 얻은 장식을 슬롯에 전시합니다.</p>
-    <div class="card">
-      <div class="slots" id="homeSlots"></div>
-    </div>
-  </section>
-
-  <!-- 6. 상점 -->
-  <section class="view" id="v-shop">
-    <h2 class="title">🛒 상점 / 보관함</h2>
-    <p class="muted">코인으로 아이템을 구매하고, 보유한 씨앗·수확물·장식을 확인합니다.</p>
-
-    <div class="card">
-      <h3>📦 보유 아이템</h3>
-      <div id="inventoryList"></div>
-    </div>
-
-    <div id="shopList"></div>
-  </section>
-
-  <!-- Tab bar -->
-  <nav class="tabbar">
-    <button class="tab on" data-v="garden" onclick="switchTab('garden')"><span class="ico">🌱</span>정원</button>
-    <button class="tab" data-v="checkin" onclick="switchTab('checkin')"><span class="ico">📅</span>출석</button>
-    <button class="tab" data-v="visit" onclick="switchTab('visit')"><span class="ico">📍</span>방문</button>
-    <button class="tab" data-v="codex" onclick="switchTab('codex')"><span class="ico">📖</span>도감</button>
-    <button class="tab" data-v="home" onclick="switchTab('home')"><span class="ico">🏠</span>마이홈</button>
-    <button class="tab" data-v="shop" onclick="switchTab('shop')"><span class="ico">🛒</span>상점</button>
+  <nav class="bottom-nav hidden" id="bottomNav">
+    <button class="nav-btn active" data-tab="garden"><span>🌱</span><span>정원</span></button>
+    <button class="nav-btn" data-tab="inventory"><span>🫘</span><span>씨앗</span></button>
+    <button class="nav-btn" data-tab="explore"><span>🗺️</span><span>씨앗지도</span></button>
+    <button class="nav-btn" data-tab="collection"><span>📖</span><span>도감</span></button>
+    <button class="nav-btn" data-tab="home"><span>🏡</span><span>정원키</span></button>
+    <button class="nav-btn" data-tab="admin"><span>⚙️</span><span>운영</span></button>
   </nav>
-</div>
 
-<div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()">
-  <div class="sheet" id="sheet"></div>
-</div>
-<div class="toast" id="toast"></div>
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-head"><h3 id="modalTitle">상세</h3><button class="icon-btn" id="modalClose">✕</button></div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+  <div class="toast-wrap" id="toastWrap"></div>
 
-<script>
-/* =========================================================================
-   가든태그 V1.1 · localStorage MVP
-   지시서 기반: 시간기반 성장 / item_id 개별 아이템 / 6탭
-   ========================================================================= */
+  <script>
+  (() => {
+    'use strict';
 
-/* ---------- 마스터 데이터 (garden_assets) ----------
-   ※ 테스트용으로 성장 시간을 짧게 설정 (원본 스펙: 감천 21600초=6시간).
-   나중에 이미지 URL 필드를 채우면 자동으로 이미지 표시. */
-const NOW = () => Date.now();
+    const URL_CODE = (new URLSearchParams(location.search).get('code') || '').toUpperCase() || null;
+    const STORAGE_KEY = URL_CODE ? `gardenTag_${URL_CODE}` : 'gardenTag_mvp_v1';
+    const ADMIN_PASSWORD = 'saegim';
+    const DEMO_SCALE = 420; // 실제 35분이 약 5초가 되도록 압축
 
-// 개발 모드: true = 빠른 테스트 시간 / false = 실제 서비스 시간
-const DEV_MODE = true;
+    const seedCatalog = [
+      { id:'dandelion', name:'민들레', type:'기본', rarity:'일반', totalMinutes:35, color:'#f1c84c', accent:'#f7e889', description:'어디서든 씩씩하게 자라는 첫 번째 씨앗입니다.', source:'시작 보상' },
+      { id:'sunflower', name:'해바라기', type:'기본', rarity:'희귀', totalMinutes:35, color:'#eaa933', accent:'#ffd45c', description:'정원키 디자인에서 태어난 밝은 시작 씨앗입니다.', source:'기본형 정원키' },
+      { id:'camellia', name:'감천 동백', type:'점포', rarity:'희귀', totalMinutes:70, color:'#d85c55', accent:'#f39a82', description:'감천 골목의 붉은 온기를 담은 꽃입니다.', source:'골목상점 빨강지붕' },
+      { id:'hydrangea', name:'바다 수국', type:'점포', rarity:'희귀', totalMinutes:70, color:'#6689c6', accent:'#9fb8e7', description:'부산 바다빛을 닮은 둥근 꽃송이입니다.', source:'파란창 공방' },
+      { id:'marigold', name:'노을 금잔화', type:'점포', rarity:'일반', totalMinutes:70, color:'#e68135', accent:'#ffc15b', description:'해 질 무렵 골목의 노을을 기억합니다.', source:'노을엽서점' },
+      { id:'morningglory', name:'새벽 나팔꽃', type:'점포', rarity:'희귀', totalMinutes:70, color:'#8b72bf', accent:'#c6b5e8', description:'조용한 아침 골목에 피는 작은 인사입니다.', source:'새벽사진관' },
+      { id:'starflower', name:'별빛꽃', type:'점포', rarity:'특별', totalMinutes:70, color:'#e7d36a', accent:'#fff0a5', description:'작가의 손끝에서 태어난 별 모양 꽃입니다.', source:'별고래 작업실' },
+      { id:'gamcheonwind', name:'감천 바람꽃', type:'지역', rarity:'특별', totalMinutes:105, color:'#7aa993', accent:'#b9dccb', description:'감천문화마을 첫 방문을 기념하는 지역 씨앗입니다.', source:'감천 첫 점포 방문' },
+      { id:'alleyglow', name:'골목빛꽃', type:'한정', rarity:'특별', totalMinutes:210, color:'#d3974c', accent:'#f0cc8c', description:'서로 다른 점포 세 곳을 걸은 여행자에게 열립니다.', source:'감천 3곳 미션' },
+      { id:'seastar', name:'바다별꽃', type:'한정', rarity:'전설', totalMinutes:210, color:'#4e93a8', accent:'#9ed6dc', description:'감천 다섯 곳의 기억을 모으면 피어나는 꽃입니다.', source:'감천 5곳 미션' }
+    ];
+    const seedMap = Object.fromEntries(seedCatalog.map(s => [s.id, s]));
 
-// 물주기 1회당 촉촉 유지시간
-// 테스트: 2분 / 실제 서비스 예시: 2시간
-const WATER_DURATION_SEC = DEV_MODE ? 120 : 7200;
+    const shops = [
+      { id:'shop-redroof', code:'GCT-001', name:'빨강지붕 기념품점', summary:'감천 골목을 담은 작은 기념품', category:'기념품', hours:'10:00–18:00', seedId:'camellia', status:'active', address:'부산 사하구 감내2로 감천문화마을', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:29, mapY:72 },
+      { id:'shop-bluewindow', code:'GCT-002', name:'파란창 공방', summary:'푸른 부산을 만드는 생활 공예', category:'공방', hours:'11:00–18:00', seedId:'hydrangea', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:23, mapY:32 },
+      { id:'shop-sunset', code:'GCT-003', name:'노을엽서점', summary:'여행의 한 장면을 고르는 엽서 가게', category:'문구', hours:'10:30–19:00', seedId:'marigold', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:67, mapY:69 },
+      { id:'shop-dawn', code:'GCT-004', name:'새벽사진관', summary:'골목의 빛을 기록하는 작은 사진관', category:'사진', hours:'예약 운영', seedId:'morningglory', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:76, mapY:27 },
+      { id:'shop-starwhale', code:'GCT-005', name:'별고래 작업실', summary:'작가의 그림을 만나는 작은 쇼룸', category:'작가 공방', hours:'12:00–18:00', seedId:'starflower', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:49, mapY:43 },
+      { id:'shop-cloud', code:'GCT-006', name:'구름계단 카페', summary:'골목을 내려다보며 쉬어가는 공간', category:'카페', hours:'10:00–20:00', seedId:'hydrangea', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:84, mapY:55 },
+      { id:'shop-fish', code:'GCT-007', name:'물고기길 상점', summary:'감천의 물고기 표식을 담은 소품점', category:'소품', hours:'10:00–18:30', seedId:'camellia', status:'active', address:'부산 사하구 감내2로', instagram:'https://www.instagram.com/', mapQuery:'감천문화마을', mapX:42, mapY:82 }
+    ];
 
-// 실제 서비스 성장 시간 기본값(초) — DEV_MODE=false일 때 적용
-const REAL_GROWTH_SECONDS = {
-  common: 10800,  // 3시간
-  rare: 21600,    // 6시간
-  local: 21600,   // 6시간
-  epic: 43200     // 12시간
-};
+    const keyDesigns = {
+      GARDEN01: { designId:'basic', name:'기본형 정원키', seedId:'sunflower', theme:'basic', themeName:'기본 정원 테마', description:'가든태그를 처음 시작하는 초록 정원 분위기입니다.', colors:['#3f6547','#6f9274','#c79a45'] },
+      GMCH2026: { designId:'gamcheon', name:'감천형 정원키', seedId:'gamcheonwind', theme:'gamcheon', themeName:'감천 골목 테마', description:'감천의 바다빛, 골목길, 따뜻한 벽색을 담은 테마입니다.', colors:['#356f78','#5e94a1','#d48a56'] },
+      ARTST001: { designId:'artist', name:'작가형 정원키', seedId:'starflower', theme:'artist', themeName:'작가 작업실 테마', description:'작가형 정원키와 어울리는 보라빛 작업실 분위기입니다.', colors:['#6b4f7d','#9272a5','#d7b85e'] }
+    };
 
-// 씨앗 마스터
-const SEEDS = {
-  basic_seed:    { seed_id:"basic_seed",    seed_name:"일반 씨앗",   category:"basic", region_id:"busan", place_id:"", default_icon:"🌱", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"normal_flower", weight:85}, {result_ref_id:"gold_flower", weight:15} ] },
-  gamcheon_seed: { seed_id:"gamcheon_seed", seed_name:"감천 씨앗",   category:"local", region_id:"busan", place_id:"gamcheon", default_icon:"🏘️", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"gamcheon_roof_flower", weight:80}, {result_ref_id:"gold_gamcheon_flower", weight:20} ] },
-  gwangan_seed:  { seed_id:"gwangan_seed",  seed_name:"바다빛 씨앗", category:"local", region_id:"busan", place_id:"gwangalli", default_icon:"🌊", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"gwangan_bridge_flower", weight:100} ] },
-  haeundae_seed: { seed_id:"haeundae_seed", seed_name:"모래빛 씨앗", category:"local", region_id:"busan", place_id:"haeundae", default_icon:"🏖️", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"wave_flower", weight:100} ] },
-  taejongdae_seed:{seed_id:"taejongdae_seed",seed_name:"절벽 씨앗",  category:"local", region_id:"busan", place_id:"taejongdae", default_icon:"🪨", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"lighthouse_tree", weight:100} ] },
-  oryukdo_seed:  { seed_id:"oryukdo_seed",  seed_name:"섬바람 씨앗", category:"local", region_id:"busan", place_id:"oryukdo", default_icon:"🏝️", seed_image_url:"", tradeable_default:true,
-      possible_results:[ {result_ref_id:"rock_flower", weight:100} ] },
-};
+    const unlockOrder = [
+      6,7,8,11,12,13,16,17,18,
+      2,22,
+      10,14,5,9,
+      1,3,21,23,
+      0,4,20,24,15,19
+    ];
 
-// 결과물 마스터 (식물/랜드마크/동물/장식 통합) — total_growth_seconds 테스트용 단축
-const RESULTS = {
-  normal_flower:        { result_id:"normal_flower",        result_name:"일반꽃",       result_type:"plant",    region_id:"busan", place_id:"", rarity:"common", default_icon:"🌼", total_growth_seconds:60,  reward_coin:20,  reward_home_item_id:null },
-  gold_flower:          { result_id:"gold_flower",          result_name:"황금꽃",       result_type:"plant",    region_id:"busan", place_id:"", rarity:"rare",   default_icon:"🌻", total_growth_seconds:90,  reward_coin:80,  reward_home_item_id:null },
-  gamcheon_roof_flower: { result_id:"gamcheon_roof_flower", result_name:"감천 지붕꽃", result_type:"landmark", region_id:"busan", place_id:"gamcheon", rarity:"local", default_icon:"🏡", total_growth_seconds:120, reward_coin:100, reward_home_item_id:"home_gamcheon_house" },
-  gold_gamcheon_flower: { result_id:"gold_gamcheon_flower", result_name:"황금 감천꽃", result_type:"plant",    region_id:"busan", place_id:"gamcheon", rarity:"epic",  default_icon:"🌟", total_growth_seconds:150, reward_coin:200, reward_home_item_id:"home_gamcheon_house" },
-  gwangan_bridge_flower:{ result_id:"gwangan_bridge_flower",result_name:"광안대교꽃",  result_type:"landmark", region_id:"busan", place_id:"gwangalli", rarity:"local", default_icon:"🌉", total_growth_seconds:120, reward_coin:100, reward_home_item_id:"home_gwangan_bridge" },
-  wave_flower:          { result_id:"wave_flower",          result_name:"파도꽃",       result_type:"plant",    region_id:"busan", place_id:"haeundae", rarity:"local", default_icon:"🌊", total_growth_seconds:120, reward_coin:100, reward_home_item_id:"home_haeundae_beach" },
-  lighthouse_tree:      { result_id:"lighthouse_tree",      result_name:"등대나무",     result_type:"landmark", region_id:"busan", place_id:"taejongdae", rarity:"local", default_icon:"🗼", total_growth_seconds:120, reward_coin:100, reward_home_item_id:"home_taejongdae_lighthouse" },
-  rock_flower:          { result_id:"rock_flower",          result_name:"바위꽃",       result_type:"plant",    region_id:"busan", place_id:"oryukdo", rarity:"local", default_icon:"🪨", total_growth_seconds:120, reward_coin:100, reward_home_item_id:"home_oryukdo_rock" },
-};
-
-// 마이홈 장식 마스터
-const HOME_ITEMS = {
-  home_gamcheon_house:        { home_item_id:"home_gamcheon_house",        home_item_name:"감천 집 장식",   region_id:"busan", place_id:"gamcheon", default_icon:"🏡", home_item_image_url:"" },
-  home_gwangan_bridge:        { home_item_id:"home_gwangan_bridge",        home_item_name:"광안대교 장식",   region_id:"busan", place_id:"gwangalli", default_icon:"🌉", home_item_image_url:"" },
-  home_haeundae_beach:        { home_item_id:"home_haeundae_beach",        home_item_name:"해운대 해변 장식", region_id:"busan", place_id:"haeundae", default_icon:"🏖️", home_item_image_url:"" },
-  home_taejongdae_lighthouse: { home_item_id:"home_taejongdae_lighthouse", home_item_name:"태종대 등대 장식", region_id:"busan", place_id:"taejongdae", default_icon:"🗼", home_item_image_url:"" },
-  home_oryukdo_rock:          { home_item_id:"home_oryukdo_rock",          home_item_name:"오륙도 바위 장식", region_id:"busan", place_id:"oryukdo", default_icon:"🪨", home_item_image_url:"" },
-};
-
-// 방문 관광지 (테스트)
-const VISIT_PLACES = [
-  { place_id:"gamcheon",   name:"감천문화마을", icon:"🏘️", seed_id:"gamcheon_seed",  reward_coin:30 },
-  { place_id:"gwangalli",  name:"광안리",       icon:"🌊", seed_id:"gwangan_seed",   reward_coin:30 },
-  { place_id:"haeundae",   name:"해운대",       icon:"🏖️", seed_id:"haeundae_seed",  reward_coin:30 },
-  { place_id:"taejongdae", name:"태종대",       icon:"🪨", seed_id:"taejongdae_seed",reward_coin:30 },
-  { place_id:"oryukdo",    name:"오륙도",       icon:"🏝️", seed_id:"oryukdo_seed",   reward_coin:30 },
-];
-
-// 관광지 QR 방문 마스터 (place 파라미터 기준)
-const GT_PLACES = {
-  gamcheon:   { place_id:"gamcheon",   place_name:"감천문화마을", icon:"🏘️", reward_seed_id:"gamcheon_seed",   reward_coin:30, enabled:true },
-  gwangalli:  { place_id:"gwangalli",  place_name:"광안리",       icon:"🌊", reward_seed_id:"gwangan_seed",    reward_coin:30, enabled:true },
-  haeundae:   { place_id:"haeundae",   place_name:"해운대",       icon:"🏖️", reward_seed_id:"haeundae_seed",   reward_coin:30, enabled:true },
-  taejongdae: { place_id:"taejongdae", place_name:"태종대",       icon:"🪨", reward_seed_id:"taejongdae_seed", reward_coin:30, enabled:true },
-  oryukdo:    { place_id:"oryukdo",    place_name:"오륙도",       icon:"🏝️", reward_seed_id:"oryukdo_seed",    reward_coin:30, enabled:true },
-};
-
-const METHOD_LABELS = {
-  test:"방문 테스트", qr:"관광지 QR 인증", gps:"GPS 인증", qr_gps:"QR + GPS 인증"
-};
-
-// 상점 상품 마스터
-const SHOP_ITEMS = [
-  { shop_item_id:"shop_basic_seed", item_name:"일반 씨앗 1개", item_type:"seed", item_ref_id:"basic_seed",    price_coin:100, icon:"🌱" },
-  { shop_item_id:"shop_basic_fert", item_name:"일반 비료 1개", item_type:"fertilizer", item_ref_id:"basic", price_coin:80,  icon:"🧪" },
-  { shop_item_id:"shop_good_fert",  item_name:"좋은 비료 1개", item_type:"fertilizer", item_ref_id:"good",  price_coin:150, icon:"⚗️" },
-];
-
-// 비료 정의 (grown_seconds 증가 방식)
-const FERTILIZERS = {
-  basic: { key:"basic", name:"일반 비료", icon:"🧪", add_seconds:1800,  field:"fertilizer_basic" },
-  good:  { key:"good",  name:"좋은 비료", icon:"⚗️", add_seconds:3600,  field:"fertilizer_good" },
-  gold:  { key:"gold",  name:"황금 비료", icon:"🏆", add_seconds:10800, field:"fertilizer_gold" },
-};
-
-// 도감 카테고리 라벨
-const CODEX_CATS = { plant:"식물", animal:"동물", landmark:"랜드마크", decor:"장식" };
-
-// 기본 아이콘 (이미지 처리 규칙: image_url > default_icon > 기본)
-const FALLBACK_ICON = { seed:"🌱", sprout:"🌿", growing:"🪴", complete:"🌼", landmark:"🏡", animal:"🐦", decor:"⭐", plant:"🌼" };
-
-// 마스터 데이터 보정
-// - 이미지 필드를 명시적으로 준비
-// - DEV_MODE=false일 때 실제 성장 시간으로 자동 전환
-function normalizeMasters(){
-  Object.values(RESULTS).forEach(r=>{
-    r.seed_image_url    = r.seed_image_url    || "";
-    r.sprout_image_url  = r.sprout_image_url  || "";
-    r.growing_image_url = r.growing_image_url || "";
-    r.complete_image_url= r.complete_image_url|| "";
-    r.codex_image_url   = r.codex_image_url   || "";
-    r.home_item_image_url = r.home_item_image_url || "";
-    r.seed_icon    = r.seed_icon    || "🌱";
-    r.sprout_icon  = r.sprout_icon  || "🌿";
-    r.growing_icon = r.growing_icon || "🪴";
-    if(r.tradeable_default === undefined) r.tradeable_default = true;
-    if(!DEV_MODE){
-      r.total_growth_seconds = REAL_GROWTH_SECONDS[r.rarity] || 21600;
-    }
-  });
-  Object.values(HOME_ITEMS).forEach(h=>{
-    h.home_item_image_url = h.home_item_image_url || "";
-    if(h.tradeable_default === undefined) h.tradeable_default = true;
-  });
-}
-normalizeMasters();
-
-/* ---------- 상태 (localStorage) ----------
-   state = {
-     user: garden_tags/{code} 메인 문서,
-     items: garden_items 컬렉션 (개별 item_id),
-     plots: garden_tags/{code}/plots 서브컬렉션 (5x5 = 25칸)
-   } */
-// URL 예시: garden-tag-v1-1-local-mvp-step4.html?code=GT-0001
-const params = new URLSearchParams(location.search);
-const PLACE_PARAM = (params.get("place") || "").trim().toLowerCase();
-
-function saveCurrentGardenCode(code){
-  if(!code) return;
-  localStorage.setItem("gardentag_current_code", String(code).trim().toUpperCase());
-}
-function getCurrentGardenCode(){
-  return localStorage.getItem("gardentag_current_code") || "";
-}
-
-const _URL_CODE = (params.get("code") || "").trim().toUpperCase();
-if(_URL_CODE) saveCurrentGardenCode(_URL_CODE);
-const USER_CODE = _URL_CODE || getCurrentGardenCode() || "GT-0001";
-
-const APP_CONFIG = {
-  version: "V1.1-step6a",
-  storageMode: "firebase", // "local" | "firebase"
-  firebase: {
-    apiKey: "AIzaSyA8uBfMGkg9gLiHiqnFh_Klmd0etvk0qQg",
-    authDomain: "saegim-memory.firebaseapp.com",
-    projectId: "saegim-memory",
-    storageBucket: "saegim-memory.firebasestorage.app",
-    messagingSenderId: "888229102391",
-    appId: "1:888229102391:web:f4fe41ece07ddacd2a10b2"
-  }
-};
-
-const LS_KEY = "gardentag_v1_1_" + USER_CODE;
-let state = null;
-let selectedPlotId = null;
-let itemSeq = 0;
-
-function todayStr(){
-  const d = new Date();
-  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-}
-function nextItemId(){
-  itemSeq++;
-  return "item_"+String(itemSeq).padStart(5,"0");
-}
-
-function newState(){
-  const plots = [];
-  for(let i=0;i<25;i++){
-    plots.push({
-      plot_id:"plot_"+String(i+1).padStart(2,"0"),
-      ground_id:"grass_basic",
-      planted_item_id:null, seed_id:null, result_ref_id:null,
-      status:"empty",
-      total_growth_seconds:0, grown_seconds:0,
-      watered_until:null,
-      planted_at:null, completed_at:null, harvested_at:null
+    const defaultState = () => ({
+      version: 1,
+      registered: false,
+      keyId: 'GT-0001',
+      gardenId: 'GARDEN-DEMO-001',
+      gardenName: '내 정원',
+      pinHash: '',
+      auth: { managed:false, failCount:0, lockUntil:0 },
+      linkedDesigns: [],
+      activeTheme: 'basic',
+      inventory: {},
+      fertilizers: { small:3, good:1 },
+      plots: Array.from({length:25}, () => null),
+      visits: [],
+      dailyRewards: {},
+      grantedRewards: {},
+      collection: {},
+      settings: { demoSpeed:true },
+      adminUnlocked: false,
+      logs: [],
+      generatedKeys: [],
+      shopStatuses: Object.fromEntries(shops.map(s => [s.id, s.status]))
     });
-  }
-  return {
-    user:{
-      user_id:USER_CODE, garden_name:USER_CODE+"의 부산 정원", region_focus:"busan",
-      coin:150,
-      fertilizer_basic:1, fertilizer_good:0, fertilizer_gold:0,
-      last_checkin_date:null, streak_count:0,
-      codex:[], home_items:[], visit_history:{},
-      created_at:new Date().toISOString(), updated_at:new Date().toISOString()
-    },
-    items:[],
-    plots
-  };
-}
 
-function migrateState(){
-  // 이전 localStorage와 호환: 없는 필드 보충
-  if(!state.user) state.user = newState().user;
-  if(!Array.isArray(state.items)) state.items = [];
-  if(!Array.isArray(state.plots)) state.plots = newState().plots;
-  if(!Array.isArray(state.user.codex)) state.user.codex = [];
-  if(!Array.isArray(state.user.home_items)) state.user.home_items = [];
-  if(!state.user.visit_history) state.user.visit_history = {};
-  if(typeof state.user.fertilizer_basic !== "number") state.user.fertilizer_basic = 0;
-  if(typeof state.user.fertilizer_good !== "number") state.user.fertilizer_good = 0;
-  if(typeof state.user.fertilizer_gold !== "number") state.user.fertilizer_gold = 0;
-  if(typeof state.user.coin !== "number") state.user.coin = 0;
+    let state = loadState();
 
-  // 과거 구조: home_items에 home_item_id가 들어있던 경우 item_id 구조로 변환
-  const converted = [];
-  state.user.home_items.forEach(x=>{
-    if(String(x).startsWith("item_")){
-      converted.push(x);
-      return;
+    // URL ?code=GT-0001 로 접근 시 자동 등록
+    if (URL_CODE && !state.registered) {
+      state.registered = true;
+      state.keyId = URL_CODE;
+      state.gardenName = URL_CODE + '의 정원';
+      state.linkedDesigns = ['basic'];
+      state.activeTheme = 'basic';
+      state.auth.managed = true;
+      addInventory('dandelion', 1, '시작 보상');
+      saveState();
     }
-    if(HOME_ITEMS[x]){
-      const existing = state.items.find(i=>i.item_type==="home_item" && i.item_ref_id===x && i.source_type==="migration");
-      if(existing){ converted.push(existing.item_id); }
-      else{
-        const it = createItem("home_item", x, "migration", "기존 마이홈 장식 변환");
-        converted.push(it.item_id);
+
+    let activeTab = state.registered ? 'garden' : 'registration';
+    let activeCollectionType = '기본';
+    let renderTimer = null;
+
+    const el = id => document.getElementById(id);
+    const qs = (sel, root=document) => root.querySelector(sel);
+    const qsa = (sel, root=document) => [...root.querySelectorAll(sel)];
+    const now = () => Date.now();
+    const todayKey = () => new Date().toISOString().slice(0,10);
+    const escapeHtml = (value='') => String(value).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    const uid = prefix => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`;
+    const hashPin = pin => btoa([...pin].map((ch,i)=>String.fromCharCode(ch.charCodeAt(0)+i+4)).join(''));
+    const formatDate = ts => ts ? new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(ts)) : '-';
+    const formatDuration = ms => {
+      if (ms <= 0) return '완료';
+      const sec = Math.ceil(ms/1000);
+      if (sec < 60) return `${sec}초`;
+      const min = Math.ceil(sec/60);
+      if (min < 60) return `${min}분`;
+      const h = Math.floor(min/60), m = min%60;
+      return `${h}시간${m ? ` ${m}분` : ''}`;
+    };
+
+    function loadState(){
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return defaultState();
+        const parsed = JSON.parse(raw);
+        const loaded={ ...defaultState(), ...parsed, activeTheme: parsed.activeTheme || 'basic', auth:{...defaultState().auth,...parsed.auth}, settings:{...defaultState().settings,...parsed.settings} };
+        if(loaded.registered && (!loaded.linkedDesigns || !loaded.linkedDesigns.length)) loaded.linkedDesigns=['basic'];
+        return loaded;
+      } catch (err) {
+        console.error(err);
+        return defaultState();
       }
     }
-  });
-  state.user.home_items = converted;
-}
+    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function logEvent(type, detail={}){
+      state.logs.unshift({ id:uid('log'), type, detail, at:now() });
+      state.logs = state.logs.slice(0,500);
+      saveState();
+    }
+    function toast(message, kind='ok'){
+      const node = document.createElement('div');
+      node.className = `toast ${kind === 'error' ? 'error' : ''}`;
+      node.textContent = message;
+      el('toastWrap').appendChild(node);
+      setTimeout(()=>node.remove(), 3200);
+    }
+    function openModal(title, html, onOpen){
+      el('modalTitle').textContent = title;
+      el('modalBody').innerHTML = html;
+      el('modalBackdrop').classList.add('open');
+      el('modalBackdrop').setAttribute('aria-hidden','false');
+      if (onOpen) onOpen(el('modalBody'));
+    }
+    function closeModal(){
+      el('modalBackdrop').classList.remove('open');
+      el('modalBackdrop').setAttribute('aria-hidden','true');
+      el('modalBody').innerHTML = '';
+    }
 
-// (구 save 제거 - 아래 save()가 사용됨)
+    function addInventory(seedId, qty=1, source='보상'){
+      const item = state.inventory[seedId] || { qty:0, firstAcquiredAt:now(), source };
+      if (item.qty === 0 && !item.firstAcquiredAt) item.firstAcquiredAt = now();
+      item.qty += qty;
+      item.source = item.source || source;
+      state.inventory[seedId] = item;
+      if (!state.collection[seedId]) state.collection[seedId] = { status:'found', harvestCount:0, firstAcquiredAt:now(), firstCompletedAt:null, records:[] };
+      else if (state.collection[seedId].status === 'unknown') state.collection[seedId].status = 'found';
+      logEvent('seed_granted',{seedId,qty,source});
+    }
+    function totalVisitCount(){ return new Set(state.visits.map(v=>v.shopId)).size; }
+    function unlockedCount(){
+      const v = totalVisitCount();
+      if (v >= 7) return 25;
+      if (v >= 5) return 19;
+      if (v >= 3) return 15;
+      if (v >= 1) return 11;
+      return 9;
+    }
+    function isPlotUnlocked(index){ return unlockOrder.slice(0, unlockedCount()).includes(index); }
+    function nextUnlock(){
+      const v = totalVisitCount();
+      if (v < 1) return {visits:1, plots:11};
+      if (v < 3) return {visits:3, plots:15};
+      if (v < 5) return {visits:5, plots:19};
+      if (v < 7) return {visits:7, plots:25};
+      return null;
+    }
+    function stageDurationMs(seed){
+      const total = seed.totalMinutes * 60 * 1000;
+      return total / 4 / (state.settings.demoSpeed ? DEMO_SCALE : 1);
+    }
+    function updateGrowth(){
+      let changed = false;
+      state.plots.forEach(plot => {
+        if (!plot || plot.status !== 'growing') return;
+        if (now() >= plot.stageEndsAt) {
+          if (plot.stage >= 4) plot.status = 'complete';
+          else plot.status = 'needs_water';
+          changed = true;
+        }
+      });
+      if (changed) saveState();
+      return changed;
+    }
+    function plantStatusLabel(plot){
+      if (!plot) return '';
+      if (plot.status === 'needs_water') return '물 필요';
+      if (plot.status === 'complete') return '수확 가능';
+      return ['','발아','새싹','성장 중','개화·결실'][plot.stage];
+    }
 
-/* ---------- Firebase ---------- */
-let gtDb = null;
-
-function initFirebase(){
-  if(APP_CONFIG.storageMode !== "firebase") return;
-  try{
-    if(!firebase.apps.length) firebase.initializeApp(APP_CONFIG.firebase);
-    gtDb = firebase.firestore();
-    console.log("[GT] Firebase connected:", APP_CONFIG.firebase.projectId);
-  }catch(e){
-    console.error("[GT] Firebase init error:", e);
-  }
-}
-
-async function saveToFirebase(){
-  if(!gtDb) return;
-  try{
-    const docs = buildFirestorePreview();
-    // 디버그: 각 경로 개별 저장으로 어느 경로가 실패하는지 확인
-    for(const [path, data] of Object.entries(docs)){
-      try{
-        await gtDb.doc(path).set(data, {merge: true});
-      }catch(e2){
-        console.error("[GT] 실패 경로:", path, "에러:", e2.message);
-        toast("❌ 실패경로: " + path.split("/").slice(-2).join("/"));
-        throw e2;
+    function drawPlant(canvas, seed, stage=4, status='growing', silhouette=false){
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const size = 11;
+      canvas.width = size; canvas.height = size;
+      ctx.clearRect(0,0,size,size);
+      const px=(x,y,c)=>{ctx.fillStyle=c;ctx.fillRect(x,y,1,1)};
+      const dark = silhouette ? '#858b83' : '#2f4d35';
+      const leaf = silhouette ? '#969c94' : '#5f9258';
+      const leaf2 = silhouette ? '#a6aaa3' : '#80ad67';
+      const bloom = silhouette ? '#787d78' : seed.color;
+      const accent = silhouette ? '#90958f' : seed.accent;
+      const soil = silhouette ? '#aaa8a0' : '#8a6842';
+      // 바닥 그림자
+      [[4,9],[5,9],[6,9],[3,10],[4,10],[5,10],[6,10],[7,10]].forEach(([x,y])=>px(x,y,soil));
+      if(stage === 1){
+        [[5,7],[5,8]].forEach(([x,y])=>px(x,y,dark));
+        [[4,6],[5,6],[6,6],[4,7],[6,7]].forEach(([x,y])=>px(x,y,leaf2));
+      }
+      if(stage >= 2){
+        for(let y=5;y<=9;y++) px(5,y,dark);
+        [[4,7],[3,6],[4,6],[6,8],[7,7],[6,7]].forEach(([x,y])=>px(x,y,leaf));
+        if(stage === 2) [[4,4],[5,4],[6,4],[5,3]].forEach(([x,y])=>px(x,y,leaf2));
+      }
+      if(stage >= 3){
+        for(let y=3;y<=9;y++) px(5,y,dark);
+        [[4,5],[3,4],[4,4],[6,7],[7,6],[6,6],[4,8],[3,7]].forEach(([x,y])=>px(x,y,leaf));
+        if(stage === 3) [[4,2],[5,2],[6,2],[4,3],[6,3],[5,1]].forEach(([x,y])=>px(x,y,bloom));
+      }
+      if(stage >= 4){
+        const petals = [[5,0],[3,1],[4,1],[6,1],[7,1],[2,2],[3,2],[7,2],[8,2],[3,3],[4,3],[6,3],[7,3],[5,4]];
+        petals.forEach(([x,y])=>px(x,y,bloom));
+        [[4,2],[5,2],[6,2],[5,1],[5,3]].forEach(([x,y])=>px(x,y,accent));
+        px(5,2, silhouette ? '#777' : '#775126');
+      }
+      if(status === 'needs_water'){
+        px(9,1,'#5e91b8'); px(8,2,'#75acd1'); px(9,2,'#75acd1'); px(9,3,'#5e91b8');
+      }
+      if(status === 'complete'){
+        px(1,1,'#c79a45'); px(1,3,'#c79a45'); px(9,4,'#c79a45');
       }
     }
-    console.log("[GT] Firebase 저장 완료");
-  }catch(e){
-    console.error("[GT] saveToFirebase error:", e);
-    toast("⚠️ 저장 실패: " + e.message);
-  }
-}
-
-async function loadFromFirebase(){
-  if(!gtDb) return false;
-  try{
-    const code = USER_CODE;
-    const mainSnap = await gtDb.doc(`garden_tags/${code}`).get();
-    if(!mainSnap.exists) return false;
-
-    const mainData = mainSnap.data();
-
-    const [plotsSnap, codexSnap, homeSlotsSnap, visitsSnap, itemsSnap] = await Promise.all([
-      gtDb.collection(`garden_tags/${code}/plots`).get(),
-      gtDb.collection(`garden_tags/${code}/codex`).get(),
-      gtDb.collection(`garden_tags/${code}/home_slots`).orderBy("slot_index").get(),
-      gtDb.collection(`garden_tags/${code}/visits`).get(),
-      gtDb.collection("garden_items").where("owner_code","==",code).get()
-    ]);
-
-    const plots = plotsSnap.docs.map(d => d.data());
-    const codex = codexSnap.docs.map(d => d.data().result_id);
-    const home_items = homeSlotsSnap.docs.map(d => d.data().item_instance_id);
-    const visit_history = {};
-    visitsSnap.docs.forEach(d => { visit_history[d.id] = d.data(); });
-    const items = itemsSnap.docs.map(d => d.data());
-
-    let maxSeq = 0;
-    items.forEach(it => {
-      const n = parseInt((it.item_id||"").replace("item_",""), 10);
-      if(!isNaN(n) && n > maxSeq) maxSeq = n;
-    });
-    itemSeq = maxSeq;
-
-    state = {
-      user: {
-        user_id: mainData.user_id || code,
-        garden_name: mainData.garden_name || code+"의 부산 정원",
-        region_focus: mainData.region_focus || "busan",
-        coin: mainData.coin || 0,
-        fertilizer_basic: mainData.fertilizer_basic || 0,
-        fertilizer_good: mainData.fertilizer_good || 0,
-        fertilizer_gold: mainData.fertilizer_gold || 0,
-        last_checkin_date: mainData.last_checkin_date || null,
-        streak_count: mainData.streak_count || 0,
-        codex, home_items, visit_history,
-        created_at: mainData.created_at,
-        updated_at: mainData.updated_at
-      },
-      items,
-      plots: plots.length ? plots : newState().plots
-    };
-    return true;
-  }catch(e){
-    console.error("[GT] loadFromFirebase error:", e);
-    return false;
-  }
-}
-
-function save(){
-  state.user.updated_at = new Date().toISOString();
-  localStorage.setItem(LS_KEY, JSON.stringify({state, itemSeq}));
-  if(APP_CONFIG.storageMode === "firebase" && gtDb){
-    saveToFirebase();
-  }
-}
-
-async function loadGardenAssetsFromFirebase(){
-  if(!gtDb) return;
-  try{
-    const [seedsSnap, resultsSnap] = await Promise.all([
-      gtDb.collection('garden_assets/seeds/items').get(),
-      gtDb.collection('garden_assets/results/items').get(),
-    ]);
-    seedsSnap.forEach(d => {
-      const data = d.data();
-      if(SEEDS[d.id]) Object.assign(SEEDS[d.id], data);
-    });
-    resultsSnap.forEach(d => {
-      const data = d.data();
-      if(RESULTS[d.id]) Object.assign(RESULTS[d.id], data);
-    });
-    console.log("[GT] garden_assets 로드 완료");
-  }catch(e){
-    console.warn("[GT] loadGardenAssetsFromFirebase 실패:", e.message);
-  }
-}
-
-async function load(){
-  if(APP_CONFIG.storageMode === "firebase"){
-    initFirebase();
-    await loadGardenAssetsFromFirebase();
-    const loaded = await loadFromFirebase();
-    if(loaded){ migrateState(); return; }
-    // Firebase에 데이터 없으면 localStorage 또는 신규 상태로 fallback
-    console.log("[GT] No Firestore data, checking localStorage...");
-  }
-  const raw = localStorage.getItem(LS_KEY);
-  if(raw){
-    try{ const p=JSON.parse(raw); state=p.state; itemSeq=p.itemSeq||0; migrateState(); save(); return; }catch(e){}
-  }
-  state = newState();
-  save();
-}
-
-/* ---------- 아이템 헬퍼 ---------- */
-// item_id 기반으로 씨앗/아이템 1개 생성 (개수 아님, 개별 item)
-function createItem(item_type, item_ref_id, source_type, source_label){
-  let name="", region_id="busan", place_id="", rarity="common", tradeable=true;
-
-  if(item_type==="seed"){
-    const s = SEEDS[item_ref_id];
-    if(s){
-      name=s.seed_name; place_id=s.place_id; region_id=s.region_id;
-      rarity=(s.category==="local")?"local":"common";
-      tradeable=s.tradeable_default;
+    function hydrateCanvases(root=document){
+      qsa('canvas[data-seed]',root).forEach(canvas => {
+        const seed = seedMap[canvas.dataset.seed] || seedCatalog[0];
+        drawPlant(canvas, seed, Number(canvas.dataset.stage||4), canvas.dataset.status||'growing', canvas.dataset.silhouette==='1');
+      });
     }
-  }
 
-  if(item_type==="result"){
-    const r = RESULTS[item_ref_id];
-    if(r){
-      name=r.result_name; place_id=r.place_id; region_id=r.region_id;
-      rarity=r.rarity; tradeable=r.tradeable_default;
+    function setActiveTab(tab){
+      if (!state.registered) tab = 'registration';
+      activeTab = tab;
+      qsa('.screen').forEach(s=>s.classList.remove('active'));
+      const id = tab === 'registration' ? 'registrationScreen' : `${tab}Screen`;
+      el(id).classList.add('active');
+      qsa('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab === tab));
+      renderCurrent();
+      window.scrollTo({top:0,behavior:'smooth'});
     }
-  }
 
-  if(item_type==="home_item"){
-    const h = HOME_ITEMS[item_ref_id];
-    if(h){
-      name=h.home_item_name; place_id=h.place_id; region_id=h.region_id;
-      rarity="decor"; tradeable=h.tradeable_default;
+    function renderChrome(){
+      applyTheme();
+      el('bottomNav').classList.toggle('hidden', !state.registered);
+      el('lockButton').classList.toggle('hidden', !state.registered);
+      el('speedPill').textContent = state.settings.demoSpeed ? '테스트 속도 ×420' : '실제 성장 시간';
+      const pill = el('authPill');
+      if (!state.registered) pill.innerHTML = '<span class="status-dot view"></span><span>미등록</span>';
+      else if (state.auth.managed) pill.innerHTML = '<span class="status-dot"></span><span>관리 모드</span>';
+      else pill.innerHTML = '<span class="status-dot view"></span><span>보기 모드</span>';
+      if (URL_CODE) el('headerCode').textContent = URL_CODE + ' · ' + state.gardenName;
     }
-  }
-
-  const it = {
-    item_id: nextItemId(),
-    owner_code: state.user.user_id,
-    item_type, item_ref_id,
-    name, region_id, place_id, rarity, tradeable,
-    status:"owned",
-    source_type: source_type||"system",
-    source_label: source_label||"",
-    created_at:new Date().toISOString(), updated_at:new Date().toISOString()
-  };
-  state.items.push(it);
-  return it;
-}
-function ownedSeeds(){ return state.items.filter(i=>i.item_type==="seed" && i.status==="owned"); }
-function ownedSeedGroups(){
-  const g = {};
-  ownedSeeds().forEach(i=>{ (g[i.item_ref_id]=g[i.item_ref_id]||[]).push(i); });
-  return g;
-}
-function ownedHomeItems(){
-  return state.items.filter(i=>i.item_type==="home_item" && i.status==="owned");
-}
-function hasHomeItemRef(homeItemId){
-  return ownedHomeItems().some(i=>i.item_ref_id===homeItemId);
-}
-
-/* ---------- 이미지/아이콘 표시 규칙 ---------- */
-function iconFor(imageUrl, defaultIcon, fallbackType){
-  if(imageUrl) return `<img src="${imageUrl}" alt="" style="mix-blend-mode:multiply;">`;
-  if(defaultIcon) return defaultIcon;
-  return FALLBACK_ICON[fallbackType] || "❔";
-}
-
-/* =====================================================================
-   성장 로직 (시간 기반)
-   - watered_until > now 인 동안만 grown_seconds 증가
-   - grown_seconds >= total_growth_seconds 이면 ready
-   ===================================================================== */
-// 마지막 계산 시점 저장용
-function tickGrowth(){
-  const now = NOW();
-  let changed = false;
-  state.plots.forEach(p=>{
-    if(p.status!=="growing" && p.status!=="planted") return;
-    // 성장 진행: watered_until 안에서만
-    if(!p._lastCalc) p._lastCalc = now;
-    const wu = p.watered_until ? new Date(p.watered_until).getTime() : 0;
-    if(wu > p._lastCalc){
-      const activeUntil = Math.min(now, wu);
-      const delta = Math.max(0, (activeUntil - p._lastCalc)/1000);
-      if(delta>0){ p.grown_seconds += delta; changed = true; }
+    function applyTheme(){
+      const theme=state.activeTheme || 'basic';
+      document.body.classList.remove('theme-basic','theme-gamcheon','theme-artist');
+      document.body.classList.add(`theme-${theme}`);
     }
-    p._lastCalc = now;
-    if(p.status==="planted" && p.grown_seconds>0) p.status="growing";
-    if(p.grown_seconds >= p.total_growth_seconds && p.total_growth_seconds>0){
-      p.grown_seconds = p.total_growth_seconds;
-      if(p.status!=="ready"){ p.status="ready"; p.completed_at=new Date().toISOString(); changed=true; }
+
+    function renderCurrent(){
+      updateGrowth();
+      renderChrome();
+      if (!state.registered) return renderRegistration();
+      if (activeTab === 'garden') renderGarden();
+      if (activeTab === 'inventory') renderInventory();
+      if (activeTab === 'explore') renderExplore();
+      if (activeTab === 'collection') renderCollection();
+      if (activeTab === 'home') renderHome();
+      if (activeTab === 'admin') renderAdmin();
     }
-  });
-  if(changed) save();
-}
-function isWatered(p){
-  return p.watered_until && new Date(p.watered_until).getTime() > NOW();
-}
 
-/* =====================================================================
-   액션들
-   ===================================================================== */
-// --- 출석 ---
-function doCheckin(){
-  const t = todayStr();
-  if(state.user.last_checkin_date === t){ toast("오늘은 이미 출석했어요 😊"); return; }
-  // 연속 출석 카운트
-  const y = new Date(); y.setDate(y.getDate()-1);
-  const yStr = y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
-  state.user.streak_count = (state.user.last_checkin_date===yStr) ? state.user.streak_count+1 : 1;
-  state.user.last_checkin_date = t;
-  // 보상: 일반 씨앗 1, 일반 비료 1, 코인 50
-  createItem("seed","basic_seed","checkin","출석 보상");
-  state.user.fertilizer_basic += 1;
-  state.user.coin += 50;
-  save(); renderAll();
-  toast("출석 완료! 🌱씨앗 +1, 🧪비료 +1, 🪙+50");
-}
-
-// --- 방문 (테스트) ---
-function doVisit(place){
-  const key = place.place_id + "_" + todayStr();
-  if(state.user.visit_history[key]){
-    toast(`${place.name} 방문 보상은 오늘 이미 받았어요`);
-    return;
-  }
-  const seed = SEEDS[place.seed_id];
-  createItem("seed", place.seed_id, "visit", place.name+" 방문 보상");
-  state.user.coin += place.reward_coin;
-  state.user.visit_history[key] = {
-    place_id: place.place_id,
-    date: todayStr(),
-    method: "test",
-    reward_seed_id: place.seed_id,
-    reward_coin: place.reward_coin,
-    created_at: new Date().toISOString()
-  };
-  save(); renderAll();
-  toast(`${place.name} 방문! ${seed.default_icon}${seed.seed_name} +1, 🪙+${place.reward_coin}`);
-}
-
-function grantPlaceReward(place, method){
-  const visitKey = place.place_id + "_" + todayStr();
-  if(!state.user.visit_history) state.user.visit_history = {};
-  if(state.user.visit_history[visitKey]){
-    toast(`오늘 ${place.place_name} 보상은 이미 받았어요. 내일 다시 방문하세요 🗓️`);
-    return false;
-  }
-  const seed = SEEDS[place.reward_seed_id];
-  if(!seed){ toast("보상 씨앗 정보를 찾을 수 없습니다."); return false; }
-  createItem("seed", place.reward_seed_id, "visit", place.place_name+" QR 방문 보상");
-  state.user.coin += Number(place.reward_coin||0);
-  state.user.visit_history[visitKey] = {
-    visit_id: visitKey,
-    place_id: place.place_id,
-    place_name: place.place_name,
-    reward_seed_id: place.reward_seed_id,
-    reward_coin: place.reward_coin,
-    method: method||"qr",
-    date: todayStr(),
-    received_at: new Date().toISOString(),
-    created_at: new Date().toISOString()
-  };
-  save(); renderAll();
-  toast(`${place.icon||"📍"} ${place.place_name} 방문 인증 완료! ${seed.default_icon}${seed.seed_name} +1, 🪙+${place.reward_coin}`);
-  return true;
-}
-
-function showNeedGardenCodeScreen(placeId){
-  const place = GT_PLACES[placeId];
-  const placeName = place ? place.place_name : "관광지";
-  document.body.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#f4f7f2">
-      <div style="width:100%;max-width:420px;background:#fff;border:1px solid #e2e8dd;border-radius:20px;padding:32px 24px;text-align:center;box-shadow:0 8px 24px rgba(40,60,30,.08)">
-        <div style="font-size:48px;margin-bottom:16px">🌱</div>
-        <h2 style="margin:0 0 12px;font-size:20px;color:#2a3d20">가든태그 코드가 필요합니다</h2>
-        <p style="color:#666;font-size:14px;line-height:1.6;margin:0 0 24px">
-          <b>${placeName}</b> 보상을 받으려면<br>먼저 본인의 가든태그 QR을 스캔해야 합니다.<br>
-          <span style="font-size:12px;color:#aaa">또는 아래에 직접 코드를 입력하세요.</span>
-        </p>
-        <input id="manualGardenCodeInput" placeholder="예: GT-0001"
-          style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:14px;border-radius:12px;border:1px solid #ccc;font-size:16px;text-align:center">
-        <button onclick="submitGardenCodeForPlace()"
-          style="width:100%;padding:14px;border-radius:12px;background:#4c9a52;color:#fff;font-weight:700;font-size:15px;border:none;cursor:pointer">
-          이 코드로 보상 받기
-        </button>
-        <p style="margin-top:16px;font-size:12px;color:#aaa">
-          개인 가든태그 QR을 먼저 스캔하면 다음부터 자동으로 보상이 연결됩니다.
-        </p>
-      </div>
-    </div>`;
-}
-
-function submitGardenCodeForPlace(){
-  const input = document.getElementById("manualGardenCodeInput");
-  const code = (input?.value||"").trim().toUpperCase();
-  if(!code){ alert("가든태그 코드를 입력하세요."); return; }
-  saveCurrentGardenCode(code);
-  const url = new URL(location.href);
-  url.searchParams.set("code", code);
-  location.href = url.toString();
-}
-
-function handlePlaceQrVisit(){
-  if(!PLACE_PARAM) return;
-  if(!_URL_CODE && !getCurrentGardenCode()){
-    showNeedGardenCodeScreen(PLACE_PARAM);
-    return;
-  }
-  const place = GT_PLACES[PLACE_PARAM];
-  if(!place || !place.enabled){
-    toast("등록되지 않은 관광지 QR입니다. 관리자에게 문의하세요.");
-    return;
-  }
-  grantPlaceReward(place, "qr");
-}
-
-// --- 씨앗 심기 ---
-function openPlantPickerForSelected(){
-  if(!selectedPlotId){ toast("먼저 심을 빈 칸을 선택하세요"); switchTab('garden'); return; }
-  const p = getPlot(selectedPlotId);
-  if(p.status!=="empty"){ toast("빈 칸에만 심을 수 있어요"); return; }
-  const groups = ownedSeedGroups();
-  const keys = Object.keys(groups);
-  if(keys.length===0){ toast("보유한 씨앗이 없어요. 출석/방문/상점에서 얻어보세요"); return; }
-  let html = `<h3>어떤 씨앗을 심을까요?</h3><div class="grid-choose">`;
-  keys.forEach(k=>{
-    const s = SEEDS[k];
-    html += `<div class="choose" onclick="plantSeed('${k}')">
-      <div class="ci">${iconFor(s.seed_image_url,s.default_icon,'seed')}</div>
-      <div class="cn">${s.seed_name}</div>
-      <div class="cq">보유 ${groups[k].length}개</div></div>`;
-  });
-  html += `</div>`;
-  openSheet(html);
-}
-function plantSeed(seedId){
-  const p = getPlot(selectedPlotId);
-  if(!p || p.status!=="empty") return;
-  const group = ownedSeedGroups()[seedId];
-  if(!group || group.length===0) return;
-  const seedItem = group[0];
-  const seed = SEEDS[seedId];
-  // 확률로 결과물 결정
-  const resultRef = pickResult(seed.possible_results);
-  const result = RESULTS[resultRef];
-  // 아이템 상태 변경
-  seedItem.status = "planted";
-  seedItem.updated_at = new Date().toISOString();
-  // plot 갱신
-  p.planted_item_id = seedItem.item_id;
-  p.seed_id = seedId;
-  p.result_ref_id = resultRef;
-  p.status = "planted";
-  p.total_growth_seconds = result.total_growth_seconds;
-  p.grown_seconds = 0;
-  p.watered_until = null;
-  p.planted_at = new Date().toISOString();
-  p.completed_at = null; p.harvested_at = null;
-  p._lastCalc = NOW();
-  save(); closeSheet(); renderAll();
-  toast(`${seed.default_icon} ${seed.seed_name}를 심었어요! 💧물을 주세요`);
-}
-function pickResult(list){
-  const total = list.reduce((a,b)=>a+b.weight,0);
-  let r = Math.random()*total;
-  for(const o of list){ if(r < o.weight) return o.result_ref_id; r -= o.weight; }
-  return list[0].result_ref_id;
-}
-
-// --- 전체 물주기 ---
-function waterAll(){
-  const until = new Date(NOW() + WATER_DURATION_SEC*1000).toISOString();
-  let n=0;
-  state.plots.forEach(p=>{
-    if(p.status==="planted"||p.status==="growing"){ p.watered_until = until; p._lastCalc = NOW(); n++; }
-  });
-  save(); renderGarden(); renderTop();
-  toast(n>0 ? `💧 정원 전체가 촉촉해졌어요! (${Math.round(WATER_DURATION_SEC/60)}분간 성장)` : "성장 중인 식물이 없어요");
-}
-
-// --- 비료 ---
-function openFertPicker(){
-  if(!selectedPlotId){ toast("먼저 비료 줄 식물을 선택하세요"); return; }
-  const p = getPlot(selectedPlotId);
-  if(p.status!=="growing" && p.status!=="planted"){ toast("성장 중인 식물에만 사용할 수 있어요"); return; }
-  const avail = [];
-  if(state.user.fertilizer_basic>0) avail.push("basic");
-  if(state.user.fertilizer_good>0) avail.push("good");
-  if(state.user.fertilizer_gold>0) avail.push("gold");
-  if(avail.length===0){ toast("보유한 비료가 없어요. 상점에서 구매하세요"); return; }
-  let html = `<h3>어떤 비료를 사용할까요?</h3><div class="grid-choose">`;
-  avail.forEach(k=>{
-    const f = FERTILIZERS[k];
-    html += `<div class="choose" onclick="useFert('${k}')">
-      <div class="ci">${f.icon}</div><div class="cn">${f.name}</div>
-      <div class="cq">보유 ${state.user[f.field]}개 · -${Math.round(f.add_seconds/60)}분</div></div>`;
-  });
-  html += `</div>`;
-  openSheet(html);
-}
-function useFert(key){
-  const p = getPlot(selectedPlotId);
-  const f = FERTILIZERS[key];
-  if(!p || state.user[f.field]<=0) return;
-  state.user[f.field] -= 1;
-  p.grown_seconds += f.add_seconds;
-  p._lastCalc = NOW();
-  if(p.grown_seconds >= p.total_growth_seconds){
-    p.grown_seconds = p.total_growth_seconds;
-    p.status = "ready"; p.completed_at = new Date().toISOString();
-  } else if(p.status==="planted"){ p.status="growing"; }
-  save(); closeSheet(); renderAll();
-  toast(`${f.icon} ${f.name} 사용! 성장 시간이 단축됐어요`);
-}
-
-// --- 수확 ---
-function harvestSelected(){
-  if(!selectedPlotId){ toast("수확할 식물을 선택하세요"); return; }
-  const p = getPlot(selectedPlotId);
-  if(p.status!=="ready"){ toast("아직 수확할 수 없어요"); return; }
-  const result = RESULTS[p.result_ref_id];
-  // 도감 등록
-  if(!state.user.codex.includes(p.result_ref_id)) state.user.codex.push(p.result_ref_id);
-  // 수확 결과물도 item_id로 생성 — 거래소/선물하기 확장 대비
-  createItem("result", p.result_ref_id, "harvest", result.result_name + " 수확");
-  // 코인 지급
-  state.user.coin += result.reward_coin;
-  // 마이홈 장식 지급도 item_id로 생성
-  let homeMsg = "";
-  if(result.reward_home_item_id){
-    const homeIt = createItem("home_item", result.reward_home_item_id, "harvest", result.result_name + " 수확 보상");
-    state.user.home_items.push(homeIt.item_id);
-    homeMsg = " · 🏠장식 획득";
-  }
-  // 심었던 씨앗 아이템 상태 -> harvested (item_id, owner_id 유지)
-  const seedItem = state.items.find(i=>i.item_id===p.planted_item_id);
-  if(seedItem){ seedItem.status="harvested"; seedItem.updated_at=new Date().toISOString(); }
-  // plot 초기화 (수확 후 빈 칸 권장)
-  const label = result.result_name;
-  Object.assign(p, {
-    planted_item_id:null, seed_id:null, result_ref_id:null, status:"empty",
-    total_growth_seconds:0, grown_seconds:0, watered_until:null,
-    planted_at:null, completed_at:null, harvested_at:new Date().toISOString(), _lastCalc:null
-  });
-  save(); renderAll();
-  toast(`🧺 ${label} 수확! 📖도감 등록 · 🪙+${result.reward_coin}${homeMsg}`);
-}
-
-// --- 상점 ---
-function buy(shop){
-  if(state.user.coin < shop.price_coin){ toast("코인이 부족해요 🪙"); return; }
-  state.user.coin -= shop.price_coin;
-  if(shop.item_type==="seed"){
-    createItem("seed", shop.item_ref_id, "shop", "상점 구매");
-  } else if(shop.item_type==="fertilizer"){
-    const f = FERTILIZERS[shop.item_ref_id];
-    state.user[f.field] += 1;
-  }
-  save(); renderAll();
-  toast(`${shop.icon} ${shop.item_name} 구매 완료!`);
-}
-
-function getPlot(id){ return state.plots.find(p=>p.plot_id===id); }
-
-function fmtTime(sec){
-  sec = Math.max(0, Math.floor(sec || 0));
-  const h = Math.floor(sec/3600);
-  const m = Math.floor((sec%3600)/60);
-  const s = sec%60;
-  if(h>0) return `${h}시간 ${m}분`;
-  if(m>0) return `${m}분 ${s}초`;
-  return `${s}초`;
-}
-function waterLeft(p){
-  if(!p || !p.watered_until) return 0;
-  return Math.max(0, Math.floor((new Date(p.watered_until).getTime() - NOW())/1000));
-}
-function remainingGrowth(p){
-  if(!p) return 0;
-  return Math.max(0, Math.ceil((p.total_growth_seconds||0) - (p.grown_seconds||0)));
-}
-/* ---- 성장 4단계 ---- */
-function getGrowthStage(plot){
-  if(!plot || !plot.result_ref_id) return { stage:"empty", stage_label:"빈 칸", percent:0 };
-  const total = Number(plot.total_growth_seconds||0);
-  const grown = Number(plot.grown_seconds||0);
-  if(plot.status==="ready" || (total>0 && grown>=total))
-    return { stage:"complete", stage_label:"완성", percent:100 };
-  if(total<=0) return { stage:"seed", stage_label:"씨앗", percent:0 };
-  const pct = Math.min(100, Math.floor(grown/total*100));
-  if(pct < 25) return { stage:"seed",    stage_label:"씨앗",   percent:pct };
-  if(pct < 60) return { stage:"sprout",  stage_label:"새싹",   percent:pct };
-  return           { stage:"growing", stage_label:"성장중", percent:pct };
-}
-
-function getGrowthStageImage(result, stage){
-  if(!result) return { image_url:"", default_icon:"🌱" };
-  if(stage==="seed")     return { image_url: result.seed_image_url||"",    default_icon: result.seed_icon||"🌱" };
-  if(stage==="sprout")   return { image_url: result.sprout_image_url||"",  default_icon: result.sprout_icon||"🌿" };
-  if(stage==="growing")  return { image_url: result.growing_image_url||"", default_icon: result.growing_icon||"🪴" };
-  if(stage==="complete") return { image_url: result.complete_image_url||"", default_icon: result.default_icon||"✨" };
-  return { image_url:"", default_icon:"🌱" };
-}
-
-function statusLabel(p){
-  if(!p) return "-";
-  if(p.status==="empty") return "빈 칸";
-  if(p.status==="planted") return "씨앗 상태";
-  if(p.status==="growing") return isWatered(p) ? "성장 중" : "물 마름 · 성장 정지";
-  if(p.status==="ready") return "수확 가능";
-  if(p.status==="harvested") return "수확 완료";
-  return p.status;
-}
-function itemName(it){
-  if(!it) return "-";
-  if(it.item_type==="seed") return SEEDS[it.item_ref_id]?.seed_name || it.name || it.item_ref_id;
-  if(it.item_type==="result") return RESULTS[it.item_ref_id]?.result_name || it.name || it.item_ref_id;
-  if(it.item_type==="home_item") return HOME_ITEMS[it.item_ref_id]?.home_item_name || it.name || it.item_ref_id;
-  return it.name || it.item_ref_id || it.item_type;
-}
-function itemIcon(it){
-  if(!it) return "❔";
-  if(it.item_type==="seed"){
-    const s = SEEDS[it.item_ref_id];
-    return s ? iconFor(s.seed_image_url, s.default_icon, "seed") : "🌱";
-  }
-  if(it.item_type==="result"){
-    const r = RESULTS[it.item_ref_id];
-    return r ? iconFor(r.complete_image_url, r.default_icon, r.result_type) : "🌼";
-  }
-  if(it.item_type==="home_item"){
-    const h = HOME_ITEMS[it.item_ref_id];
-    return h ? iconFor(h.home_item_image_url, h.default_icon, "landmark") : "🏠";
-  }
-  return "📦";
-}
-
-/* =====================================================================
-   렌더링
-   ===================================================================== */
-function renderAll(){
-  renderTop(); renderGarden(); renderPlotDetail(); renderCheckin(); renderVisit();
-  renderCodex(); renderHome(); renderInventory(); renderShop();
-}
-
-function renderTop(){
-  document.getElementById("gardenName").textContent = state.user.garden_name;
-  const codeEl = document.getElementById("currentCode");
-  if(codeEl) codeEl.textContent = state.user.user_id;
-  const storageEl = document.getElementById("storageModeLabel");
-  if(storageEl) storageEl.textContent = gtDb ? "🔥 Firebase" : (APP_CONFIG.storageMode === "firebase" ? "Firebase 연결 중..." : "localStorage");
-  document.getElementById("stCoin").textContent = state.user.coin;
-  const fert = state.user.fertilizer_basic + state.user.fertilizer_good + state.user.fertilizer_gold;
-  document.getElementById("stFert").textContent = fert;
-  document.getElementById("stCodex").textContent = state.user.codex.length;
-}
-
-function plotView(p){
-  if(p.status==="empty"){
-    return {cls:"plot empty", inner:"빈 칸", pct:"", badge:""};
-  }
-  const result = RESULTS[p.result_ref_id];
-  const stageInfo = getGrowthStage(p);
-  const visual = getGrowthStageImage(result, stageInfo.stage);
-  const icon = iconFor(visual.image_url, visual.default_icon, stageInfo.stage);
-  const watered = isWatered(p);
-  const cls = "plot" + (watered?" watered":"");
-  if(stageInfo.stage==="complete"){
-    return {cls, inner:icon, pct:"수확가능", badge:"✅"};
-  }
-  const pctLabel = stageInfo.stage==="seed" ? "씨앗" :
-                   stageInfo.stage==="sprout" ? "새싹 "+stageInfo.percent+"%" :
-                   "성장중 "+stageInfo.percent+"%";
-  return {cls, inner:icon, pct:pctLabel, badge: watered?"💧":""};
-}
-
-function renderGarden(){
-  tickGrowth();
-  const grid = document.getElementById("gardenGrid");
-  grid.innerHTML = "";
-  state.plots.forEach(p=>{
-    const v = plotView(p);
-    const el = document.createElement("div");
-    el.className = v.cls + (selectedPlotId===p.plot_id ? " sel" : "");
-    el.innerHTML = `<div>${v.inner}</div>` +
-      (v.badge?`<span class="ready-badge">${v.badge}</span>`:"") +
-      (v.pct?`<span class="pct">${v.pct}</span>`:"");
-    el.onclick = ()=> selectPlot(p.plot_id);
-    grid.appendChild(el);
-  });
-}
-function selectPlot(id){
-  selectedPlotId = (selectedPlotId===id)? null : id;
-  renderGarden(); renderPlotDetail();
-  const p = getPlot(id);
-  if(selectedPlotId){
-    if(p.status==="empty") toast("빈 칸 선택됨 · 🌱씨앗 심기를 누르세요");
-    else if(p.status==="ready") toast("수확 가능! 🧺수확하기를 누르세요");
-    else toast("선택됨 · 💧물주기 또는 🧪비료 사용");
-  }
-}
-
-
-function renderPlotDetail(){
-  const box = document.getElementById("plotDetail");
-  if(!box) return;
-  if(!selectedPlotId){
-    box.innerHTML = "정원 칸을 누르면 상태가 표시됩니다.";
-    return;
-  }
-  const p = getPlot(selectedPlotId);
-  if(!p){
-    box.innerHTML = "선택한 칸을 찾을 수 없습니다.";
-    return;
-  }
-  if(p.status==="empty"){
-    box.innerHTML = `
-      <div class="detail-row"><b>칸</b><span class="detail-value">${p.plot_id}</span></div>
-      <div class="detail-row"><b>상태</b><span class="detail-value">빈 칸</span></div>
-      <div class="detail-row"><b>안내</b><span class="detail-value">씨앗 심기를 눌러 시작</span></div>
-    `;
-    return;
-  }
-  const seed = SEEDS[p.seed_id];
-  const result = RESULTS[p.result_ref_id];
-  const plantedItem = state.items.find(i=>i.item_id===p.planted_item_id);
-  const stageInfo = getGrowthStage(p);
-  const pct = stageInfo.percent;
-  const wl = waterLeft(p);
-  const stageNum = {seed:1,sprout:2,growing:3,complete:4}[stageInfo.stage]||0;
-  box.innerHTML = `
-    <div class="detail-row"><b>칸</b><span class="detail-value">${p.plot_id}</span></div>
-    <div class="detail-row"><b>상태</b><span class="detail-value">${statusLabel(p)}</span></div>
-    <div class="detail-row"><b>성장 단계</b><span class="detail-value">${stageNum > 0 ? stageNum+"단계 · "+stageInfo.stage_label : "-"}</span></div>
-    <div class="detail-row"><b>씨앗</b><span class="detail-value">${seed ? seed.default_icon+" "+seed.seed_name : "-"}</span></div>
-    <div class="detail-row"><b>결과 예정</b><span class="detail-value">${result ? result.default_icon+" "+result.result_name : "-"}</span></div>
-    <div class="detail-row"><b>성장률</b><span class="detail-value">${pct}%</span></div>
-    <div class="progressbar" style="margin:8px 0 10px;"><i style="width:${pct}%"></i></div>
-    <div class="detail-row"><b>남은 성장 시간</b><span class="detail-value">${fmtTime(remainingGrowth(p))}</span></div>
-    <div class="detail-row"><b>물 상태</b><span class="detail-value">${wl>0 ? "촉촉함 · "+fmtTime(wl)+" 남음" : "말라 있음"}</span></div>
-    <div class="detail-row"><b>심은 아이템 ID</b><span class="detail-value small-code">${plantedItem ? plantedItem.item_id : "-"}</span></div>
-  `;
-}
-
-function renderInventory(){
-  const box = document.getElementById("inventoryList");
-  if(!box) return;
-  const groups = {
-    seed: state.items.filter(i=>i.item_type==="seed" && i.status==="owned"),
-    planted: state.items.filter(i=>i.status==="planted"),
-    result: state.items.filter(i=>i.item_type==="result" && i.status==="owned"),
-    home_item: state.items.filter(i=>i.item_type==="home_item" && i.status==="owned"),
-    harvested: state.items.filter(i=>i.status==="harvested")
-  };
-  const section = (title, arr) => {
-    if(!arr.length) return `<div class="inv-group"><h4>${title}</h4><div class="muted">없음</div></div>`;
-    return `<div class="inv-group"><h4>${title}</h4>` + arr.map(it =>
-      `<span class="inv-chip ${it.locked?'locked':''}">${itemIcon(it)} ${itemName(it)} <span class="small-code">/${it.item_id}</span></span>`
-    ).join("") + `</div>`;
-  };
-  box.innerHTML =
-    section("보유 씨앗", groups.seed) +
-    section("심어진 아이템", groups.planted) +
-    section("수확 결과물", groups.result) +
-    section("마이홈 장식", groups.home_item) +
-    section("수확 완료 씨앗 기록", groups.harvested);
-}
-
-function htmlEscapeText(txt){
-  return String(txt).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
-}
-
-function exportState(){
-  const dump = JSON.stringify(state, null, 2);
-  openSheet(`<h3>개발용 데이터 확인</h3><p class="muted">코워크 오류 확인용입니다. 필요하면 이 내용을 복사해서 전달하세요.</p><div class="state-dump">${htmlEscapeText(dump)}</div>`);
-}
-
-function buildFirestorePreview(){
-  // Step5 확정 구조: garden_tags/{code} 기준
-  const code = state.user.user_id;
-  const docs = {};
-
-  // 1. garden_tags/{code} — 메인 문서 (rules의 허용 필드만)
-  docs[`garden_tags/${code}`] = {
-    code,
-    product:            state.user.product            || "",
-    status:             state.user.status             || "active",
-    garden_name:        state.user.garden_name        || code+"의 부산 정원",
-    region_focus:       state.user.region_focus       || "busan",
-    coin:               state.user.coin               || 0,
-    fertilizer_basic:   state.user.fertilizer_basic   || 0,
-    fertilizer_good:    state.user.fertilizer_good    || 0,
-    fertilizer_gold:    state.user.fertilizer_gold    || 0,
-    last_checkin_date:  state.user.last_checkin_date  || null,
-    streak_count:       state.user.streak_count       || 0,
-    created_at:         state.user.created_at         || new Date().toISOString(),
-    updated_at:         state.user.updated_at         || new Date().toISOString(),
-  };
-
-  // 2. garden_tags/{code}/plots/{plotId} — 정원 칸별
-  state.plots.forEach(p=>{
-    const copy = {...p};
-    delete copy._lastCalc;
-    docs[`garden_tags/${code}/plots/${p.plot_id}`] = copy;
-  });
-
-  // 3. garden_items/{itemId} — 개별 아이템 (garden_user_items → garden_items)
-  state.items.forEach(it=>{
-    docs[`garden_items/${it.item_id}`] = {...it};
-  });
-
-  // 4. garden_tags/{code}/codex/{resultId} — 도감 (결과물별 개별 문서)
-  (state.user.codex || []).forEach(resultId=>{
-    docs[`garden_tags/${code}/codex/${resultId}`] = {
-      code,
-      result_id: resultId,
-      registered_at: state.user.updated_at
-    };
-  });
-
-  // 5. garden_tags/{code}/home_slots/{slotId} — 마이홈 슬롯
-  (state.user.home_items || []).forEach((itemId, idx)=>{
-    const slotId = "slot_" + String(idx+1).padStart(2,"0");
-    docs[`garden_tags/${code}/home_slots/${slotId}`] = {
-      code,
-      slot_id: slotId,
-      item_instance_id: itemId,
-      slot_index: idx,
-      updated_at: state.user.updated_at
-    };
-  });
-
-  // 6. garden_tags/{code}/visits/{visitKey} — 방문 기록
-  Object.entries(state.user.visit_history || {}).forEach(([key, visit])=>{
-    docs[`garden_tags/${code}/visits/${key}`] = { code, visit_id: key, ...visit };
-  });
-
-  return docs;
-}
-
-function exportFirestorePreview(){
-  const preview = buildFirestorePreview();
-  const dump = JSON.stringify(preview, null, 2);
-  openSheet(`<h3>Firestore 저장 구조 미리보기</h3>
-    <p class="muted">Firebase 연결 전, 현재 localStorage 상태가 Firestore에 어떤 문서 경로로 저장될지 확인하는 화면입니다.</p>
-    <div class="state-dump">${htmlEscapeText(dump)}</div>`);
-}
-
-function openFirebaseGuide(){
-  const guide = `Step4 Firebase 연결 준비
-
-1. Firebase Console에서 Web App 설정값을 만든다.
-2. APP_CONFIG.firebase 안에 apiKey, projectId 등을 입력한다.
-3. APP_CONFIG.storageMode를 "firebase"로 변경한다.
-4. save() 함수 안에서 buildFirestorePreview() 결과를 Firestore setDoc으로 저장한다.
-5. load() 함수는 Firestore에서 garden_tags/{code}, /plots, /codex, /home_slots, /visits + garden_items를 읽어 state로 재구성한다.
-
-현재 파일은 안전하게 localStorage만 사용합니다.
-QR 코드별 테스트 예시:
-- ?code=GT-0001
-- ?code=GT-0002
-- ?code=GT-GAMCHEON-001`;
-  const snippet = `const APP_CONFIG = {
-  version: "V1.1-step4",
-  storageMode: "firebase",
-  firebase: {
-    apiKey: "여기에 입력",
-    authDomain: "여기에 입력",
-    projectId: "여기에 입력",
-    storageBucket: "여기에 입력",
-    messagingSenderId: "여기에 입력",
-    appId: "여기에 입력"
-  }
-};`;
-  openSheet(`<h3>Firebase 연결 안내</h3>
-    <p class="muted">${htmlEscapeText(guide).replace(/\n/g,"<br>")}</p>
-    <div class="guide-code">${htmlEscapeText(snippet)}</div>`);
-}
-
-function renderCheckin(){
-  document.getElementById("streak").textContent = state.user.streak_count;
-  document.getElementById("lastCheckin").textContent = state.user.last_checkin_date || "-";
-  const done = state.user.last_checkin_date === todayStr();
-  const btn = document.getElementById("checkinBtn");
-  btn.disabled = done;
-  btn.textContent = done ? "오늘 출석 완료 ✅" : "출석하고 보상 받기";
-}
-
-function renderVisit(){
-  const box = document.getElementById("visitList");
-  box.innerHTML = "";
-  VISIT_PLACES.forEach(pl=>{
-    const seed = SEEDS[pl.seed_id];
-    const key = pl.place_id + "_" + todayStr();
-    const record = state.user.visit_history[key];
-    const done = !!record;
-    const methodLabel = done ? (METHOD_LABELS[record.method] || record.method || "") : "";
-    const c = document.createElement("div");
-    c.className = "card";
-    c.innerHTML = `<div class="list-item" style="border:none;padding:4px 0;">
-      <div class="li-icon">${pl.icon}</div>
-      <div class="li-body">
-        <div class="n">${pl.name} ${done?'<span class="pill">오늘 완료</span>':''}</div>
-        <div class="d">${seed.default_icon}${seed.seed_name} +1 · 🪙+${pl.reward_coin} · 하루 1회</div>
-        ${done && methodLabel ? `<div class="d" style="font-size:11px;opacity:.7">${methodLabel}</div>` : ''}
-      </div>
-      <button class="b-primary" style="flex:none;padding:8px 14px;" ${done?'disabled':''}>${done?'완료':'방문 테스트'}</button>
-    </div>`;
-    c.querySelector("button").onclick = ()=> doVisit(pl);
-    box.appendChild(c);
-  });
-}
-
-function renderCodex(){
-  const total = Object.keys(RESULTS).length;
-  const got = state.user.codex.length;
-  const rate = total>0 ? Math.round(got/total*100) : 0;
-  document.getElementById("codexRate").textContent = rate+"% ("+got+"/"+total+")";
-  document.getElementById("codexBar").style.width = rate+"%";
-  const box = document.getElementById("codexCats");
-  box.innerHTML = "";
-  // 카테고리별
-  const byCat = {};
-  Object.values(RESULTS).forEach(r=>{ (byCat[r.result_type]=byCat[r.result_type]||[]).push(r); });
-  Object.keys(byCat).forEach(cat=>{
-    const card = document.createElement("div");
-    card.className = "card";
-    let cells = "";
-    byCat[cat].forEach(r=>{
-      const unlocked = state.user.codex.includes(r.result_id);
-      cells += `<div class="cx-cell ${unlocked?'':'locked'}">
-        <div>${unlocked ? iconFor(r.codex_image_url,r.default_icon,r.result_type) : "🔒"}</div>
-        <div class="cn">${unlocked ? r.result_name : "???"}</div></div>`;
-    });
-    card.innerHTML = `<h3>${CODEX_CATS[cat]||cat}</h3><div class="cx-grid">${cells}</div>`;
-    box.appendChild(card);
-  });
-}
-
-function renderHome(){
-  const box = document.getElementById("homeSlots");
-  box.innerHTML = "";
-  const ownedIds = state.user.home_items || [];
-  const owned = ownedIds
-    .map(itemId=>state.items.find(i=>i.item_id===itemId && i.item_type==="home_item" && i.status==="owned"))
-    .filter(Boolean);
-  const SLOTS = 6;
-  for(let i=0;i<SLOTS;i++){
-    const el = document.createElement("div");
-    if(i < owned.length){
-      const item = owned[i];
-      const h = HOME_ITEMS[item.item_ref_id];
-      el.className = "slot filled";
-      el.innerHTML = `<div>${iconFor(h.home_item_image_url,h.default_icon,'landmark')}</div>
-        <span class="sn">${h.home_item_name}</span>`;
-    } else {
-      el.className = "slot";
-      el.innerHTML = `<div style="opacity:.3">＋</div><span class="sn">비어 있음</span>`;
+    function renderRegistration(){
+      el('registrationScreen').innerHTML = `
+        <div class="hero">
+          <div class="eyebrow">GARDEN TAG · GAMCHEON</div>
+          <h1>씨앗을 따라<br>감천 골목을 탐험해요.</h1>
+          <p>실물 QR 정원키를 등록하고, 씨앗 지도를 보며 감천의 점포와 작가 공간을 방문하세요. 수집한 씨앗은 내 정원에서 자라고, 완성된 식물은 장소와 기록이 담긴 도감이 됩니다.</p>
+        </div>
+        <div class="registration-wrap">
+          <div class="panel registration-card">
+            <div class="section-head"><div><h2>정원키를 등록해주세요</h2><p>포장 안의 1회용 등록코드를 입력하면 나만의 정원이 열립니다. 1차 실증에서는 회원가입 없이 정원키와 PIN으로 시작합니다.</p></div></div>
+            <div class="demo-start-card" style="margin-bottom:14px">
+              <strong>시연용 빠른 시작</strong>
+              <p class="helper" style="margin:0">기본형 정원키를 산 상황으로 바로 시작합니다.</p>
+              <button class="btn" id="quickBasicStart" type="button">기본형 정원키로 시작하기</button>
+            </div>
+            <form id="registerForm" class="form-grid">
+              <label class="field">등록코드
+                <input id="registrationCode" maxlength="8" autocomplete="off" placeholder="영문·숫자 8자리" value="GARDEN01" />
+              </label>
+              <div class="grid-2">
+                <label class="field">6자리 PIN
+                  <input id="pin" type="password" inputmode="numeric" maxlength="6" placeholder="숫자 6자리" value="123456" />
+                </label>
+                <label class="field">PIN 확인
+                  <input id="pinConfirm" type="password" inputmode="numeric" maxlength="6" placeholder="한 번 더 입력" value="123456" />
+                </label>
+              </div>
+              <button class="btn" type="submit">내 정원 열기</button>
+              <div class="helper">등록코드는 최초 1회만 사용할 수 있어요. 이 MVP에서는 아래 테스트 코드를 사용합니다.</div>
+            </form>
+          </div>
+          <div class="panel registration-card stack">
+            <div>
+              <div class="section-head"><div><h3>바로 실행해보는 테스트 버전</h3><p>가든태그의 1차 실증 가능성을 검토하기 위한 로컬 MVP입니다.</p></div></div>
+              <div class="demo-code">GARDEN01</div>
+              <div class="helper" style="margin-top:8px">기본 PIN 예시: <strong>123456</strong></div>
+            </div>
+            <div class="seed-preview">
+              <canvas class="pixel-canvas" data-seed="sunflower" data-stage="4"></canvas>
+              <div><strong>최초 등록 보상</strong><div class="helper">민들레 씨앗 1개 + 기본형 정원키 전용 해바라기 씨앗 1개</div></div>
+            </div>
+            <div class="notice">실서비스에서는 등록코드·PIN·정원 데이터가 Firebase 같은 서버에 저장되어야 합니다. 현재 파일은 화면과 핵심 루프를 검증하는 로컬 MVP입니다.</div>
+          </div>
+        </div>`;
+      hydrateCanvases(el('registrationScreen'));
+      el('quickBasicStart').addEventListener('click',()=>{el('registrationCode').value='GARDEN01';el('pin').value='123456';el('pinConfirm').value='123456';el('registerForm').requestSubmit();});
+      el('registerForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const code = el('registrationCode').value.trim().toUpperCase();
+        const pin = el('pin').value.trim();
+        const confirm = el('pinConfirm').value.trim();
+        if (!keyDesigns[code]) return toast('등록코드를 다시 확인해주세요.','error');
+        if (!/^\d{6}$/.test(pin)) return toast('PIN은 숫자 6자리로 입력해주세요.','error');
+        if (pin !== confirm) return toast('두 PIN이 서로 달라요.','error');
+        state.registered = true;
+        state.pinHash = hashPin(pin);
+        state.auth.managed = true;
+        state.linkedDesigns = [keyDesigns[code].designId];
+        state.activeTheme = keyDesigns[code].theme;
+        addInventory('dandelion',1,'최초 등록 보상');
+        addInventory(keyDesigns[code].seedId,1,`${keyDesigns[code].name} 시작 보상`);
+        logEvent('key_registered',{code,designId:keyDesigns[code].designId});
+        saveState();
+        toast('정원키 등록이 완료되었습니다.');
+        setActiveTab('garden');
+      });
     }
-    box.appendChild(el);
-  }
-}
 
-function renderShop(){
-  const box = document.getElementById("shopList");
-  box.innerHTML = "";
-  SHOP_ITEMS.forEach(s=>{
-    const c = document.createElement("div");
-    c.className = "card";
-    const afford = state.user.coin >= s.price_coin;
-    c.innerHTML = `<div class="list-item" style="border:none;padding:4px 0;">
-      <div class="li-icon">${s.icon}</div>
-      <div class="li-body"><div class="n">${s.item_name}</div>
-        <div class="d">🪙 ${s.price_coin} 코인</div></div>
-      <button class="b-gold" style="flex:none;padding:8px 14px;" ${afford?'':'disabled'}>구매</button>
-    </div>`;
-    c.querySelector("button").onclick = ()=> buy(s);
-    box.appendChild(c);
-  });
-}
+    function renderGarden(){
+      const visits = totalVisitCount();
+      const unlocked = unlockedCount();
+      const ready = state.plots.filter(p=>p && p.status==='needs_water').length;
+      const complete = state.plots.filter(p=>p && p.status==='complete').length;
+      const next = nextUnlock();
+      const plotsHtml = state.plots.map((plot,index) => {
+        const unlockedPlot = isPlotUnlocked(index);
+        if (!unlockedPlot) return `<button class="plot locked" data-plot="${index}"><span style="font-size:20px">🔒</span><span class="plot-label">잠긴 칸</span></button>`;
+        if (!plot) return `<button class="plot empty" data-plot="${index}"><span style="font-size:24px;color:#8d846b">＋</span><span class="plot-label">씨앗 심기</span></button>`;
+        const seed = seedMap[plot.seedId];
+        const badge = plot.status==='needs_water' ? '💧' : plot.status==='complete' ? '✨' : '';
+        return `<button class="plot ${plot.status==='needs_water'?'needs-water':''} ${plot.status==='complete'?'complete':''}" data-plot="${index}">
+          ${badge ? `<span class="plot-badge">${badge}</span>`:''}
+          <canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="${plot.stage}" data-status="${plot.status}"></canvas>
+          <span class="plot-label">${escapeHtml(seed.name)} · ${plantStatusLabel(plot)}</span>
+        </button>`;
+      }).join('');
+      el('gardenScreen').innerHTML = `
+        <div class="section-head"><div><h2>${escapeHtml(state.gardenName)}</h2><p>빈 칸을 눌러 씨앗을 심고, 물이 필요할 때 다시 찾아와 주세요.</p></div><div class="button-row"><button class="btn secondary small" id="waterAll" ${!state.auth.managed || ready===0?'disabled':''}>💧 전체 물주기 ${ready?`(${ready})`:''}</button></div></div>
+        ${!state.auth.managed ? '<div class="notice" style="margin-bottom:14px">현재 보기 모드입니다. 심기·물주기·수확은 우측 상단 자물쇠에서 PIN 인증 후 사용할 수 있습니다.</div>' : ''}
+        <div class="garden-layout">
+          <div class="garden-board-wrap"><div class="garden-board">${plotsHtml}</div></div>
+          <div class="stack">
+            <div class="panel section">
+              <div class="section-head"><div><h3>정원 현황</h3><p>점포 방문이 쌓이면 바깥 칸이 열립니다.</p></div></div>
+              <div class="garden-stats">
+                <div class="stat"><strong>${unlocked}</strong><small>사용 가능 칸</small></div>
+                <div class="stat"><strong>${visits}</strong><small>서로 다른 점포</small></div>
+                <div class="stat"><strong>${complete}</strong><small>수확 대기</small></div>
+              </div>
+              ${next ? `<div style="margin-top:14px"><div class="helper">다음 해금: 점포 ${next.visits}곳 방문 → ${next.plots}칸</div><div class="progress" style="margin-top:7px"><span style="width:${Math.min(100,visits/next.visits*100)}%"></span></div></div>` : '<div class="notice green" style="margin-top:14px">정원의 25칸이 모두 열렸습니다.</div>'}
+            </div>
+            <div class="panel section">
+              <div class="section-head"><div><h3>빠른 행동</h3><p>현재 정원의 상태에 맞는 행동입니다.</p></div></div>
+              <div class="button-row">
+                <button class="btn secondary small" data-go="inventory">보유 씨앗 보기</button>
+                <button class="btn secondary small" data-go="explore">씨앗 찾으러 가기</button>
+                <button class="btn secondary small" data-go="collection">도감 확인</button>
+              </div>
+            </div>
+            <div class="panel section">
+              <div class="section-head"><div><h3>성장 규칙</h3></div></div>
+              <div class="helper">발아 → 물주기 → 새싹 → 물주기 → 성장 중 → 물주기 → 개화·결실 → 수확. 물을 주지 않아도 식물은 죽지 않고 성장만 멈춥니다.</div>
+            </div>
+          </div>
+        </div>`;
+      hydrateCanvases(el('gardenScreen'));
+      qsa('[data-plot]',el('gardenScreen')).forEach(btn=>btn.addEventListener('click',()=>handlePlotClick(Number(btn.dataset.plot))));
+      qsa('[data-go]',el('gardenScreen')).forEach(btn=>btn.addEventListener('click',()=>setActiveTab(btn.dataset.go)));
+      el('waterAll').addEventListener('click', waterAll);
+    }
 
-/* =====================================================================
-   UI 헬퍼 (탭 / 시트 / 토스트)
-   ===================================================================== */
-function switchTab(name){
-  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
-  document.getElementById("v-"+name).classList.add("active");
-  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on", t.dataset.v===name));
-  if(name==="garden") renderGarden();
-}
-function openSheet(html){
-  document.getElementById("sheet").innerHTML = html;
-  document.getElementById("overlay").classList.add("show");
-}
-function closeSheet(){ document.getElementById("overlay").classList.remove("show"); }
-let toastTimer;
-function toast(msg){
-  const t = document.getElementById("toast");
-  t.textContent = msg; t.classList.add("show");
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>t.classList.remove("show"), 2200);
-}
-function resetAll(){
-  if(confirm("모든 데이터를 초기화할까요? (테스트용)")){
-    localStorage.removeItem(LS_KEY);
-    selectedPlotId=null; itemSeq=0;
-    state = newState();
-    save();
-    renderAll();
-    toast("초기화 완료 🌱");
-  }
-}
+    function handlePlotClick(index){
+      if (!isPlotUnlocked(index)) {
+        const next = nextUnlock();
+        return openModal('잠긴 정원 칸', `<div class="empty-state"><div style="font-size:38px">🔒</div><strong>아직 열리지 않은 칸입니다.</strong><p>${next ? `감천의 서로 다른 점포 ${next.visits}곳을 방문하면 ${next.plots}칸까지 열립니다.` : '모든 칸이 열렸습니다.'}</p><button class="btn" data-modal-go="explore">점포 탐색하기</button></div>`, root=>{
+          qs('[data-modal-go]',root)?.addEventListener('click',()=>{closeModal();setActiveTab('explore')});
+        });
+      }
+      if (!state.auth.managed) return requestPin();
+      const plot = state.plots[index];
+      if (!plot) return openSeedPicker(index);
+      return openPlantDetail(index);
+    }
 
-/* =====================================================================
-   초기화 + 실시간 갱신 루프
-   ===================================================================== */
-(async()=>{
-  await load();
-  renderAll();
-  handlePlaceQrVisit(); // place 파라미터 있으면 QR 방문 처리
-  // 3초마다 성장 갱신
-  setInterval(()=>{
-    tickGrowth();
-    if(document.getElementById("v-garden").classList.contains("active")){ renderGarden(); renderPlotDetail(); }
-    renderInventory();
-    renderTop();
-  }, 3000);
-})();
-</script>
-</body>
-</html>
+    function openSeedPicker(index){
+      const available = seedCatalog.filter(seed => (state.inventory[seed.id]?.qty||0) > 0);
+      const list = available.length ? available.map(seed=>`<button class="item-card" style="width:100%;text-align:left" data-pick-seed="${seed.id}">
+        <canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas>
+        <div><h4>${escapeHtml(seed.name)}</h4><p>${escapeHtml(seed.description)}</p><div class="chip-row"><span class="chip">${seed.type}</span><span class="chip">약 ${seed.totalMinutes}분</span></div></div><div class="qty">${state.inventory[seed.id].qty}</div>
+      </button>`).join('') : '<div class="empty-state"><strong>심을 씨앗이 없습니다.</strong><p>점포를 탐색해 새로운 씨앗을 받아보세요.</p></div>';
+      openModal('어떤 씨앗을 심을까요?', `<div class="stack">${list}</div>`, root=>{
+        hydrateCanvases(root);
+        qsa('[data-pick-seed]',root).forEach(btn=>btn.addEventListener('click',()=>openPlantRecordForm(index,btn.dataset.pickSeed)));
+      });
+    }
+
+    function openPlantRecordForm(index,seedId){
+      const seed = seedMap[seedId];
+      openModal(`${seed.name} 심기`, `
+        <div class="seed-preview"><canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas><div><strong>${escapeHtml(seed.name)}</strong><div class="helper">${escapeHtml(seed.source)} · ${seed.type} 씨앗</div></div></div>
+        <form id="plantForm" class="form-grid" style="margin-top:16px">
+          <label class="field">여행 기록 사진 1장 <span class="helper">선택 사항 · 자동 압축</span><input id="recordPhoto" type="file" accept="image/*" /></label>
+          <label class="field">짧은 기록 <span class="helper"><span id="recordCount">0</span>/200자</span><textarea id="recordText" maxlength="200" placeholder="이 씨앗을 얻은 장소나 오늘의 기억을 남겨보세요."></textarea></label>
+          <button class="btn" type="submit">이 칸에 심기</button>
+        </form>`, root=>{
+          hydrateCanvases(root);
+          const text=qs('#recordText',root), count=qs('#recordCount',root);
+          text.addEventListener('input',()=>count.textContent=text.value.length);
+          qs('#plantForm',root).addEventListener('submit', async e=>{
+            e.preventDefault();
+            const file = qs('#recordPhoto',root).files[0];
+            let photo = null;
+            if (file) {
+              try { photo = await compressImage(file,800,.72); }
+              catch { return toast('사진을 처리하지 못했습니다. 다른 사진을 선택해주세요.','error'); }
+            }
+            plantSeed(index,seedId,text.value.trim(),photo);
+          });
+        });
+    }
+
+    function plantSeed(index,seedId,text,photo){
+      const inv = state.inventory[seedId];
+      if (!inv || inv.qty < 1) return toast('보유 씨앗이 부족합니다.','error');
+      inv.qty -= 1;
+      const seed = seedMap[seedId];
+      state.plots[index] = {
+        id:uid('plant'), seedId, stage:1, status:'growing', plantedAt:now(), stageEndsAt:now()+stageDurationMs(seed),
+        record:{ text:text||'', photo:photo||null }
+      };
+      logEvent('plant_seed',{index,seedId});
+      saveState();
+      closeModal();
+      toast(`${seed.name} 씨앗을 심었습니다.`);
+      renderGarden();
+    }
+
+    function openPlantDetail(index){
+      updateGrowth();
+      const plot = state.plots[index];
+      const seed = seedMap[plot.seedId];
+      const remaining = plot.status==='growing' ? Math.max(0,plot.stageEndsAt-now()) : 0;
+      const canFertilize = plot.status==='growing';
+      openModal(seed.name, `
+        <div style="display:grid;justify-items:center;gap:10px">
+          <canvas class="pixel-canvas" style="width:150px;height:150px" data-seed="${seed.id}" data-stage="${plot.stage}" data-status="${plot.status}"></canvas>
+          <div class="chip-row"><span class="chip">${plantStatusLabel(plot)}</span><span class="chip ${rarityClass(seed.rarity)}">${seed.rarity}</span></div>
+          <div style="text-align:center"><strong>${['','발아','새싹','성장 중','개화·결실'][plot.stage]}</strong><div class="helper" style="margin-top:4px">${plot.status==='growing' ? `다음 상태까지 ${formatDuration(remaining)}` : plot.status==='needs_water' ? '물을 주면 다음 단계가 시작됩니다.' : '이제 수확해 도감에 남길 수 있습니다.'}</div></div>
+        </div>
+        ${plot.record?.text || plot.record?.photo ? `<div class="panel section" style="margin-top:16px;box-shadow:none"><strong>심을 때 남긴 기록</strong>${plot.record.photo?`<img class="record-thumb" src="${plot.record.photo}" alt="정원 기록" />`:''}${plot.record.text?`<p class="helper" style="font-size:13px;color:var(--ink)">${escapeHtml(plot.record.text)}</p>`:''}</div>`:''}
+        <div class="button-row" style="margin-top:16px">
+          ${plot.status==='needs_water'?'<button class="btn" id="waterOne">💧 물주기</button>':''}
+          ${plot.status==='complete'?'<button class="btn" id="harvestOne">✨ 수확하기</button>':''}
+          ${canFertilize?`<button class="btn secondary" id="smallFertilizer" ${state.fertilizers.small<1?'disabled':''}>작은 비료 10분 (${state.fertilizers.small})</button><button class="btn secondary" id="goodFertilizer" ${state.fertilizers.good<1?'disabled':''}>좋은 비료 30분 (${state.fertilizers.good})</button>`:''}
+          <button class="btn ghost" id="removePlant">식물 제거</button>
+        </div>`, root=>{
+          hydrateCanvases(root);
+          qs('#waterOne',root)?.addEventListener('click',()=>waterPlot(index));
+          qs('#harvestOne',root)?.addEventListener('click',()=>harvestPlot(index));
+          qs('#smallFertilizer',root)?.addEventListener('click',()=>useFertilizer(index,'small',10));
+          qs('#goodFertilizer',root)?.addEventListener('click',()=>useFertilizer(index,'good',30));
+          qs('#removePlant',root)?.addEventListener('click',()=>removePlant(index));
+        });
+    }
+
+    function waterPlot(index, silent=false){
+      const plot = state.plots[index];
+      if (!plot || plot.status!=='needs_water') return;
+      plot.stage += 1;
+      plot.status = 'growing';
+      plot.stageEndsAt = now()+stageDurationMs(seedMap[plot.seedId]);
+      logEvent('water_plant',{index,seedId:plot.seedId,stage:plot.stage});
+      saveState();
+      if (!silent) { closeModal(); toast('물을 주었습니다. 다음 성장이 시작됩니다.'); renderGarden(); }
+    }
+    function waterAll(){
+      let count=0;
+      state.plots.forEach((p,i)=>{if(p?.status==='needs_water'){waterPlot(i,true);count++;}});
+      if(count){saveState();toast(`${count}개의 식물에 물을 주었습니다.`);renderGarden();}
+    }
+    function useFertilizer(index,type,minutes){
+      const plot=state.plots[index];
+      if(!plot || plot.status!=='growing') return toast('지금은 비료를 사용할 수 없습니다.','error');
+      if(state.fertilizers[type]<1) return toast('보유 비료가 없습니다.','error');
+      state.fertilizers[type]-=1;
+      const reduce = minutes*60*1000/(state.settings.demoSpeed?DEMO_SCALE:1);
+      plot.stageEndsAt=Math.max(now()+400,plot.stageEndsAt-reduce);
+      logEvent('fertilizer_used',{index,type,minutes}); saveState(); closeModal(); toast('성장 시간이 단축되었습니다.'); renderGarden();
+    }
+    function removePlant(index){
+      if(!confirm('이 식물을 제거할까요? 사용한 씨앗은 돌아오지 않습니다.')) return;
+      const plot=state.plots[index]; state.plots[index]=null; logEvent('plant_removed',{index,seedId:plot.seedId}); saveState(); closeModal(); renderGarden();
+    }
+    function harvestPlot(index){
+      const plot=state.plots[index]; if(!plot || plot.status!=='complete') return;
+      const seed=seedMap[plot.seedId];
+      const entry=state.collection[seed.id]||{status:'found',harvestCount:0,firstAcquiredAt:plot.plantedAt,firstCompletedAt:null,records:[]};
+      entry.status='complete'; entry.harvestCount=(entry.harvestCount||0)+1; entry.firstCompletedAt=entry.firstCompletedAt||now();
+      if(plot.record?.text || plot.record?.photo) entry.records.unshift({id:uid('record'),...plot.record,plantedAt:plot.plantedAt,completedAt:now(),source:seed.source});
+      state.collection[seed.id]=entry; state.plots[index]=null;
+      logEvent('harvest',{index,seedId:seed.id}); saveState(); closeModal(); toast(`${seed.name}을 수확해 도감에 등록했습니다.`); renderGarden();
+    }
+
+    function renderInventory(){
+      const ownedSeeds=seedCatalog.filter(s=>(state.inventory[s.id]?.qty||0)>0);
+      const knownSeeds=seedCatalog.filter(s=>(state.inventory[s.id]?.qty||0)>0 || state.collection[s.id]);
+      const totalQty=Object.values(state.inventory).reduce((sum,item)=>sum+(item.qty||0),0);
+      const completedCount=Object.values(state.collection).filter(c=>c.status==='complete').length;
+      const groupedTypes=['기본','점포','지역','한정'];
+      const groupLabels={ '기본':'기본 씨앗', '점포':'점포 씨앗', '지역':'지역 씨앗', '한정':'미션·한정 씨앗' };
+      const seedCard=seed=>{
+        const inv=state.inventory[seed.id]||{qty:0};
+        const collected=state.collection[seed.id];
+        const empty=(inv.qty||0)===0;
+        const statusText=empty ? (collected?.status==='complete'?'수확 기록':'발견') : `${inv.qty}개`;
+        const shopButton=seed.type==='점포' ? `<button class="btn ghost small" data-seed-shops="${seed.id}" type="button">점포 정보</button>` : '';
+        return `<div class="item-card ${empty?'empty-inventory':''}">
+          <canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="${empty?2:4}"></canvas>
+          <div><h4>${escapeHtml(seed.name)}</h4><p>${escapeHtml(seed.source)} · ${escapeHtml(seed.description)}</p><div class="chip-row"><span class="chip">${seed.type}</span><span class="chip ${rarityClass(seed.rarity)}">${seed.rarity}</span><span class="chip">${seed.totalMinutes}분</span></div></div>
+          <div style="display:grid;gap:7px;justify-items:end"><div class="qty">${statusText}</div>${shopButton}</div>
+        </div>`;
+      };
+      const groupedHtml=knownSeeds.length?groupedTypes.map(type=>{
+        const groupItems=knownSeeds.filter(seed=>seed.type===type);
+        if(!groupItems.length)return '';
+        const ownedCount=groupItems.filter(seed=>(state.inventory[seed.id]?.qty||0)>0).length;
+        return `<div class="inventory-group">
+          <div class="inventory-group-title"><span>${groupLabels[type]}</span><span>${ownedCount}/${groupItems.length}종 보유</span></div>
+          <div class="card-list">${groupItems.map(seedCard).join('')}</div>
+        </div>`;
+      }).join(''):'<div class="empty-state"><strong>보유 씨앗이 없습니다.</strong><p>점포 QR을 스캔해 씨앗을 모아보세요.</p></div>';
+      el('inventoryScreen').innerHTML=`
+        <div class="section-head"><div><h2>씨앗 인벤토리</h2><p>씨앗 유형은 획득 경로, 희귀도는 수집 가치를 뜻합니다.</p></div><button class="btn secondary small" data-go="explore">점포 탐색</button></div>
+        <div class="inventory-summary">
+          <div class="stat"><strong>${totalQty}</strong><small>심을 수 있는 씨앗</small></div>
+          <div class="stat"><strong>${ownedSeeds.length}</strong><small>보유 종류</small></div>
+          <div class="stat"><strong>${completedCount}</strong><small>도감 완성</small></div>
+          <div class="stat"><strong>${state.fertilizers.small+state.fertilizers.good}</strong><small>보유 비료</small></div>
+        </div>
+        <div class="grid-2">
+          <div class="panel section"><div class="section-head"><div><h3>씨앗 목록</h3><p>수량이 있는 씨앗은 정원의 빈 칸을 눌러 심을 수 있습니다.</p></div></div>${groupedHtml}</div>
+          <div class="stack">
+            <div class="panel section"><div class="section-head"><div><h3>비료</h3><p>성장 중인 단계의 시간을 줄입니다.</p></div></div>
+              <div class="settings-row"><div><strong>작은 비료</strong><p>현재 단계 10분 단축</p></div><div class="qty">${state.fertilizers.small}</div></div>
+              <div class="settings-row"><div><strong>좋은 비료</strong><p>현재 단계 30분 단축</p></div><div class="qty">${state.fertilizers.good}</div></div>
+            </div>
+            <div class="panel section"><div class="section-head"><div><h3>1차 MVP 씨앗</h3></div></div><div class="helper">기본 2종, 점포 5종, 감천 지역 1종, 3곳·5곳 한정 2종으로 총 10종입니다. 거래·선물·교배·랜덤 뽑기는 포함하지 않았습니다.</div></div>
+          </div>
+        </div>`;
+      hydrateCanvases(el('inventoryScreen'));
+      qs('[data-go]',el('inventoryScreen')).addEventListener('click',()=>setActiveTab('explore'));
+      qsa('[data-seed-shops]',el('inventoryScreen')).forEach(button=>button.addEventListener('click',()=>openSeedShopDetail(button.dataset.seedShops)));
+    }
+
+    function renderExplore(){
+      const unique=totalVisitCount();
+      const regionGranted=state.grantedRewards.region_gamcheon;
+      const reward3=state.grantedRewards.gamcheon_3;
+      const reward5=state.grantedRewards.gamcheon_5;
+      const sorted=[...shops].sort((a,b)=>{
+        const aOwned=(state.collection[a.seedId]||state.inventory[a.seedId])?1:0;
+        const bOwned=(state.collection[b.seedId]||state.inventory[b.seedId])?1:0;
+        return aOwned-bOwned;
+      });
+      el('exploreScreen').innerHTML=`
+        <div class="section-head"><div><h2>감천 씨앗 지도</h2><p>아직 얻지 못한 씨앗과 미션에 필요한 점포를 먼저 보여줍니다. 지도는 관광객에게 다음 방문 이유를 제안하는 화면입니다.</p></div></div>
+        <div class="mission-strip" style="margin-bottom:14px">
+          <div class="mission ${regionGranted?'done':''}"><strong>${regionGranted?'✓ ':''}지역 첫 방문</strong><span class="helper">감천 바람꽃 · ${regionGranted?'지급 완료':'첫 점포에서 지급'}</span></div>
+          <div class="mission ${reward3?'done':''}"><strong>${reward3?'✓ ':''}서로 다른 3곳</strong><span class="helper">골목빛꽃 · ${Math.min(unique,3)}/3</span></div>
+          <div class="mission ${reward5?'done':''}"><strong>${reward5?'✓ ':''}서로 다른 5곳</strong><span class="helper">바다별꽃 · ${Math.min(unique,5)}/5</span></div>
+        </div>
+        <div class="panel section" style="margin-bottom:14px">
+          <div class="section-head"><div><h3>가상 감천 씨앗 지도</h3><p>씨앗 아이콘을 누르면 해당 점포와 받을 수 있는 씨앗 정보를 확인할 수 있습니다.</p></div></div>
+          ${renderVirtualSeedMap(sorted)}
+        </div>
+        ${state.auth.managed?`<div class="panel section" style="margin-bottom:14px">
+          <div class="section-head"><div><h3>매장 QR 보상 테스트</h3><p>실제 현장에서는 매장 내부 QR을 스캔합니다. 여기서는 운영 테스트용 점포 코드를 입력하거나 카드의 테스트 버튼을 누르세요.</p></div></div>
+          <form id="scanForm" class="button-row"><input id="shopCode" style="flex:1;min-width:190px" placeholder="운영 테스트 코드 입력" /><button class="btn" type="submit">QR 보상 확인</button></form>
+        </div>`:''}
+        <div class="shop-grid">${sorted.map(shop=>shopCard(shop)).join('')}</div>`;
+      hydrateCanvases(el('exploreScreen'));
+      el('scanForm')?.addEventListener('submit',e=>{e.preventDefault();processShopCode(el('shopCode').value)});
+      qsa('[data-map-shop]',el('exploreScreen')).forEach(b=>b.addEventListener('click',()=>openMapSeedDetail(b.dataset.mapShop)));
+      qsa('[data-scan-shop]',el('exploreScreen')).forEach(b=>b.addEventListener('click',()=>processShopCode(b.dataset.scanShop)));
+      qsa('[data-shop-detail]',el('exploreScreen')).forEach(b=>b.addEventListener('click',()=>openShopDetail(b.dataset.shopDetail)));
+    }
+    function renderVirtualSeedMap(items){
+      return `<div class="seed-map" aria-label="가상 감천 씨앗 지도">
+        <div class="map-label">감천 씨앗길</div>
+        <span class="map-lane one"></span><span class="map-lane two"></span>
+        ${items.map(shop=>{
+          const status=state.shopStatuses[shop.id]||shop.status;
+          const visited=state.visits.some(v=>v.shopId===shop.id);
+          const seed=seedMap[shop.seedId];
+          return `<button class="map-pin ${visited?'visited':''} ${status!=='active'?'paused':''}" style="left:${shop.mapX}%;top:${shop.mapY}%" data-map-shop="${shop.id}" type="button" title="${escapeHtml(shop.name)}">
+            ${visited?'<span class="pin-check">✓</span>':''}
+            <canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas>
+            <strong>${escapeHtml(seed.name)}</strong>
+            <small>${visited?'방문 완료':status==='active'?'받을 수 있음':'중지'}</small>
+          </button>`;
+        }).join('')}
+      </div>`;
+    }
+    function shopCard(shop){
+      const status=state.shopStatuses[shop.id]||shop.status;
+      const visited=state.visits.some(v=>v.shopId===shop.id);
+      const seed=seedMap[shop.seedId];
+      return `<div class="shop-card ${status!=='active'?'paused':''}">
+        <div class="shop-title"><div><h3>${escapeHtml(shop.name)}</h3><p>${escapeHtml(shop.category)} · ${escapeHtml(shop.hours)}</p></div><span class="chip">${status==='active'?'운영 중':'보상 중지'}</span></div>
+        <p class="helper" style="margin:0">${escapeHtml(shop.summary)}</p>
+        <div class="shop-seed"><canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas><div><strong>${escapeHtml(seed.name)}</strong><div class="helper">${visited?'방문 기록 있음':'아직 미방문'} · ${seed.rarity}</div></div></div>
+        <div class="button-row">${state.auth.managed?`<button class="btn small" data-scan-shop="${shop.code}" ${status!=='active'?'disabled':''}>QR 스캔 테스트</button>`:''}<button class="btn ghost small" data-shop-detail="${shop.id}">상세 보기</button></div>
+      </div>`;
+    }
+    function processShopCode(raw){
+      if(!state.auth.managed) return requestPin();
+      const code=String(raw||'').trim().toUpperCase();
+      const shop=shops.find(s=>s.code===code);
+      if(!shop) return toast('등록된 점포 QR 코드가 아닙니다.','error');
+      if((state.shopStatuses[shop.id]||shop.status)!=='active') return toast('현재 보상이 중지된 점포입니다.','error');
+      const day=todayKey();
+      const dailyKey=`${shop.id}_${day}`;
+      if(state.dailyRewards[dailyKey]) return toast('이 점포의 오늘 보상은 이미 받았습니다.','error');
+      state.dailyRewards[dailyKey]=true;
+      state.visits.push({id:uid('visit'),shopId:shop.id,at:now(),day});
+      addInventory(shop.seedId,1,shop.name);
+      const newly=[];
+      if(!state.grantedRewards.region_gamcheon){state.grantedRewards.region_gamcheon=true;addInventory('gamcheonwind',1,'감천 지역 첫 방문');newly.push('감천 바람꽃');}
+      const unique=totalVisitCount();
+      if(unique>=3&&!state.grantedRewards.gamcheon_3){state.grantedRewards.gamcheon_3=true;addInventory('alleyglow',1,'감천 3곳 미션');newly.push('골목빛꽃');}
+      if(unique>=5&&!state.grantedRewards.gamcheon_5){state.grantedRewards.gamcheon_5=true;addInventory('seastar',1,'감천 5곳 미션');newly.push('바다별꽃');}
+      logEvent('shop_qr_reward',{shopId:shop.id,seedId:shop.seedId,bonus:newly}); saveState();
+      toast(`${shop.name} 씨앗을 받았습니다.${newly.length?` 추가 보상: ${newly.join(', ')}`:''}`); renderExplore();
+    }
+    function openMapSeedDetail(shopId){
+      const shop=shops.find(s=>s.id===shopId); const seed=seedMap[shop.seedId];
+      const status=state.shopStatuses[shop.id]||shop.status;
+      const visited=state.visits.some(v=>v.shopId===shop.id);
+      openModal(seed.name,`<div class="stack">
+        <div class="seed-preview"><canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas><div><strong>${escapeHtml(shop.name)}</strong><div class="helper">${visited?'이미 방문한 점포입니다.':'이 점포에서 씨앗을 받을 수 있습니다.'}</div></div></div>
+        <div><span class="chip">${escapeHtml(shop.category)}</span><span class="chip ${rarityClass(seed.rarity)}">${escapeHtml(seed.rarity)}</span><h3 style="margin:10px 0 4px">${escapeHtml(shop.summary)}</h3><p class="helper">${escapeHtml(shop.address)} · ${escapeHtml(shop.hours)}</p></div>
+        <div class="notice">${status==='active'?'현장에 도착해 점포 QR을 스캔하면 씨앗을 받을 수 있어요.':'현재 이 점포의 씨앗 보상은 중지되어 있습니다.'}</div>
+        <div class="button-row"><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.mapQuery)}">지도 보기</a><button class="btn ghost" data-open-shop="${shop.id}" type="button">점포 상세</button></div>
+      </div>`,root=>{
+        hydrateCanvases(root);
+        qs('[data-open-shop]',root)?.addEventListener('click',()=>openShopDetail(shop.id));
+        qs('[data-scan-shop]',root)?.addEventListener('click',()=>{closeModal();processShopCode(shop.code);});
+      });
+    }
+    function openShopDetail(shopId){
+      const shop=shops.find(s=>s.id===shopId); const seed=seedMap[shop.seedId];
+      openModal(shop.name,`<div class="stack">
+        <div><span class="chip">${escapeHtml(shop.category)}</span><h3 style="margin:10px 0 4px">${escapeHtml(shop.summary)}</h3><p class="helper">${escapeHtml(shop.address)} · ${escapeHtml(shop.hours)}</p></div>
+        <div class="seed-preview"><canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas><div><strong>제공 씨앗: ${escapeHtml(seed.name)}</strong><div class="helper">${escapeHtml(seed.description)}</div></div></div>
+        <div class="notice">점포 QR은 실제 구매나 매출이 아니라 보상 참여 지표로 기록됩니다.</div>
+        <div class="button-row"><a class="btn" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.mapQuery)}">외부 지도 길찾기</a><a class="btn secondary" style="text-decoration:none" target="_blank" rel="noopener" href="${shop.instagram}">공식 SNS</a></div>
+      </div>`,root=>hydrateCanvases(root));
+    }
+    function shopsForSeed(seedId){ return shops.filter(shop=>shop.seedId===seedId); }
+    function seedShopInfoHtml(seedId){
+      const related=shopsForSeed(seedId);
+      if(!related.length) return '';
+      return `<div class="stack">
+        ${related.map(shop=>`<div class="panel section" style="box-shadow:none">
+          <div class="section-head"><div><h3>${escapeHtml(shop.name)}</h3><p>${escapeHtml(shop.summary)}</p></div><span class="chip">${escapeHtml(shop.category)}</span></div>
+          <div class="settings-row"><div><strong>위치</strong><p>${escapeHtml(shop.address)}</p></div><span>${escapeHtml(shop.category)}</span></div>
+          <div class="settings-row"><div><strong>운영 시간</strong><p>${escapeHtml(shop.hours)}</p></div><span>${(state.shopStatuses[shop.id]||shop.status)==='active'?'운영':'중지'}</span></div>
+          <div class="button-row"><a class="btn small" style="text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.mapQuery)}">지도 보기</a><button class="btn ghost small" data-open-shop="${shop.id}" type="button">점포 상세</button></div>
+        </div>`).join('')}
+      </div>`;
+    }
+    function openSeedShopDetail(seedId){
+      const seed=seedMap[seedId];
+      openModal(`${seed.name} 획득 점포`,`<div class="stack">
+        <div class="seed-preview"><canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4"></canvas><div><strong>${escapeHtml(seed.name)}</strong><div class="helper">${escapeHtml(seed.description)}</div></div></div>
+        ${seedShopInfoHtml(seedId)||'<div class="notice">연결된 점포 정보가 없습니다.</div>'}
+      </div>`,root=>{
+        hydrateCanvases(root);
+        qsa('[data-open-shop]',root).forEach(button=>button.addEventListener('click',()=>openShopDetail(button.dataset.openShop)));
+      });
+    }
+
+    function renderCollection(){
+      const collectionCard=seed=>{
+        const c=state.collection[seed.id];
+        const status=c?.status||'unknown';
+        const hidden=status==='unknown';
+        const latest=c?.records?.[0];
+        const related=shopsForSeed(seed.id);
+        return `<button class="collection-card ${hidden?'unknown':''}" data-collection="${seed.id}" style="text-align:left;border:1px solid var(--line)">
+          <canvas class="pixel-canvas" data-seed="${seed.id}" data-stage="4" data-silhouette="${hidden?'1':'0'}"></canvas>
+          <h4>${hidden?'아직 만나지 못한 씨앗':escapeHtml(seed.name)}</h4>
+          <p>${hidden?'점포 탐색에서 획득처를 확인하세요':status==='complete'?`완성 · 수확 ${c.harvestCount}회`:'발견 · 수확 전'}</p>
+          ${related.length?`<p>${escapeHtml(related.map(shop=>shop.name).join(' · '))}</p>`:''}
+          ${latest?.photo && state.auth.managed?`<img class="record-thumb" src="${latest.photo}" alt="정원 기록" />`:''}
+        </button>`;
+      };
+      const groupTypes=['기본','점포','지역','한정'];
+      const groupLabels={ '기본':'일반 씨앗', '점포':'점포 씨앗', '지역':'지역 씨앗', '한정':'미션·한정 씨앗' };
+      if(!groupTypes.includes(activeCollectionType)) activeCollectionType='기본';
+      const categoryTabs=groupTypes.map(type=>{
+        const seeds=seedCatalog.filter(seed=>seed.type===type);
+        const done=seeds.filter(seed=>state.collection[seed.id]?.status==='complete').length;
+        const foundCount=seeds.filter(seed=>state.collection[seed.id]?.status==='found').length;
+        return `<button class="category-tab ${activeCollectionType===type?'active':''}" data-collection-type="${type}" type="button">
+          <strong>${groupLabels[type]}</strong>
+          <span>완성 ${done} · 발견 ${foundCount} · 전체 ${seeds.length}</span>
+        </button>`;
+      }).join('');
+      const activeSeeds=seedCatalog.filter(seed=>seed.type===activeCollectionType);
+      const activeComplete=activeSeeds.filter(seed=>state.collection[seed.id]?.status==='complete').length;
+      const activeFound=activeSeeds.filter(seed=>state.collection[seed.id]?.status==='found').length;
+      const activeCards=`<div class="inventory-group">
+          <div class="inventory-group-title"><span>${groupLabels[activeCollectionType]} 도감</span><span>완성 ${activeComplete} · 발견 ${activeFound} · 전체 ${activeSeeds.length}</span></div>
+          <div class="collection-grid">${activeSeeds.map(collectionCard).join('')}</div>
+        </div>`;
+      const complete=Object.values(state.collection).filter(c=>c.status==='complete').length;
+      const found=Object.values(state.collection).filter(c=>c.status==='found').length;
+      el('collectionScreen').innerHTML=`
+        <div class="section-head"><div><h2>나의 식물 도감</h2><p>씨앗을 얻은 장소, 수확 기록, 개인 여행 메모가 함께 쌓입니다. 개인 기록은 관리 모드에서만 보입니다.</p></div></div>
+        <div class="garden-stats" style="margin-bottom:14px"><div class="stat"><strong>${complete}</strong><small>완성</small></div><div class="stat"><strong>${found}</strong><small>발견</small></div><div class="stat"><strong>${seedCatalog.length-complete-found}</strong><small>미발견</small></div></div>
+        <div class="category-tabs">${categoryTabs}</div>
+        ${activeCards}`;
+      hydrateCanvases(el('collectionScreen'));
+      qsa('[data-collection-type]',el('collectionScreen')).forEach(button=>button.addEventListener('click',()=>{activeCollectionType=button.dataset.collectionType;renderCollection();}));
+      qsa('[data-collection]',el('collectionScreen')).forEach(b=>b.addEventListener('click',()=>openCollectionDetail(b.dataset.collection)));
+    }
+    function openCollectionDetail(seedId){
+      const seed=seedMap[seedId], c=state.collection[seedId];
+      const shopInfo=seedShopInfoHtml(seedId);
+      if(!c) return openModal('미발견 씨앗',`<div class="stack"><div class="empty-state"><canvas class="pixel-canvas" style="width:120px;height:120px" data-seed="${seed.id}" data-stage="4" data-silhouette="1"></canvas><strong>아직 만나지 못한 씨앗입니다.</strong><p>${escapeHtml(seed.source)}에서 획득할 수 있습니다.</p></div>${shopInfo?`<h4>획득 가능한 점포</h4>${shopInfo}`:''}</div>`,root=>{hydrateCanvases(root);qsa('[data-open-shop]',root).forEach(button=>button.addEventListener('click',()=>openShopDetail(button.dataset.openShop)));});
+      const records=state.auth.managed && c.records?.length ? c.records.map(r=>`<div class="panel section" style="box-shadow:none">${r.photo?`<img class="record-thumb" src="${r.photo}" alt="정원 기록" />`:''}<p>${escapeHtml(r.text||'기록 없음')}</p><div class="helper">완성: ${formatDate(r.completedAt)} · ${escapeHtml(r.source||seed.source)}</div></div>`).join('') : `<div class="notice">${state.auth.managed?'아직 저장된 사진·글 기록이 없습니다.':'보기 모드에서는 개인 사진과 글을 표시하지 않습니다.'}</div>`;
+      openModal(seed.name,`<div style="display:grid;justify-items:center"><canvas class="pixel-canvas" style="width:150px;height:150px" data-seed="${seed.id}" data-stage="4"></canvas><div class="chip-row"><span class="chip">${seed.type}</span><span class="chip ${rarityClass(seed.rarity)}">${seed.rarity}</span></div></div>
+        <div class="story-strip">
+          <div class="story-card"><strong>획득 장소</strong><p class="helper">${escapeHtml(seed.source)}</p></div>
+          <div class="story-card"><strong>처음 만난 날</strong><p class="helper">${formatDate(c.firstAcquiredAt)}</p></div>
+          <div class="story-card"><strong>수확 기록</strong><p class="helper">${c.harvestCount||0}회 · ${formatDate(c.firstCompletedAt)}</p></div>
+        </div>
+        ${shopInfo?`<h4>획득 점포 정보</h4>${shopInfo}`:''}
+        <h4>성장 기록</h4><div class="stack">${records}</div>`,root=>{
+          hydrateCanvases(root);
+          qsa('[data-open-shop]',root).forEach(button=>button.addEventListener('click',()=>openShopDetail(button.dataset.openShop)));
+        });
+    }
+
+    function renderHome(){
+      const linkedKeys=state.linkedDesigns.map(id=>Object.values(keyDesigns).find(k=>k.designId===id)).filter(Boolean);
+      const activeKey=linkedKeys.find(key=>key.theme===state.activeTheme) || linkedKeys[0] || keyDesigns.GARDEN01;
+      const themeCards=linkedKeys.length?linkedKeys.map(key=>`<div class="theme-card ${state.activeTheme===key.theme?'active':''}">
+        <div>
+          <strong>${escapeHtml(key.name)}</strong>
+          <p class="helper">${escapeHtml(key.themeName)} · ${escapeHtml(key.description)}</p>
+          <div class="theme-swatch">${key.colors.map(color=>`<span style="background:${color}"></span>`).join('')}</div>
+        </div>
+        <button class="btn ${state.activeTheme===key.theme?'secondary':'ghost'} small" data-theme-key="${key.designId}" ${!state.auth.managed?'disabled':''}>${state.activeTheme===key.theme?'적용 중':'테마 적용'}</button>
+      </div>`).join(''):'<div class="helper">연결된 정원키가 없습니다.</div>';
+      el('homeScreen').innerHTML=`
+        <div class="section-head"><div><h2>정원키 관리</h2><p>정원 이름, 정원키 연결, 관리 권한과 데이터를 관리합니다.</p></div></div>
+        <div class="grid-2">
+          <div class="panel section">
+            <div class="section-head"><div><h3>정원 설정</h3><p>사용자 화면에는 내부 키 코드를 기본 노출하지 않습니다.</p></div></div>
+            <form id="gardenNameForm" class="form-grid"><label class="field">정원 이름<input id="gardenNameInput" maxlength="20" value="${escapeHtml(state.gardenName)}" /></label><button class="btn" type="submit" ${!state.auth.managed?'disabled':''}>이름 저장</button></form>
+            <div class="settings-row"><div><strong>현재 권한</strong><p>PIN 인증 또는 인증된 브라우저에서 관리할 수 있습니다.</p></div><span class="chip">${state.auth.managed?'관리 모드':'보기 모드'}</span></div>
+            <div class="button-row"><button class="btn secondary" id="toggleAuth">${state.auth.managed?'관리 모드 잠그기':'PIN으로 관리 모드 열기'}</button></div>
+          </div>
+          <div class="panel section">
+            <div class="section-head"><div><h3>연결된 정원키</h3><p>정원키를 살수록 하나의 정원에 테마와 전용 씨앗이 쌓입니다.</p></div></div>
+            <div class="notice green" style="margin-bottom:12px">현재 적용 테마: <strong>${escapeHtml(activeKey.themeName)}</strong></div>
+            <div class="button-row" style="margin-bottom:12px"><button class="btn" id="demoGamcheonKey" type="button" ${!state.auth.managed?'disabled':''}>감천형 정원키 적용하기 테스트</button><button class="btn secondary" id="demoArtistKey" type="button" ${!state.auth.managed?'disabled':''}>작가형 정원키 적용하기 테스트</button></div>
+            <div class="card-list">${themeCards}</div>
+            <form id="linkKeyForm" class="form-grid" style="margin-top:15px"><label class="field">추가 정원키 등록코드<input id="linkKeyCode" maxlength="8" placeholder="GMCH2026 또는 ARTST001" /></label><button class="btn secondary" type="submit" ${!state.auth.managed?'disabled':''}>기존 정원에 연결</button></form>
+          </div>
+          <div class="panel section">
+            <div class="section-head"><div><h3>내 데이터</h3><p>로컬 MVP 백업과 테스트 초기화 기능입니다.</p></div></div>
+            <div class="button-row"><button class="btn secondary" id="exportJson">JSON 백업</button><button class="btn ghost" id="exportCsv">활동 CSV</button><button class="btn danger" id="resetApp">모든 데이터 초기화</button></div>
+          </div>
+          <div class="panel section">
+            <div class="section-head"><div><h3>개인정보 원칙</h3></div></div>
+            <div class="notice green">사진과 글은 기본 비공개입니다. 보기 모드, 점포·작가 화면, 관리자 일반 화면에 노출하지 않는 기준을 적용했습니다.</div>
+          </div>
+        </div>`;
+      el('gardenNameForm').addEventListener('submit',e=>{e.preventDefault();if(!state.auth.managed)return requestPin();state.gardenName=el('gardenNameInput').value.trim()||'내 정원';logEvent('garden_renamed',{name:state.gardenName});saveState();toast('정원 이름을 저장했습니다.');renderHome();});
+      el('toggleAuth').addEventListener('click',()=>state.auth.managed?lockManagement():requestPin());
+      el('demoGamcheonKey').addEventListener('click',applyDemoGamcheonKey);
+      el('demoArtistKey').addEventListener('click',applyDemoArtistKey);
+      el('linkKeyForm').addEventListener('submit',e=>{e.preventDefault();linkAdditionalKey(el('linkKeyCode').value)});
+      qsa('[data-theme-key]',el('homeScreen')).forEach(button=>button.addEventListener('click',()=>applyKeyTheme(button.dataset.themeKey)));
+      el('exportJson').addEventListener('click',exportJson);
+      el('exportCsv').addEventListener('click',exportCsv);
+      el('resetApp').addEventListener('click',resetApp);
+    }
+
+    function linkAdditionalKey(raw){
+      if(!state.auth.managed)return requestPin();
+      const code=String(raw||'').trim().toUpperCase(); const design=keyDesigns[code];
+      if(!design)return toast('등록코드를 다시 확인해주세요.','error');
+      if(state.linkedDesigns.includes(design.designId))return toast('이미 연결된 정원키 디자인입니다.','error');
+      state.linkedDesigns.push(design.designId); state.activeTheme=design.theme; addInventory(design.seedId,1,`${design.name} 연결 보상`); logEvent('key_linked',{code,designId:design.designId,theme:design.theme});saveState();toast(`${design.name}을 연결하고 테마를 적용했습니다.`);renderHome();renderChrome();
+    }
+    function applyDemoGamcheonKey(){
+      applyDemoKey('GMCH2026');
+    }
+    function applyDemoArtistKey(){
+      applyDemoKey('ARTST001');
+    }
+    function applyDemoKey(code){
+      if(!state.auth.managed)return requestPin();
+      const design=keyDesigns[code];
+      const alreadyLinked=state.linkedDesigns.includes(design.designId);
+      if(!alreadyLinked){
+        state.linkedDesigns.push(design.designId);
+        addInventory(design.seedId,1,`${design.name} 테스트 연결 보상`);
+        logEvent('key_linked_demo',{code,designId:design.designId,theme:design.theme});
+      }
+      state.activeTheme=design.theme;
+      saveState();
+      renderHome();
+      renderChrome();
+      toast(alreadyLinked?`${design.name} 테마를 적용했습니다.`:`${design.name}을 연결하고 테마를 적용했습니다.`);
+    }
+    function applyKeyTheme(designId){
+      if(!state.auth.managed)return requestPin();
+      const design=Object.values(keyDesigns).find(key=>key.designId===designId);
+      if(!design || !state.linkedDesigns.includes(design.designId))return toast('연결된 정원키만 테마로 적용할 수 있습니다.','error');
+      state.activeTheme=design.theme;
+      logEvent('theme_applied',{designId:design.designId,theme:design.theme});
+      saveState();
+      renderHome();
+      renderChrome();
+      toast(`${design.themeName}를 적용했습니다.`);
+    }
+
+    function requestPin(){
+      const locked=state.auth.lockUntil>now();
+      openModal('관리 모드 인증',locked?`<div class="notice red">PIN 입력이 잠겼습니다. ${formatDuration(state.auth.lockUntil-now())} 뒤 다시 시도해주세요.</div>`:`<form id="pinForm" class="form-grid"><label class="field">6자리 PIN<input id="unlockPin" type="password" inputmode="numeric" maxlength="6" autofocus /></label><button class="btn" type="submit">관리 모드 열기</button><div class="helper">테스트 등록 시 기본 PIN은 123456입니다.</div></form>`,root=>{
+        qs('#pinForm',root)?.addEventListener('submit',e=>{
+          e.preventDefault(); const pin=qs('#unlockPin',root).value;
+          if(hashPin(pin)===state.pinHash){state.auth.managed=true;state.auth.failCount=0;state.auth.lockUntil=0;saveState();closeModal();toast('관리 모드가 열렸습니다.');renderCurrent();}
+          else{state.auth.failCount=(state.auth.failCount||0)+1;if(state.auth.failCount>=5){state.auth.lockUntil=now()+60*1000;state.auth.failCount=0;}saveState();toast('PIN을 다시 확인해주세요.','error');closeModal();renderCurrent();}
+        });
+      });
+    }
+    function lockManagement(){state.auth.managed=false;saveState();toast('보기 모드로 전환했습니다.');renderCurrent();}
+
+    function renderAdmin(){
+      if(!state.adminUnlocked){
+        el('adminScreen').innerHTML=`<div class="panel section admin-lock"><div class="section-head"><div><h2>운영자 테스트 도구</h2><p>점포·씨앗·보상·복구 기능을 확인하는 로컬 화면입니다.</p></div></div><form id="adminLogin" class="form-grid"><label class="field">운영자 암호<input id="adminPassword" type="password" placeholder="saegim" /></label><button class="btn" type="submit">운영자 화면 열기</button><div class="helper">테스트 암호: saegim</div></form></div>`;
+        el('adminLogin').addEventListener('submit',e=>{e.preventDefault();if(el('adminPassword').value!==ADMIN_PASSWORD)return toast('관리자 암호가 다릅니다.','error');state.adminUnlocked=true;saveState();renderAdmin();});
+        return;
+      }
+      const logRows=state.logs.slice(0,25).map(l=>`<tr><td>${formatDate(l.at)}</td><td>${escapeHtml(l.type)}</td><td><code>${escapeHtml(JSON.stringify(l.detail))}</code></td></tr>`).join('')||'<tr><td colspan="3">기록 없음</td></tr>';
+      const shopRows=shops.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${s.code}</td><td>${escapeHtml(seedMap[s.seedId].name)}</td><td><select data-shop-status="${s.id}"><option value="active" ${(state.shopStatuses[s.id]||s.status)==='active'?'selected':''}>운영</option><option value="paused" ${(state.shopStatuses[s.id]||s.status)==='paused'?'selected':''}>일시중지</option><option value="closed" ${(state.shopStatuses[s.id]||s.status)==='closed'?'selected':''}>종료</option></select></td></tr>`).join('');
+      el('adminScreen').innerHTML=`
+        <div class="section-head"><div><h2>실증 운영</h2><p>현장 실증 중 보상, 사용자 지원, 점포 상태, 핵심 지표를 확인하는 화면입니다.</p></div><button class="btn ghost small" id="adminLogout">운영자 잠금</button></div>
+        <div class="grid-2">
+          <div class="panel section"><div class="section-head"><div><h3>시연 보조</h3><p>설명회와 내부 테스트에서 성장과 보상 흐름을 빠르게 확인합니다.</p></div></div>
+            <div class="settings-row"><div><strong>성장 시간</strong><p>${state.settings.demoSpeed?'현재 실제 시간의 420배 속도':'기획서의 실제 성장 시간'}</p></div><button class="btn secondary small" id="toggleSpeed">${state.settings.demoSpeed?'실제 시간으로':'테스트 속도로'}</button></div>
+            <div class="button-row"><button class="btn secondary small" id="advanceAll">모든 타이머 완료</button><button class="btn secondary small" id="grantAllSeeds">씨앗 10종 각 1개</button><button class="btn secondary small" id="grantFertilizer">비료 지급</button></div>
+          </div>
+          <div class="panel section"><div class="section-head"><div><h3>사용자 지원</h3><p>누락 보상·PIN·인증 기기·정원 초기화를 처리합니다.</p></div></div>
+            <div class="button-row"><button class="btn secondary small" id="grantMissing">선택 씨앗 수동 지급</button><button class="btn secondary small" id="resetPin">PIN을 123456으로 초기화</button><button class="btn secondary small" id="releaseDevice">인증 기기 해제</button><button class="btn danger small" id="resetGarden">정원 초기화</button></div>
+          </div>
+          <div class="panel section" style="grid-column:1/-1"><div class="section-head"><div><h3>점포 QR 상태</h3><p>중지된 점포는 신규 QR 보상과 탐색 노출이 제한됩니다.</p></div></div><div class="table-wrap"><table><thead><tr><th>점포</th><th>QR 코드</th><th>제공 씨앗</th><th>상태</th></tr></thead><tbody>${shopRows}</tbody></table></div></div>
+          <div class="panel section"><div class="section-head"><div><h3>정원키·등록코드 생성</h3><p>QR 이미지 대신 테스트용 식별자와 등록코드를 생성합니다.</p></div></div><div class="button-row"><button class="btn" id="generateKey">새 정원키 생성</button></div><div class="card-list" style="margin-top:12px">${state.generatedKeys.slice(0,6).map(k=>`<div class="settings-row"><div><strong>${k.keyId}</strong><p>${k.code} · ${k.design}</p></div><span class="chip">미등록</span></div>`).join('')||'<div class="helper">아직 생성한 키가 없습니다.</div>'}</div></div>
+          <div class="panel section"><div class="section-head"><div><h3>실증 데이터</h3><p>현장 검증용 핵심 수치입니다.</p></div></div>
+            <div class="garden-stats"><div class="stat"><strong>${state.registered?1:0}</strong><small>등록 정원키</small></div><div class="stat"><strong>${totalVisitCount()}</strong><small>서로 다른 점포</small></div><div class="stat"><strong>${Object.values(state.collection).filter(c=>c.status==='complete').length}</strong><small>완성 도감</small></div></div>
+            <div class="button-row" style="margin-top:12px"><button class="btn secondary small" id="adminCsv">CSV 내보내기</button></div>
+          </div>
+          <div class="panel section" style="grid-column:1/-1"><div class="section-head"><div><h3>최근 운영 로그</h3><p>사용자 캡처 없이 등록·보상·성장·복구 이력을 확인합니다.</p></div></div><div class="table-wrap"><table><thead><tr><th>시간</th><th>이벤트</th><th>상세</th></tr></thead><tbody>${logRows}</tbody></table></div></div>
+        </div>`;
+      el('adminLogout').addEventListener('click',()=>{state.adminUnlocked=false;saveState();renderAdmin();});
+      el('toggleSpeed').addEventListener('click',toggleSpeed);
+      el('advanceAll').addEventListener('click',advanceAll);
+      el('grantAllSeeds').addEventListener('click',()=>{seedCatalog.forEach(s=>addInventory(s.id,1,'관리자 테스트 지급'));saveState();toast('씨앗 10종을 지급했습니다.');renderAdmin();});
+      el('grantFertilizer').addEventListener('click',()=>{state.fertilizers.small+=3;state.fertilizers.good+=2;logEvent('fertilizer_granted',{small:3,good:2});saveState();toast('비료를 지급했습니다.');renderAdmin();});
+      el('grantMissing').addEventListener('click',openManualGrant);
+      el('resetPin').addEventListener('click',()=>{state.pinHash=hashPin('123456');state.auth.failCount=0;state.auth.lockUntil=0;logEvent('pin_reset',{});saveState();toast('PIN을 123456으로 초기화했습니다.');});
+      el('releaseDevice').addEventListener('click',()=>{state.auth.managed=false;logEvent('device_released',{});saveState();toast('인증 기기를 해제했습니다.');renderChrome();});
+      el('resetGarden').addEventListener('click',resetApp);
+      el('generateKey').addEventListener('click',generateTestKey);
+      el('adminCsv').addEventListener('click',exportCsv);
+      qsa('[data-shop-status]',el('adminScreen')).forEach(sel=>sel.addEventListener('change',()=>{state.shopStatuses[sel.dataset.shopStatus]=sel.value;logEvent('shop_status_changed',{shopId:sel.dataset.shopStatus,status:sel.value});saveState();toast('점포 상태를 변경했습니다.');}));
+    }
+    function toggleSpeed(){
+      const old=state.settings.demoSpeed; state.settings.demoSpeed=!old;
+      // 진행 중인 타이머는 남은 비율을 보존
+      state.plots.forEach(p=>{if(p?.status==='growing'){const seed=seedMap[p.seedId];const oldDur=seed.totalMinutes*60*1000/4/(old?DEMO_SCALE:1);const newDur=seed.totalMinutes*60*1000/4/(state.settings.demoSpeed?DEMO_SCALE:1);const ratio=Math.max(0,(p.stageEndsAt-now())/oldDur);p.stageEndsAt=now()+newDur*ratio;}});
+      logEvent('speed_mode_changed',{demoSpeed:state.settings.demoSpeed});saveState();toast(state.settings.demoSpeed?'테스트 속도로 전환했습니다.':'실제 성장 시간으로 전환했습니다.');renderAdmin();renderChrome();
+    }
+    function advanceAll(){let c=0;state.plots.forEach(p=>{if(p?.status==='growing'){p.stageEndsAt=now()-1;c++;}});saveState();updateGrowth();toast(`${c}개의 타이머를 완료 처리했습니다.`);renderAdmin();}
+    function openManualGrant(){
+      openModal('누락 보상 수동 지급',`<form id="manualGrantForm" class="form-grid"><label class="field">씨앗<select id="manualSeed">${seedCatalog.map(s=>`<option value="${s.id}">${escapeHtml(s.name)} · ${s.type}</option>`).join('')}</select></label><label class="field">수량<input id="manualQty" type="number" min="1" max="20" value="1" /></label><button class="btn" type="submit">지급하기</button></form>`,root=>qs('#manualGrantForm',root).addEventListener('submit',e=>{e.preventDefault();addInventory(qs('#manualSeed',root).value,Number(qs('#manualQty',root).value)||1,'관리자 누락 보상');saveState();closeModal();toast('수동 보상을 지급했습니다.');renderAdmin();}));
+    }
+    function generateTestKey(){
+      const n=state.generatedKeys.length+2; const code=Math.random().toString(36).slice(2,10).toUpperCase(); const key={keyId:`GT-${String(n).padStart(4,'0')}`,code,design:['기본형','감천형','작가형'][n%3],createdAt:now()};state.generatedKeys.unshift(key);logEvent('garden_key_generated',key);saveState();toast(`${key.keyId}를 생성했습니다.`);renderAdmin();
+    }
+
+    function exportJson(){downloadFile(`가든태그_백업_${todayKey()}.json`,JSON.stringify(state,null,2),'application/json');}
+    function exportCsv(){
+      const rows=[['시간','이벤트','상세'],...state.logs.map(l=>[new Date(l.at).toISOString(),l.type,JSON.stringify(l.detail)])];
+      const csv='\ufeff'+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');downloadFile(`가든태그_활동기록_${todayKey()}.csv`,csv,'text/csv;charset=utf-8');
+    }
+    function downloadFile(name,content,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    function resetApp(){if(!confirm('가든태그 로컬 데이터를 모두 삭제할까요?'))return;localStorage.removeItem(STORAGE_KEY);state=defaultState();activeTab='registration';closeModal();renderAll();toast('초기화했습니다.');}
+    function rarityClass(r){return r==='희귀'?'rare':r==='특별'?'special':r==='전설'?'legend':'';}
+    function compressImage(file,maxSize=800,quality=.72){
+      return new Promise((resolve,reject)=>{const reader=new FileReader();reader.onerror=reject;reader.onload=()=>{const img=new Image();img.onerror=reject;img.onload=()=>{let w=img.width,h=img.height;if(Math.max(w,h)>maxSize){const s=maxSize/Math.max(w,h);w=Math.round(w*s);h=Math.round(h*s);}const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);resolve(c.toDataURL('image/jpeg',quality));};img.src=reader.result;};reader.readAsDataURL(file);});
+    }
+
+    function renderAll(){renderChrome();if(!state.registered){setActiveTab('registration');return;}setActiveTab(activeTab==='registration'?'garden':activeTab);}
+
+    el('modalClose').addEventListener('click',closeModal);
+    el('moda
