@@ -88,15 +88,25 @@ function handleApi_(params) {
 
 // ─────────────────────────────────────────────────────────
 
-function getSheet_() {
+// 제품 코드(CD, BMT 등)에 맞는 시트를 반환. 없으면 QR_DB fallback
+// findQrRow_ 가 마지막으로 사용한 시트를 캐시해서 후속 호출에 재사용
+let _lastQrSheet = null;
+
+function getSheet_(code) {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  if (code) {
+    const productType = String(code).split('-')[0].toUpperCase();
+    const productSheet = ss.getSheetByName(productType);
+    if (productSheet) return productSheet;
+  }
+  if (_lastQrSheet) return _lastQrSheet;
   const sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) throw new Error('QR_DB 시트를 찾을 수 없습니다.');
   return sheet;
 }
 
-function getHeaderMap_() {
-  const sheet = getSheet_();
+function getHeaderMap_(code) {
+  const sheet = getSheet_(code);
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const map = {};
   headers.forEach((h, i) => {
@@ -106,7 +116,8 @@ function getHeaderMap_() {
 }
 
 function findQrRow_(code) {
-  const sheet = getSheet_();
+  const sheet = getSheet_(code);
+  _lastQrSheet = sheet;  // 이후 getSheet_() 호출이 같은 시트를 참조
   const values = sheet.getDataRange().getValues();
   const targetCode = String(code || '').trim().toUpperCase();
   for (let i = 1; i < values.length; i++) {
@@ -114,6 +125,7 @@ function findQrRow_(code) {
       return i + 1;
     }
   }
+  _lastQrSheet = null;
   return -1;
 }
 
@@ -128,8 +140,8 @@ function fixPhone_(key, val) {
   return s;
 }
 
-function getRowObject_(row) {
-  const sheet = getSheet_();
+function getRowObject_(row, sheet) {
+  if (!sheet) sheet = getSheet_();
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   const values = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
   const obj = {};
@@ -334,11 +346,11 @@ function normalizeUrl_(type, url) {
 
 function registerSoldQr(form) {
   try {
+    const row = findQrRow_(form.code);  // 먼저 호출해야 _lastQrSheet 가 CD 탭으로 세팅됨
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+
     const sheet = getSheet_();
     const headers = getHeaderMap_();
-    const row = findQrRow_(form.code);
-
-    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
 
     const data = getRowObject_(row);
     // 판매완료 = 정상 등록 대기
@@ -450,11 +462,11 @@ function resetPasswordByEmail(code, email) {
 
 function updateCustomerData(form) {
   try {
+    const row = findQrRow_(form.code);
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+
     const sheet = getSheet_();
     const headers = getHeaderMap_();
-    const row = findQrRow_(form.code);
-
-    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
 
     const pwCheck = verifyPassword(form.code, form.password);
     if (!pwCheck.success) return pwCheck;
