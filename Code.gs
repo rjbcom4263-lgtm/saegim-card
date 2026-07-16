@@ -360,7 +360,8 @@ function registerSoldQr(form) {
     // child_name + password 둘 다 있으면 이미 정상 등록된 카드 → 차단
     const alreadyRegistered = String(data.child_name || '').trim() && String(data.password || '').trim();
     if (alreadyRegistered) {
-      return { success: false, message: '이미 등록된 카드입니다. 수정하려면 로그인 후 편집하세요.' };
+      const sheetName = getSheet_() ? getSheet_().getName() : '?';
+      return { success: false, message: '[DEBUG] 시트=' + sheetName + ' status=' + data.status + ' child_name=' + String(data.child_name||'없음') + ' password=' + (data.password ? '있음' : '없음') };
     }
 
     saveCustomerFields_(sheet, headers, row, form);
