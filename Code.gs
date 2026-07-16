@@ -1060,37 +1060,4 @@ function initGardenPlacesSheet() {
   PLACES.forEach(function(p, idx) {
     const row = idx + 2;
     const placeUrl = BASE + '?place=' + p.place_id;
-    const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=' + QR_SIZE + '&data=' + encodeURIComponent(placeUrl);
-
-    // Drive에서 기존 파일 삭제
-    const existing = folder.getFilesByName(p.place_id + '_qr.png');
-    while (existing.hasNext()) existing.next().setTrashed(true);
-
-    // QR 이미지 fetch → Drive 저장
-    const blob = UrlFetchApp.fetch(qrApiUrl).getBlob().setName(p.place_id + '_qr.png');
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    const driveUrl = 'https://drive.google.com/uc?export=view&id=' + file.getId();
-
-    // 데이터 행 작성 (qr_file_url 열에 Drive URL 저장)
-    sheet.getRange(row, 1, 1, headers.length).setValues([[
-      p.place_id, p.place_name, p.icon, placeUrl,
-      p.reward_seed, p.reward_coin, 1, true, driveUrl, now
-    ]]);
-
-    sheet.setRowHeight(row, 40);
-    Utilities.sleep(500); // API 과부하 방지
-  });
-
-  sheet.setColumnWidth(4, 380);
-  sheet.setColumnWidth(9, 180);
-
-  Logger.log('GARDEN_PLACES 시트 생성 완료 — QR Drive 저장 완료');
-}
-
-function getOrCreateDriveFolder_(name) {
-  const folders = DriveApp.getFoldersByName(name);
-  if (folders.hasNext()) return folders.next();
-  return DriveApp.createFolder(name);
-}
-
+    const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/

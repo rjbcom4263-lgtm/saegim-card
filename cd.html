@@ -52,7 +52,7 @@ const FIREBASE_CONFIG = {
 };
 
 // ── 고객용 Apps Script (쓰기 전용: 등록/수정/비밀번호 확인) ──
-const API_URL = 'https://script.google.com/macros/s/AKfycbyy94aw6jA4q2bG6vkXyF4q1JcgWDuLXQFDuprjZl-Udg5fYKGZxH98IpAqhvyT4i_B/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzo0sXPGjmj9pfUE716EhLR_XVJ-mtYcb7eKGmzEkA_RF9GTp4Sj967oprsY7RfYU4/exec';
 
 const params = new URLSearchParams(location.search);
 const CODE   = (params.get('code') || '').trim().toUpperCase();
@@ -505,10 +505,4 @@ function setLoading(btnEl, loading, loadingText) {
   }
 }
 function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
-function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
-function renderError(msg) { app.innerHTML = '<div class="error">' + esc(msg) + '</div>'; }
-
-loadData();
-</script>
-</body>
-</html>
+function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.in
