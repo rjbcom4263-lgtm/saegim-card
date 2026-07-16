@@ -354,8 +354,8 @@ function registerSoldQr(form) {
 
     const data = getRowObject_(row);
     // 판매완료 = 정상 등록 대기
-    // 사용중 + 비밀번호 없음 = 불완전 등록 → 재등록 허용
-    const isIncomplete = data.status === '사용중' && !String(data.password || '').trim();
+    // 사용중 + child_name 없음 = 불완전 등록 → 재등록 허용
+    const isIncomplete = data.status === '사용중' && !String(data.child_name || '').trim();
     if (data.status !== '판매완료' && !isIncomplete) {
       return { success: false, message: '등록 가능한 상태가 아닙니다.' };
     }
