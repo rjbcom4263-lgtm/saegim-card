@@ -359,11 +359,13 @@ function registerSoldQr(form) {
     }
 
     const data = getRowObject_(row);
-    // child_name + password 둘 다 있으면 이미 정상 등록된 카드 → 차단
-    const alreadyRegistered = String(data.child_name || '').trim() && String(data.password || '').trim();
-    if (alreadyRegistered) {
-      const sheetName = getSheet_() ? getSheet_().getName() : '?';
-      return { success: false, message: '[DEBUG] 시트=' + sheetName + ' status=' + data.status + ' child_name=' + String(data.child_name||'없음') + ' password=' + (data.password ? '있음' : '없음') };
+    // 판매완료 = 어드민이 재등록 허가 → 무조건 통과
+    // 그 외 + child_name+password 있으면 이미 등록된 카드 → 차단
+    if (data.status !== '판매완료') {
+      const alreadyRegistered = String(data.child_name || '').trim() && String(data.password || '').trim();
+      if (alreadyRegistered) {
+        return { success: false, message: '이미 등록된 카드입니다. 수정하려면 로그인 후 편집하세요.' };
+      }
     }
 
     saveCustomerFields_(sheet, headers, row, form);
