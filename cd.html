@@ -183,7 +183,6 @@ function renderView(data) {
   if (data.status === '미등록')  { renderInactive(); return; }
   if (data.status === '판매완료') { renderRegister(data); return; }
   if (data.status === '중지')    { renderStopped(); return; }
-  if (data.status === '사용중')  { renderCare(data); return; }  // 등록 완료 = 무조건 care
   if (!data.child_name && !data.owner) { renderRegister(data); return; }
   renderCare(data);
 }
