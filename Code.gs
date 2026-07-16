@@ -352,15 +352,15 @@ function registerSoldQr(form) {
     const sheet = getSheet_();
     const headers = getHeaderMap_();
 
-    const data = getRowObject_(row);
-    // 판매완료 = 정상 등록 대기
-    // 사용중 + child_name 없음 = 불완전 등록 → 재등록 허용
-    const isIncomplete = data.status === '사용중' && !String(data.child_name || '').trim();
-    if (data.status !== '판매완료' && !isIncomplete) {
-      return { success: false, message: '등록 가능한 상태가 아닙니다.' };
-    }
     if (!String(form.password || '').trim()) {
       return { success: false, message: '수정 비밀번호를 입력해주세요.' };
+    }
+
+    const data = getRowObject_(row);
+    // child_name + password 둘 다 있으면 이미 정상 등록된 카드 → 차단
+    const alreadyRegistered = String(data.child_name || '').trim() && String(data.password || '').trim();
+    if (alreadyRegistered) {
+      return { success: false, message: '이미 등록된 카드입니다. 수정하려면 로그인 후 편집하세요.' };
     }
 
     saveCustomerFields_(sheet, headers, row, form);
