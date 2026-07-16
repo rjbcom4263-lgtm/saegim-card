@@ -180,7 +180,7 @@ function renderLinkButtons(links) {
 
 // ── 라우팅 ─────────────────────────────────────────────────
 function renderView(data) {
-  if (data._debug) console.warn('🔍 DEBUG getQrData:', data._debug);
+  console.warn('🔍 DEBUG renderView: status=' + data.status + ' child_name=' + (data.child_name||'없음') + ' owner=' + (data.owner||'없음'));
   if (data.status === '미등록')  { renderInactive(); return; }
   if (data.status === '판매완료') { renderRegister(data); return; }
   if (data.status === '중지')    { renderStopped(); return; }
