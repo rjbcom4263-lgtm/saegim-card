@@ -341,7 +341,10 @@ function registerSoldQr(form) {
     if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
 
     const data = getRowObject_(row);
-    if (data.status !== '판매완료') {
+    // 판매완료 = 정상 등록 대기
+    // 사용중 + 비밀번호 없음 = 불완전 등록 → 재등록 허용
+    const isIncomplete = data.status === '사용중' && !String(data.password || '').trim();
+    if (data.status !== '판매완료' && !isIncomplete) {
       return { success: false, message: '등록 가능한 상태가 아닙니다.' };
     }
     if (!String(form.password || '').trim()) {
