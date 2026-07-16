@@ -252,9 +252,11 @@ function getQrData(code) {
     if (!code) return { success: false, message: 'QR 코드가 없습니다.' };
 
     const row = findQrRow_(code);
-    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다.' };
+    if (row === -1) return { success: false, message: 'QR 정보를 찾을 수 없습니다. [시트=' + (getSheet_() ? getSheet_().getName() : '?') + ']' };
 
     const data = getRowObject_(row);
+    // DEBUG: 어느 시트에서 뭘 읽었는지 확인
+    data._debug = '[GET] 시트=' + (getSheet_() ? getSheet_().getName() : '?') + ' status=' + data.status + ' child_name=' + String(data.child_name||'없음');
 
     if (data.status === '사용중' || data.status === '분실') {
       data.scan_count = increaseScanCount_(row);

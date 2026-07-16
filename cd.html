@@ -52,7 +52,7 @@ const FIREBASE_CONFIG = {
 };
 
 // ── 고객용 Apps Script (쓰기 전용: 등록/수정/비밀번호 확인) ──
-const API_URL = 'https://script.google.com/macros/s/AKfycbyr3xQDw0ku1tBO3-JOXGVFBN-W3h8fs28RsxCdTk8St6jqkSCWwsQp3FPpY5VJR3M/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzmxP024M5-wG66TaziiiNsgVRpnAcFlEv5eZ96V2kb9py996dD_UUM-PQKItoZ58TA/exec';
 
 const params = new URLSearchParams(location.search);
 const CODE   = (params.get('code') || '').trim().toUpperCase();
@@ -180,6 +180,7 @@ function renderLinkButtons(links) {
 
 // ── 라우팅 ─────────────────────────────────────────────────
 function renderView(data) {
+  if (data._debug) console.warn('🔍 DEBUG getQrData:', data._debug);
   if (data.status === '미등록')  { renderInactive(); return; }
   if (data.status === '판매완료') { renderRegister(data); return; }
   if (data.status === '중지')    { renderStopped(); return; }
