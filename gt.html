@@ -422,6 +422,7 @@
     function loadState(){
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
+        console.log('[GT] loadState key=' + STORAGE_KEY + ' found=' + !!raw);
         if (!raw) return defaultState();
         const parsed = JSON.parse(raw);
         const loaded={ ...defaultState(), ...parsed, activeTheme: parsed.activeTheme || 'basic', auth:{...defaultState().auth,...parsed.auth}, settings:{...defaultState().settings,...parsed.settings} };
@@ -432,7 +433,16 @@
         return defaultState();
       }
     }
-    function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function saveState(){
+      try {
+        const json = JSON.stringify(state);
+        localStorage.setItem(STORAGE_KEY, json);
+        console.log('[GT] 저장 완료 key=' + STORAGE_KEY + ' size=' + json.length);
+      } catch(e) {
+        console.error('[GT] 저장 실패:', e);
+        toast('⚠️ 저장 실패: ' + e.message, 'error');
+      }
+    }
     function logEvent(type, detail={}){
       state.logs.unshift({ id:uid('log'), type, detail, at:now() });
       state.logs = state.logs.slice(0,500);
